@@ -33,13 +33,13 @@ void print_packet_at_index(
     }
     L0Packet packet = packets[index];
 
+    if (modes)      packet.print_modes();
+    if (pulse_info) packet.print_pulse_info();
     if (headers)
     {
         packet.print_primary_header();
         packet.print_secondary_header();
     }
-    if (pulse_info) packet.print_pulse_info();
-    if (modes)      packet.print_modes();
 }
 
 
@@ -55,6 +55,7 @@ int main(int argc, char* argv[])
 
     if (command == "help" or command  == "--help" or command == "-h")
     {
+        cout << "print [packet_index] [path]"                    << endl;
         cout << "print_headers [packet_index] [path]"            << endl;
         cout << "print_modes [packet_index] [path]"              << endl;
         cout << "print_pulse_info [packet_index] [path]"         << endl;
@@ -65,6 +66,17 @@ int main(int argc, char* argv[])
         cout << "thread_test [path]"                             << endl;
         cout << "omp_test [path]"                                << endl;
         cout << "find_packets_of_type [packet_type] [path]"      << endl;
+    }
+
+    else if (command == "print")
+    {
+
+        if(argv[2] == __null || argv[3] == __null) 
+        {
+            cout << "Please enter a packet index and filename." << endl;
+            return 1;
+        }
+        print_packet_at_index(string(argv[3]), stoi(argv[2]), true, true, true);
     }
 
     else if (command == "print_headers")
