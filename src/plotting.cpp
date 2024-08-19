@@ -113,7 +113,7 @@ void plot_fft(string filename, const int& packet_index, const bool& plot_real = 
 }
 
 
-void plot_swath(string filename, const int& swath_number)
+void plot_swath(string filename, const string& swath)
 {
     ifstream data = open_file(filename);
 
@@ -124,7 +124,7 @@ void plot_swath(string filename, const int& swath_number)
     #pragma omp parallel for
     for (L0Packet packet : packets)
     {
-        if (packet.secondary_header("swath_number") == swath_number)
+        if (packet.get_swath() == swath)
         {
             complex_samples.push_back(packet.get_complex_samples());
         }
@@ -179,11 +179,11 @@ int main(int argc, char* argv[])
     {
         if(argv[2] == __null || argv[3] == __null) 
         {
-            cout << "Please enter the packet index and filename." << endl;
+            cout << "Please enter the swath and filename." << endl;
             return 1;
         }
 
-        plot_swath(string(argv[3]), stoi(argv[2]));
+        plot_swath(string(argv[3]), string(argv[2]));
     }
     else if (command == "plot_fft")
     {
