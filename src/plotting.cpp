@@ -130,6 +130,12 @@ void plot_swath(string filename, const string& swath)
         }
     }
 
+    if (complex_samples.size() < 1)
+    {
+        cout << "No samples found for swath " << swath << endl;
+        return;
+    }
+
     vector<float> real_samples;
     
     real_samples.reserve(complex_samples.size() * complex_samples[0].size());
