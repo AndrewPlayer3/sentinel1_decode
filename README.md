@@ -1,8 +1,10 @@
 # sentinel1_decode (W.I.P.)
 
-This is a C++ program/library for decoding Level-0 Raw data from the Sentinel-1 satellite. This code has been moved from my previous repo [sar_processing](https://github.com/andrewplayer3/sar_processing). That repo also contains a Python implementation of level-0 decoding that can be interacted with in Jupyter; although, it is much slower than this version.
+This is a C++ program/library for decoding Level-0 Raw data from the Sentinel-1 satellite. Currently, with OpenMP, sentinel1_decode can decode the complex samples for all packets in a data file in approximately 30 seconds on my Ryzen 5800.
 
-Currently, with OpenMP it can decode the complex samples for all the packets in a data file in approximately 30 seconds on my Ryzen 5800.
+For additional information on Level-0 product decoding, see the [SAR Space Packet Protocol Data Unit Specification](https://sentinels.copernicus.eu/documents/247904/2142675/Sentinel-1-SAR-Space-Packet-Protocol-Data-Unit.pdf) and the [Sentinel-1 Level-0 Data Decoding Package](https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17).
+
+*This code has been moved from my previous repo [sar_processing](https://github.com/andrewplayer3/sar_processing). That repo also contains a Python implementation of level-0 decoding that can be interacted with in Jupyter; although, it is much slower than this version.*
 
 ## Usage
 
