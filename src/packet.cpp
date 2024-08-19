@@ -198,7 +198,7 @@ char L0Packet::get_rx_polarization()
 /* Returns the parity error status of the SES SSB message */
 string L0Packet::get_error_status()
 {
-    return _secondary_header["error_flag"] == 0 ? "nominal" : "ssb_corrupt";
+    return _secondary_header.at("error_flag") == 0 ? "nominal" : "ssb_corrupt";
 }
 
 
@@ -206,6 +206,13 @@ string L0Packet::get_error_status()
 string L0Packet::get_sensor_mode()
 {
     return ECC_CODE_TO_SENSOR_MODE[_secondary_header["ecc_number"]];
+}
+
+
+/* Returns the swath string representation */
+string L0Packet::get_swath()
+{
+    return SWATH_NUM_TO_STRING.at(_secondary_header["swath_number"]);
 }
 
 
@@ -308,6 +315,7 @@ void L0Packet::print_pulse_info()
     int range_decimation = _secondary_header["range_decimation"];
     int tx_pulse_number  = _secondary_header["tx_pulse_number"];
     
+    cout << "Swath: "                   << get_swath()           << endl;
     cout << "RX Polarization: "         << get_rx_polarization() << endl;
     cout << "TX Polarization: "         << get_tx_polarization() << endl;
     cout << "Pulse Length: "            << get_pulse_length()    << endl;

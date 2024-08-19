@@ -173,6 +173,7 @@ public:
     string get_sensor_mode();
     string get_signal_type();
     string get_error_status();
+    string get_swath();
 
     void print_primary_header();
     void print_secondary_header();
