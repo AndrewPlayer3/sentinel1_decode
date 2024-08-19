@@ -24,7 +24,7 @@ void print_packet_at_index(
     bool modes = false
 ) {
     ifstream data = open_file(filename);
-    
+
     vector<L0Packet> packets = L0Packet::get_packets(data, index + 1);
 
     if (index >= packets.size())
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 
     if (command == "print_headers")
     {
-        
+
         if(argv[2] == __null || argv[3] == __null) 
         {
             cout << "Please enter a packet index and filename." << endl;
@@ -64,10 +64,10 @@ int main(int argc, char* argv[])
         }
         print_packet_at_index(string(argv[3]), stoi(argv[2]));
     }
-    
+
     else if (command == "time")
     {
-        
+
         if(argv[2] == __null || argv[3] == __null) 
         {
             cout << "Please enter the packet count to time and a filename." << endl;
@@ -90,10 +90,10 @@ int main(int argc, char* argv[])
         }
         print_packet_at_index(string(argv[3]), stoi(argv[2]), false, true);
     }
-    
+
     else if (command == "print_modes")
     {
-        
+
         if(argv[2] == __null || argv[3] == __null) 
         {
             cout << "Please enter the packet index and filename." << endl;
@@ -101,10 +101,10 @@ int main(int argc, char* argv[])
         }
         print_packet_at_index(string(argv[3]), stoi(argv[2]), false, false, true);
     }
-    
+
     else if (command == "thread_test")
     {
-        
+
         if(argv[2] == __null) 
         {
             cout << "Please enter the filename." << endl;
@@ -112,7 +112,7 @@ int main(int argc, char* argv[])
         }
         thread_test(string(argv[2]));
     }
-    
+
     else if (command == "omp_test")
     {
         
@@ -170,20 +170,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    else if (command == "print_packet_type")
-    {
-
-        if(argv[2] == __null || argv[3] == __null) 
-        {
-            cout << "Please enter the packet index and filename." << endl;
-            return 1;
-        }
-        ifstream data = open_file(string(argv[3]));
-
-        vector<L0Packet> packets = L0Packet::get_packets(data, stoi(argv[2]) + 1);
-
-        cout << "Packet Type is " << packets[stoi(argv[2])].get_data_format() << "." << endl;
-    }
     else
     {
         cout << command << " is not a valid command." << endl;
