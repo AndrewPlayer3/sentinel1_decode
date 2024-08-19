@@ -13,78 +13,70 @@ Description: Funtions for reading packets, index info, and annotation info from 
 using namespace std;
 
 
+vector<unordered_map<string, u_int64_t>> index_decoder(const string& filename)
+{
+    ifstream data = open_file(filename);
+    return index_decoder(data);
+}
+
+
 /* Returns a vector of maps containing the index records */
-vector<unordered_map<string, int>> index_decoder(ifstream& data)
+vector<unordered_map<string, u_int64_t>> index_decoder(ifstream& data)
 {
     int record_size = 36;
 
-    vector<unordered_map<string, int>> index_records;
+    vector<unordered_map<string, u_int64_t>> index_records;
 
     while (!data.eof())
     {
         vector<u_int8_t> record_bytes = read_bytes(data, record_size);
 
-        int date_time     = read_n_bits(record_bytes,   0, 64);
-        int time_delta    = read_n_bits(record_bytes,  64, 64);
-        int data_size     = read_n_bits(record_bytes, 128, 32);
-        int unit_offset   = read_n_bits(record_bytes, 160, 32);
-        int byte_offset   = read_n_bits(record_bytes, 192, 64);
-        int variable_flag = read_n_bits(record_bytes, 256,  8);
-        int spare_data    = read_n_bits(record_bytes, 264, 24);
-
-        index_records.push_back(unordered_map<string, int>({
-            {"date_time",     date_time},
-            {"time_delta",    time_delta},
-            {"data_size",     data_size},
-            {"unit_offset",   unit_offset},
-            {"byte_offset",   byte_offset},
-            {"variable_flag", variable_flag},
-            {"spare_data",    spare_data}
+        index_records.push_back(unordered_map<string, u_int64_t>({
+            {"date_time",     read_n_bits(record_bytes,   0, 64)},
+            {"time_delta",    read_n_bits(record_bytes,  64, 64)},
+            {"data_size",     read_n_bits(record_bytes, 128, 32)},
+            {"unit_offset",   read_n_bits(record_bytes, 160, 32)},
+            {"byte_offset",   read_n_bits(record_bytes, 192, 64)},
+            {"variable_flag", read_n_bits(record_bytes, 256,  8)},
+            {"spare_data",    read_n_bits(record_bytes, 264, 24)}
         }));
     }
     return index_records;
 }
 
 
+vector<unordered_map<string, u_int64_t>> annotation_decoder(const string& filename)
+{
+    ifstream data = open_file(filename);
+    return annotation_decoder(data);
+}
+
+
 /* Returns a vector of maps containing the annotation records */
-vector<unordered_map<string, int>> annotation_decoder(ifstream& data)
+vector<unordered_map<string, u_int64_t>> annotation_decoder(ifstream& data)
 {
     int record_size = 26;
 
-    vector<unordered_map<string, int>> annotation_records;
+    vector<unordered_map<string, u_int64_t>> annotation_records;
 
     while (!data.eof())
     {
         vector<u_int8_t> record_bytes = read_bytes(data, record_size);
 
-        int days_ul             = read_n_bits(record_bytes,   0, 16);
-        int milliseconds_ul     = read_n_bits(record_bytes,  16, 32);
-        int microseconds_ul     = read_n_bits(record_bytes,  48, 16);
-        int days_dl             = read_n_bits(record_bytes,  64, 16);
-        int milliseconds_dl     = read_n_bits(record_bytes,  80, 32);
-        int microseconds_dl     = read_n_bits(record_bytes, 112, 16);
-        int packet_length       = read_n_bits(record_bytes, 128, 16);
-        int num_transfer_frames = read_n_bits(record_bytes, 144, 16);
-        int error_flag          = read_n_bits(record_bytes, 160,  8);
-        int bit_1_type          = read_n_bits(record_bytes, 168,  1);
-        int bit_2_type          = read_n_bits(record_bytes, 169,  2);
-        int bit_6_type          = read_n_bits(record_bytes, 171,  6);
-        int spare_field         = read_n_bits(record_bytes, 177,  8);
-
-        annotation_records.push_back(unordered_map<string, int>({
-            {"days_ul",             days_ul},
-            {"milliseconds_ul",     milliseconds_ul},
-            {"microseconds_ul",     microseconds_ul},
-            {"days_dl",             days_dl},
-            {"milliseconds_dl",     milliseconds_dl},
-            {"microseconds_dl",     microseconds_dl},
-            {"packet_length",       packet_length},
-            {"num_transfer_frames", num_transfer_frames},
-            {"error_flag",          error_flag},
-            {"bit_1_type",          bit_1_type},
-            {"bit_2_type",          bit_2_type},
-            {"bit_6_type",          bit_6_type},
-            {"spare_field",         spare_field}
+        annotation_records.push_back(unordered_map<string, u_int64_t>({
+            {"days_ul",             read_n_bits(record_bytes,   0, 16)},
+            {"milliseconds_ul",     read_n_bits(record_bytes,  16, 32)},
+            {"microseconds_ul",     read_n_bits(record_bytes,  48, 16)},
+            {"days_dl",             read_n_bits(record_bytes,  64, 16)},
+            {"milliseconds_dl",     read_n_bits(record_bytes,  80, 32)},
+            {"microseconds_dl",     read_n_bits(record_bytes, 112, 16)},
+            {"packet_length",       read_n_bits(record_bytes, 128, 16)},
+            {"num_transfer_frames", read_n_bits(record_bytes, 144, 16)},
+            {"error_flag",          read_n_bits(record_bytes, 160,  8)},
+            {"bit_1_type",          read_n_bits(record_bytes, 168,  1)},
+            {"bit_2_type",          read_n_bits(record_bytes, 169,  2)},
+            {"bit_6_type",          read_n_bits(record_bytes, 171,  6)},
+            {"spare_field",         read_n_bits(record_bytes, 177,  8)}
         }));
     }
     return annotation_records;

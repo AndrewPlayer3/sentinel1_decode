@@ -53,8 +53,21 @@ int main(int argc, char* argv[])
 
     string command = string(argv[1]);
 
+    if (command == "help" or command  == "--help" or command == "-h")
+    {
+        cout << "print_headers [packet_index] [path]"            << endl;
+        cout << "print_modes [packet_index] [path]"              << endl;
+        cout << "print_pulse_info [packet_index] [path]"         << endl;
+        cout << "print_complex_samples [packet_index] [path]"    << endl;
+        cout << "print_index_records [path]"                     << endl;
+        cout << "print_annotation_record [record_index] [path]"  << endl;
+        cout << "time [num_packets] [path]"                      << endl;
+        cout << "thread_test [path]"                             << endl;
+        cout << "omp_test [path]"                                << endl;
+        cout << "find_packets_of_type [packet_type] [path]"      << endl;
+    }
 
-    if (command == "print_headers")
+    else if (command == "print_headers")
     {
 
         if(argv[2] == __null || argv[3] == __null) 
@@ -168,6 +181,53 @@ int main(int argc, char* argv[])
                 cout << "Packet #" << sequence_count << " at index " << i << " is type " << data_format << endl;
             }
         }
+    }
+
+    else if (command == "print_index_records")
+    {
+        if(argv[2] == __null)
+        {
+            cout << "Please enter the filepath." << endl;
+            return 1;
+        }
+
+        vector<unordered_map<string, u_int64_t>> records = index_decoder(string(argv[2]));
+
+        int index = 0;
+        for (unordered_map<string, u_int64_t> record : records)
+        {
+            cout << "Index Record #"  << index << ":"            << endl;
+            cout << "Date/Time: "     << record["date_time"]     << endl;
+            cout << "Time Delta: "    << record["time_delta"]    << endl;
+            cout << "Data Size: "     << record["data_size"]     << endl;
+            cout << "Unit Offset: "   << record["unit_offset"]   << endl;
+            cout << "Byte Offset: "   << record["byte_offset"]   << endl;
+            cout << "Variable Flag: " << record["variable_flag"] << endl;
+            cout << "Spare Data: "    << record["spare_data"]    << endl;
+            cout << "---"                                        << endl;
+
+            index += 1;
+        }
+    }
+
+    else if (command == "print_annotation_record")
+    {
+        if(argv[2] == __null or argv[3] == __null)
+        {
+            cout << "Please enter an annotation record index and the filepath." << endl;
+            return 1;
+        }
+
+        unordered_map<string, u_int64_t> record = annotation_decoder(string(argv[3]))[stoi(argv[2])];
+
+        cout << "Days Uplink: "           << record["days_ul"]         << endl;
+        cout << "Milliseconds Uplink: "   << record["milliseconds_ul"] << endl;
+        cout << "Microseconds Uplink: "   << record["microseconds_ul"] << endl;
+        cout << "Days Downlink: "         << record["days_dl"]         << endl;
+        cout << "Milliseconds Downlink: " << record["milliseconds_dl"] << endl;
+        cout << "Microseconds Downlink: " << record["microseconds_dl"] << endl;
+        cout << "Packet Length: "         << record["packet_length"]   << endl;
+        cout << "Error Flag: "            << record["error_flag"]      << endl;
     }
 
     else

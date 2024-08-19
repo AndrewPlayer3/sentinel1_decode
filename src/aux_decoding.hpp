@@ -12,6 +12,10 @@ Description: Funtions for reading packets, index info, and annotation info from 
 
 #include "packet.hpp"
 
-vector<unordered_map<string, int>> annotation_decoder(ifstream& data);
+vector<unordered_map<string, u_int64_t>> annotation_decoder(const string& filename);
 
-vector<unordered_map<string, int>> index_decoder(ifstream& data);
+vector<unordered_map<string, u_int64_t>> annotation_decoder(ifstream& data);
+
+vector<unordered_map<string, u_int64_t>> index_decoder(const string& filename);
+
+vector<unordered_map<string, u_int64_t>> index_decoder(ifstream& data);
