@@ -11,6 +11,91 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 #include "packet.hpp"
 
 
+/* Returns the header dictionary with the values cast to integers with no calculations */
+unordered_map<string, int> L0Packet::_parse_header(
+    const vector<u_int8_t>&  bytes,
+    const vector<int>&       bit_lengths,
+    const vector<string>&    field_names
+) {
+    int num_fields = field_names.size();
+    int bit_index = 0;
+
+    unordered_map<string, int> header;
+
+    for (int i = 0; i < num_fields; i++) 
+    {
+        header[field_names[i]] = read_n_bits(bytes, bit_index, bit_lengths[i]);
+
+        bit_index += bit_lengths[i];
+    }
+    return header;
+}
+
+
+/* Decode the next packet within the data stream */
+L0Packet L0Packet::get_next_packet(ifstream& data)
+{
+    vector<u_int8_t> primary_bytes = read_bytes(data, 6);
+    unordered_map<string, int> primary_header = _parse_header(
+        primary_bytes,
+        PRIMARY_HEADER,
+        PRIMARY_HEADER_FIELDS
+    );
+
+    if (data.eof()) return L0Packet();
+
+    vector<u_int8_t> secondary_bytes = read_bytes(data, 62);
+    unordered_map<string, int> secondary_header = _parse_header(
+        secondary_bytes,
+        SECONDARY_HEADER,
+        SECONDARY_HEADER_FIELDS
+    );
+
+    u_int32_t packet_length    = primary_header["packet_data_length"];
+    u_int32_t user_data_length = packet_length + 1 - SECONDARY_HEADER_SIZE;
+
+    vector<u_int8_t> user_data = read_bytes(data, user_data_length);
+
+    L0Packet packet = L0Packet(
+        primary_header,
+        secondary_header,
+        user_data
+    );
+
+    return packet;
+}
+
+
+/* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
+vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
+{
+    vector<L0Packet> packets;
+
+    int index = 0;
+
+    bool get_all_packets = num_packets == 0;
+
+    while (!data.eof() and (index < num_packets or get_all_packets))
+    {
+        try
+        {
+            L0Packet packet = L0Packet::get_next_packet(data);
+
+            if (!packet.is_empty()) packets.push_back(packet);
+            else break;
+
+            index += 1;
+        }
+        catch(runtime_error)
+        {
+            cout << "Caught a runtime error while decoding packet #" << index << ". Skipping..." << endl;
+            continue;
+        }
+    }
+    return packets;
+}
+
+
 /* Returns the length of the baq blocks in bytes */
 int L0Packet::get_baq_block_length()
 {   
@@ -478,10 +563,10 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_c(
         for (int s_id = 0; s_id < block_length; s_id++)
         {
             s_values.push_back({
-                _get_s_values_type_c(threshold_id, IE.signs[block_id][s_id], IE.m_codes[block_id][s_id]),
-                _get_s_values_type_c(threshold_id, IO.signs[block_id][s_id], IO.m_codes[block_id][s_id]),
-                _get_s_values_type_c(threshold_id, QE.signs[block_id][s_id], QE.m_codes[block_id][s_id]),
-                _get_s_values_type_c(threshold_id, QO.signs[block_id][s_id], QO.m_codes[block_id][s_id])
+                _get_s_values_type_c(threshold_id, IE.blocks[block_id].signs[s_id], IE.blocks[block_id].m_codes[s_id]),
+                _get_s_values_type_c(threshold_id, IO.blocks[block_id].signs[s_id], IO.blocks[block_id].m_codes[s_id]),
+                _get_s_values_type_c(threshold_id, QE.blocks[block_id].signs[s_id], QE.blocks[block_id].m_codes[s_id]),
+                _get_s_values_type_c(threshold_id, QO.blocks[block_id].signs[s_id], QO.blocks[block_id].m_codes[s_id])
             });
         }
     }
@@ -546,11 +631,7 @@ void L0Packet::_set_quad_type_c(QUAD& component, int& bit_index)
             bit_index += threshold_bits;
         }
 
-        H_CODE h_code = _get_h_code_type_c(bit_index, is_last_block);
-
-        component.signs.push_back(h_code.signs);
-        component.m_codes.push_back(h_code.m_codes);
-        component.bits_read += h_code.bits_read + (is_qe ? threshold_bits : 0);
+        component.blocks.push_back(_get_h_code_type_c(bit_index, is_last_block));
     }
 
     bit_index = _get_next_word_boundary(bit_index);
@@ -604,10 +685,10 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_d(
         for (int s_id = 0; s_id < block_length; s_id++)
         {
             s_values.push_back({
-                _get_s_values_type_d(brc, threshold_id, IE.signs[block_id][s_id], IE.m_codes[block_id][s_id]),
-                _get_s_values_type_d(brc, threshold_id, IO.signs[block_id][s_id], IO.m_codes[block_id][s_id]),
-                _get_s_values_type_d(brc, threshold_id, QE.signs[block_id][s_id], QE.m_codes[block_id][s_id]),
-                _get_s_values_type_d(brc, threshold_id, QO.signs[block_id][s_id], QO.m_codes[block_id][s_id]),
+                _get_s_values_type_d(brc, threshold_id, IE.blocks[block_id].signs[s_id], IE.blocks[block_id].m_codes[s_id]),
+                _get_s_values_type_d(brc, threshold_id, IO.blocks[block_id].signs[s_id], IO.blocks[block_id].m_codes[s_id]),
+                _get_s_values_type_d(brc, threshold_id, QE.blocks[block_id].signs[s_id], QE.blocks[block_id].m_codes[s_id]),
+                _get_s_values_type_d(brc, threshold_id, QO.blocks[block_id].signs[s_id], QO.blocks[block_id].m_codes[s_id]),
             });
         }
     }
@@ -685,16 +766,7 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
         }
         brc = _brc[i];
 
-        H_CODE h_code = _get_h_code_type_d(brc, bit_index, is_last_block);
-
-        component.signs.push_back(h_code.signs);
-        component.m_codes.push_back(h_code.m_codes);
-
-        int brc_offset       = is_ie ? brc_bits       : 0;
-        int threshold_offset = is_qe ? threshold_bits : 0;
-
-        component.bits_read += h_code.bits_read + brc_offset + threshold_offset;
+        component.blocks.push_back(_get_h_code_type_d(brc, bit_index, is_last_block));
     }
-
     bit_index = _get_next_word_boundary(bit_index);
 }

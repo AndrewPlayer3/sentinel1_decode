@@ -14,7 +14,7 @@ Description: Main function with random command-line arguments for testing purpos
 
 #include "../include/matplotlibcpp.h"
 
-#include "packet_decoding.hpp"
+#include "packet.hpp"
 
 using namespace std;
 
@@ -43,7 +43,7 @@ void plot_complex_samples(string filename, const int& packet_index, const bool& 
 {
     ifstream data = open_file(filename);
 
-    vector<L0Packet> packets = get_n_packets(data, packet_index + 1, false, 0);
+    vector<L0Packet> packets = L0Packet::get_packets(data, packet_index + 1);
 
     vector<complex<float>> complex_samples = packets[packet_index].get_complex_samples();
 
@@ -103,7 +103,7 @@ void plot_fft(string filename, const int& packet_index, const bool& plot_real = 
 {
     ifstream data = open_file(filename);
 
-    vector<L0Packet> packets = get_n_packets(data, packet_index + 1, false, 0);
+    vector<L0Packet> packets = L0Packet::get_packets(data, packet_index + 1);
 
     vector<complex<float>> complex_samples = packets[packet_index].get_complex_samples();
 
@@ -117,7 +117,7 @@ void plot_swath(string filename, const int& swath_number)
 {
     ifstream data = open_file(filename);
 
-    vector<L0Packet> packets = get_all_packets(data, false, 0);
+    vector<L0Packet> packets = L0Packet::get_packets(data);
 
     vector<vector<complex<float>>> complex_samples;
 

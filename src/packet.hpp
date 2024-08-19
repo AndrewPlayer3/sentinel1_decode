@@ -21,14 +21,15 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 using namespace std;
 
 
-/* H_CODE or S_CODE struct representing one element of a quadrature */
+/* H_CODE / S_CODE struct representing one element of a quadrature */
 struct H_CODE {
     vector<u_int8_t> signs;
     vector<u_int16_t> m_codes;
 
-    int bits_read;
-
-    H_CODE() {}
+    H_CODE() {
+        signs.reserve(128);
+        m_codes.reserve(128);
+    }
 
     H_CODE(const int& num_codes)
     {
@@ -40,12 +41,9 @@ struct H_CODE {
 
 /* Quadrature struct representing one of the IE, IO, QE, or QO quads */
 struct QUAD {
-    vector<vector<u_int8_t>> signs;
-    vector<vector<u_int16_t>> m_codes;
+    vector<H_CODE> blocks;
 
     string key;
-
-    int bits_read;
 
     QUAD(const string& component_key) {
         key = component_key;
@@ -54,9 +52,7 @@ struct QUAD {
     QUAD(const string& component_key, const int& num_blocks)
     {
         key = component_key;
-
-        signs.reserve(num_blocks);
-        m_codes.reserve(num_blocks);
+        blocks.reserve(num_blocks);
     }
 };
 
@@ -82,6 +78,12 @@ private:
     char _data_format;
 
     void _set_data_format();
+
+    static unordered_map<string, int> _parse_header(
+        const vector<u_int8_t>&  bytes,
+        const vector<int>&       bit_lengths,
+        const vector<string>&    field_names
+    );
 
 
     /**********************************/
@@ -178,4 +180,8 @@ public:
     void print_pulse_info();
 
     vector<complex<float>> get_complex_samples();
+
+    static L0Packet get_next_packet(ifstream& data);
+
+    static vector<L0Packet> get_packets(ifstream& data, const int& num_packets = 0);
 };

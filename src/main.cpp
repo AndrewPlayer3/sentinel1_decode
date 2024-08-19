@@ -10,87 +10,10 @@ Description: Main function with random command-line arguments for testing purpos
 
 #include <thread>
 
-#include "packet_decoding.hpp"
+#include "perf.hpp"
+#include "aux_decoding.hpp"
 
 using namespace std;
-
-
-void omp_test(string filename)
-{
-    ifstream data = open_file(filename);
-
-    vector<L0Packet> packets = get_all_packets(data, false, 10);
-
-    const int num_packets = packets.size();
-
-    chrono::time_point start = chrono::high_resolution_clock::now();
-
-    vector<vector<complex<float>>> complex_samples(num_packets);
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        complex_samples[i] = packets[i].get_complex_samples();
-    }
-
-    chrono::duration<double> difference = chrono::high_resolution_clock::now() - start;
-
-    cout << "Decoded " << num_packets << " packets in " << difference.count() << "s." << endl;
-}
-
-
-void thread_runner(
-    vector<vector<complex<float>>>& complex_samples,
-    vector<L0Packet>& packets,
-    const int start_index,
-    const int end_index
-)
-{
-    for (int i = start_index; i < end_index; i++)
-    {
-        complex_samples[i] = packets[i].get_complex_samples();
-    }
-}
-
-
-void thread_test(string filename)
-{
-    ifstream data = open_file(filename);
-    
-    vector<L0Packet> packets = get_all_packets(data, false, 0);
-    vector<thread>   threads;
-
-    const int num_packets = packets.size();
-    const int num_threads = thread::hardware_concurrency();
-    const int chunk_size  = num_packets / num_threads;
-
-    chrono::time_point start = chrono::high_resolution_clock::now();
-
-    vector<vector<complex<float>>> complex_samples(num_packets);
-
-    for (int i = 0; i < num_threads; i++)
-    {
-        int start_index =  i * chunk_size;
-        int end_index   = (i == num_threads - 1) ? num_packets : start_index + chunk_size;
-        
-        threads.emplace_back(
-            thread_runner,
-            ref(complex_samples),
-            ref(packets),
-            start_index,
-            end_index
-        );
-    }
-
-    for (thread& thread : threads)
-    {
-        if (thread.joinable()) thread.join();
-    }
-
-    chrono::duration<double> difference = chrono::high_resolution_clock::now() - start;
-
-    cout << "Decoded " << num_packets << " packets in " << difference.count() << "s." << endl;
-}
 
 
 void print_packet_at_index(
@@ -102,7 +25,7 @@ void print_packet_at_index(
 ) {
     ifstream data = open_file(filename);
     
-    vector<L0Packet> packets = get_n_packets(data, index + 1, false, 0);
+    vector<L0Packet> packets = L0Packet::get_packets(data, index + 1);
 
     if (index >= packets.size())
     {
@@ -211,7 +134,7 @@ int main(int argc, char* argv[])
         }
         ifstream data = open_file(string(argv[3]));
 
-        vector<L0Packet> packets = get_n_packets(data, stoi(argv[2]) + 1, false, 0);
+        vector<L0Packet> packets = L0Packet::get_packets(data, stoi(argv[2]) + 1);
 
         vector<complex<float>> complex_samples = packets[stoi(argv[2])].get_complex_samples();
 
@@ -233,7 +156,7 @@ int main(int argc, char* argv[])
 
         char type = char(argv[2][0]);
 
-        vector<L0Packet> packets = get_all_packets(data, false, 0);
+        vector<L0Packet> packets = L0Packet::get_packets(data);
 
         for (int i = 0; i < packets.size(); i++)
         {
@@ -257,7 +180,7 @@ int main(int argc, char* argv[])
         }
         ifstream data = open_file(string(argv[3]));
 
-        vector<L0Packet> packets = get_n_packets(data, stoi(argv[2]) + 1, false, 0);
+        vector<L0Packet> packets = L0Packet::get_packets(data, stoi(argv[2]) + 1);
 
         cout << "Packet Type is " << packets[stoi(argv[2])].get_data_format() << "." << endl;
     }
