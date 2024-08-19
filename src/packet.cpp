@@ -279,7 +279,7 @@ void L0Packet::_set_data_format()
 
 
 /* Returns the decoded complex sample data - only does the calculations the first time.  */
-vector<complex<double>> L0Packet::get_complex_samples()
+vector<complex<float>> L0Packet::get_complex_samples()
 {
     if (!_complex_samples_set_flag)
     {
@@ -292,23 +292,33 @@ vector<complex<double>> L0Packet::get_complex_samples()
 /* Decodes the complex data based on the packets data format, and sets _complex_samples */
 void L0Packet::_decode() 
 {
-    QUAD IE = QUAD("IE");
-    QUAD IO = QUAD("IO");
-    QUAD QE = QUAD("QE");
-    QUAD QO = QUAD("QO");
-
     int bit_index = 0;
 
     if (_data_format == 'A' || _data_format == 'B') 
     {
+        H_CODE IE;
+        H_CODE IO;
+        H_CODE QE;
+        H_CODE QO;
+
         _set_quad_types_a_and_b(IE, bit_index);
         _set_quad_types_a_and_b(IO, bit_index);
         _set_quad_types_a_and_b(QE, bit_index);
         _set_quad_types_a_and_b(QO, bit_index);
 
         _complex_samples = _get_complex_samples_types_a_and_b(IE, IO, QE, QO);
+
+        return;
     }
-    else if (_data_format == 'C')
+
+    QUAD IE = QUAD("IE", _num_baq_blocks);
+    QUAD IO = QUAD("IO", _num_baq_blocks);
+    QUAD QE = QUAD("QE", _num_baq_blocks);
+    QUAD QO = QUAD("QO", _num_baq_blocks);
+
+    _thresholds.reserve(_num_baq_blocks);
+
+    if (_data_format == 'C')
     {
         _set_quad_type_c(IE, bit_index);
         _set_quad_type_c(IO, bit_index);
@@ -317,8 +327,10 @@ void L0Packet::_decode()
 
         _complex_samples = _get_complex_samples_type_c(IE, IO, QE, QO);
     }
-    else
+    else if (_data_format == 'D')
     {
+        _brc.reserve(_num_baq_blocks);
+        
         _set_quad_type_d(IE, bit_index);
         _set_quad_type_d(IO, bit_index);
         _set_quad_type_d(QE, bit_index);
@@ -357,49 +369,49 @@ int L0Packet::_get_next_word_boundary(const int& bit_index)
 /***********************************************************************/
 
 
-vector<complex<double>> L0Packet::_get_complex_samples_types_a_and_b(
-    QUAD& IE,
-    QUAD& IO,
-    QUAD& QE,
-    QUAD& QO
+vector<complex<float>> L0Packet::_get_complex_samples_types_a_and_b(
+    H_CODE& IE,
+    H_CODE& IO,
+    H_CODE& QE,
+    H_CODE& QO
 ) {
     auto get_s_value = [](u_int8_t sign, u_int16_t m_code) {return pow(-1, sign) * m_code;};
 
-    int num_s_codes = IE.signs[0].size();
-
     vector<vector<double>> s_values;
 
-    for(int i = 0; i < num_s_codes; i++)
+    s_values.reserve(_num_quads);
+
+    for(int i = 0; i < _num_quads; i++)
     {
         s_values.push_back({
-            get_s_value(IE.signs[0][i], IE.m_codes[0][i]),
-            get_s_value(IO.signs[0][i], IO.m_codes[0][i]),
-            get_s_value(QE.signs[0][i], QE.m_codes[0][i]),
-            get_s_value(QO.signs[0][i], QO.m_codes[0][i])
+            get_s_value(IE.signs[i], IE.m_codes[i]),
+            get_s_value(IO.signs[i], IO.m_codes[i]),
+            get_s_value(QE.signs[i], QE.m_codes[i]),
+            get_s_value(QO.signs[i], QO.m_codes[i])
         });
     }
 
-    vector<complex<double>> complex_samples;
+    vector<complex<float>> complex_samples;
+
+    complex_samples.reserve(_num_quads * 4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
         vector<double> components = s_values[i-1];
 
-        complex_samples.push_back(complex<double>(components[0], components[2]));
-        complex_samples.push_back(complex<double>(components[1], components[3]));
+        complex_samples.push_back(complex<float>(components[0], components[2]));
+        complex_samples.push_back(complex<float>(components[1], components[3]));
     }
 
     return complex_samples;
 }
 
 
-void L0Packet::_set_quad_types_a_and_b(QUAD& component, int& bit_index)
+void L0Packet::_set_quad_types_a_and_b(H_CODE& component, int& bit_index)
 {
     int num_bits = 0;
     int sign_bits = 1;
     int m_code_bits = 9;
-
-    H_CODE h_code;
 
     for (int i = 0; i < _num_quads; i++)
     {
@@ -409,12 +421,9 @@ void L0Packet::_set_quad_types_a_and_b(QUAD& component, int& bit_index)
         u_int16_t m_code = read_n_bits(_raw_user_data, bit_index, m_code_bits);
         bit_index += m_code_bits;
 
-        h_code.signs.push_back(sign);
-        h_code.m_codes.push_back(m_code);
+        component.signs.push_back(sign);
+        component.m_codes.push_back(m_code);
     }
-
-    component.signs.push_back(h_code.signs);
-    component.m_codes.push_back(h_code.m_codes);
 
     bit_index = _get_next_word_boundary(bit_index);
 }
@@ -448,13 +457,15 @@ double L0Packet::_get_s_values_type_c(
 }
 
 
-vector<complex<double>> L0Packet::_get_complex_samples_type_c(
+vector<complex<float>> L0Packet::_get_complex_samples_type_c(
     QUAD& IE,
     QUAD& IO,
     QUAD& QE,
     QUAD& QO
 ) {
     vector<vector<double>> s_values;
+
+    s_values.reserve(_num_quads);
 
     for (int block_id = 0; block_id < _num_baq_blocks; block_id++)
     {
@@ -472,14 +483,16 @@ vector<complex<double>> L0Packet::_get_complex_samples_type_c(
             });
         }
     }
-    vector<complex<double>> complex_samples;
+    vector<complex<float>> complex_samples;
+
+    complex_samples.reserve(_num_quads * 4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
         vector<double> components = s_values[i-1];
 
-        complex_samples.push_back(complex<double>(components[0], components[2]));
-        complex_samples.push_back(complex<double>(components[1], components[3]));
+        complex_samples.push_back(complex<float>(components[0], components[2]));
+        complex_samples.push_back(complex<float>(components[1], components[3]));
     }
 
     return complex_samples;
@@ -488,9 +501,10 @@ vector<complex<double>> L0Packet::_get_complex_samples_type_c(
 
 H_CODE L0Packet::_get_h_code_type_c(int& bit_index, const bool& is_last_block)
 {
-        H_CODE h_code;
-
         int num_codes = is_last_block ? _num_quads - (128 * (_num_baq_blocks - 1)) : 128;
+        
+        H_CODE h_code(num_codes);
+
         for (int i = 0; i < num_codes; i++)
         {
             int start_bit_index = bit_index;
@@ -501,9 +515,7 @@ H_CODE L0Packet::_get_h_code_type_c(int& bit_index, const bool& is_last_block)
             bit_index += _baq_mode - 1;
 
             h_code.signs.push_back(sign);
-            h_code.m_codes.push_back(m_code);                
-
-            h_code.bits_read += (bit_index - start_bit_index);
+            h_code.m_codes.push_back(m_code);
         }
 
         return h_code;
@@ -570,13 +582,15 @@ double L0Packet::_get_s_values_type_d(
 }
 
 
-vector<complex<double>> L0Packet::_get_complex_samples_type_d(
+vector<complex<float>> L0Packet::_get_complex_samples_type_d(
     QUAD& IE,
     QUAD& IO,
     QUAD& QE,
     QUAD& QO
 ) {
     vector<vector<double>> s_values;
+
+    s_values.reserve(_num_quads);
 
     for (int block_id = 0; block_id < _num_baq_blocks; block_id++)
     {
@@ -595,14 +609,16 @@ vector<complex<double>> L0Packet::_get_complex_samples_type_d(
             });
         }
     }
-    vector<complex<double>> complex_samples;
+    vector<complex<float>> complex_samples;
+
+    complex_samples.reserve(_num_quads * 4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
         vector<double> components = s_values[i-1];
 
-        complex_samples.push_back(complex<double>(components[0], components[2]));
-        complex_samples.push_back(complex<double>(components[1], components[3]));
+        complex_samples.push_back(complex<float>(components[0], components[2]));
+        complex_samples.push_back(complex<float>(components[1], components[3]));
     }
 
     return complex_samples;
@@ -611,9 +627,10 @@ vector<complex<double>> L0Packet::_get_complex_samples_type_d(
 
 H_CODE L0Packet::_get_h_code_type_d(const u_int8_t& brc, int& bit_index, const bool& is_last_block)
 {
-        H_CODE h_code;
-
         int num_codes = is_last_block ? _num_quads - (128 * (_num_baq_blocks - 1)) : 128;
+
+        H_CODE h_code(num_codes);
+
         for (int i = 0; i < num_codes; i++)
         {
             int start_bit_index = bit_index;
@@ -624,9 +641,7 @@ H_CODE L0Packet::_get_h_code_type_d(const u_int8_t& brc, int& bit_index, const b
             u_int16_t m_code = huffman_decode(_raw_user_data, brc, bit_index);
 
             h_code.signs.push_back(sign);
-            h_code.m_codes.push_back(m_code);                
-
-            h_code.bits_read += (bit_index - start_bit_index);
+            h_code.m_codes.push_back(m_code);
         }
 
         return h_code;

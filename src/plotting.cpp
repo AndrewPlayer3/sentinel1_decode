@@ -41,12 +41,12 @@ int main(int argc, char* argv[])
 
         vector<L0Packet> packets = get_n_packets(data, stoi(argv[2]) + 1, false, 0);
 
-        vector<complex<double>> complex_samples = packets[stoi(argv[2])].get_complex_samples();
+        vector<complex<float>> complex_samples = packets[stoi(argv[2])].get_complex_samples();
 
-        vector<double> real_parts;
-        vector<double> imag_parts;
+        vector<float> real_parts;
+        vector<float> imag_parts;
 
-        for (complex<double> sample : complex_samples)
+        for (complex<float> sample : complex_samples)
         {
             real_parts.push_back(sample.real());
             imag_parts.push_back(sample.imag());

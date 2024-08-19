@@ -25,7 +25,7 @@ void omp_test(string filename)
 
     chrono::time_point start = chrono::high_resolution_clock::now();
 
-    vector<vector<complex<double>>> complex_samples(num_packets);
+    vector<vector<complex<float>>> complex_samples(num_packets);
 
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
@@ -40,7 +40,7 @@ void omp_test(string filename)
 
 
 void thread_runner(
-    vector<vector<complex<double>>>& complex_samples,
+    vector<vector<complex<float>>>& complex_samples,
     vector<L0Packet>& packets,
     const int start_index,
     const int end_index
@@ -66,7 +66,7 @@ void thread_test(string filename)
 
     chrono::time_point start = chrono::high_resolution_clock::now();
 
-    vector<vector<complex<double>>> complex_samples(num_packets);
+    vector<vector<complex<float>>> complex_samples(num_packets);
 
     for (int i = 0; i < num_threads; i++)
     {
@@ -213,9 +213,9 @@ int main(int argc, char* argv[])
 
         vector<L0Packet> packets = get_n_packets(data, stoi(argv[2]) + 1, false, 0);
 
-        vector<complex<double>> complex_samples = packets[stoi(argv[2])].get_complex_samples();
+        vector<complex<float>> complex_samples = packets[stoi(argv[2])].get_complex_samples();
 
-        for (complex<double> sample : complex_samples)
+        for (complex<float> sample : complex_samples)
         {
             cout << sample << endl;
         }

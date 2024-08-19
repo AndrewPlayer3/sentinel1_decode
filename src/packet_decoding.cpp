@@ -158,7 +158,7 @@ double time_packet_generation(ifstream& data, const int& num_packets, const bool
 
             L0Packet packet = decode_next_packet(data);
             
-            vector<complex<double>> complex_samples = packet.get_complex_samples();
+            vector<complex<float>> complex_samples = packet.get_complex_samples();
 
             auto end   = chrono::high_resolution_clock::now();
 

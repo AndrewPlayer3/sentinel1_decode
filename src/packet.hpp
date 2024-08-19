@@ -27,6 +27,14 @@ struct H_CODE {
     vector<u_int16_t> m_codes;
 
     int bits_read;
+
+    H_CODE() {}
+
+    H_CODE(const int& num_codes)
+    {
+        signs.reserve(num_codes);
+        m_codes.reserve(num_codes);
+    }
 };
 
 
@@ -41,6 +49,14 @@ struct QUAD {
 
     QUAD(const string& component_key) {
         key = component_key;
+    }
+
+    QUAD(const string& component_key, const int& num_blocks)
+    {
+        key = component_key;
+
+        signs.reserve(num_blocks);
+        m_codes.reserve(num_blocks);
     }
 };
 
@@ -75,7 +91,7 @@ private:
 
     vector<int> _brc = {};
     vector<int> _thresholds = {};
-    vector<complex<double>> _complex_samples;
+    vector<complex<float>> _complex_samples;
 
     bool _complex_samples_set_flag = false;
 
@@ -91,11 +107,11 @@ private:
 
     void _set_quad_type_d(QUAD& component, int& bit_index);
     void _set_quad_type_c(QUAD& component, int& bit_index);
-    void _set_quad_types_a_and_b(QUAD& component, int& bit_index);
+    void _set_quad_types_a_and_b(H_CODE& component, int& bit_index);
 
-    vector<complex<double>> _get_complex_samples_type_d(QUAD& IE, QUAD& IO, QUAD& QE, QUAD& QO);
-    vector<complex<double>> _get_complex_samples_type_c(QUAD& IE, QUAD& IO, QUAD& QE, QUAD& QO);
-    vector<complex<double>> _get_complex_samples_types_a_and_b(QUAD& IE, QUAD& IO, QUAD& QE, QUAD& QO);
+    vector<complex<float>> _get_complex_samples_type_d(QUAD& IE, QUAD& IO, QUAD& QE, QUAD& QO);
+    vector<complex<float>> _get_complex_samples_type_c(QUAD& IE, QUAD& IO, QUAD& QE, QUAD& QO);
+    vector<complex<float>> _get_complex_samples_types_a_and_b(H_CODE& IE, H_CODE& IO, H_CODE& QE, H_CODE& QO);
 
 
 public:
@@ -161,5 +177,5 @@ public:
     void print_modes();
     void print_pulse_info();
 
-    vector<complex<double>> get_complex_samples();
+    vector<complex<float>> get_complex_samples();
 };
