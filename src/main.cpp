@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
 
         for (complex<double> sample : complex_samples)
         {
-            cout << "Complex Value: " << sample << endl;
+            cout << sample << endl;
         }
     }
 

@@ -54,8 +54,6 @@ int main(int argc, char* argv[])
 
         plt::figure();
         plt::plot(real_parts);
-        plt::xlabel("Time");
-        plt::ylabel("Amplitude");
         plt::show();
     }
     else
