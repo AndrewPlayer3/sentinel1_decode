@@ -86,8 +86,7 @@ void thread_runner(
     vector<L0Packet>& packets,
     const int start_index,
     const int end_index
-)
-{
+) {
     for (int i = start_index; i < end_index; i++)
     {
         complex_samples[i] = packets[i].get_complex_samples();
@@ -114,7 +113,7 @@ void thread_test(string filename)
     {
         int start_index =  i * chunk_size;
         int end_index   = (i == num_threads - 1) ? num_packets : start_index + chunk_size;
-        
+
         threads.emplace_back(
             thread_runner,
             ref(complex_samples),
