@@ -344,6 +344,8 @@ void L0Packet::_decode()
 /* Setter for _complex_samples - destroys _raw_user_data to free space */
 void L0Packet::_set_complex_samples()
 {
+    _complex_samples.reserve(_num_quads * 4);
+
     _decode();
     _complex_samples_set_flag = true;
 
