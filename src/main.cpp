@@ -62,10 +62,11 @@ int main(int argc, char* argv[])
         cout << "print_complex_samples [packet_index] [path]"    << endl;
         cout << "print_index_records [path]"                     << endl;
         cout << "print_annotation_record [record_index] [path]"  << endl;
+        cout << "print_swaths [path]"                            << endl;
+        cout << "find_packets_of_type [packet_type] [path]"      << endl;
         cout << "time [num_packets] [path]"                      << endl;
         cout << "thread_test [path]"                             << endl;
         cout << "omp_test [path]"                                << endl;
-        cout << "find_packets_of_type [packet_type] [path]"      << endl;
     }
 
     else if (command == "print")
@@ -90,18 +91,6 @@ int main(int argc, char* argv[])
         print_packet_at_index(string(argv[3]), stoi(argv[2]));
     }
 
-    else if (command == "time")
-    {
-
-        if(argv[2] == __null || argv[3] == __null) 
-        {
-            cout << "Please enter the packet count to time and a filename." << endl;
-            return 1;
-        }
-        double runtime = time_packet_generation(string(argv[3]), stoi(argv[2]), false, 0);
-
-        cout << "Decoded " << stoi(argv[2]) << " packets in " << runtime << "s." << endl;
-    }
 
     else if (command == "print_pulse_info")
     {
@@ -123,72 +112,6 @@ int main(int argc, char* argv[])
             return 1;
         }
         print_packet_at_index(string(argv[3]), stoi(argv[2]), false, false, true);
-    }
-
-    else if (command == "thread_test")
-    {
-
-        if(argv[2] == __null) 
-        {
-            cout << "Please enter the filename." << endl;
-            return 1;
-        }
-        thread_test(string(argv[2]));
-    }
-
-    else if (command == "omp_test")
-    {
-        
-        if(argv[2] == __null) 
-        {
-            cout << "Please enter the filename." << endl;
-            return 1;
-        }
-        omp_test(string(argv[2]));
-    }
-
-    else if (command == "print_complex_samples")
-    {
-
-        if(argv[2] == __null || argv[3] == __null) 
-        {
-            cout << "Please enter the packet index and filename." << endl;
-            return 1;
-        }
-        ifstream data = open_file(string(argv[3]));
-
-        vector<L0Packet> packets = L0Packet::get_packets(data, stoi(argv[2]) + 1);
-
-        vector<complex<float>> complex_samples = packets[stoi(argv[2])].get_complex_samples();
-
-        for (complex<float> sample : complex_samples)
-        {
-            cout << sample << endl;
-        }
-    }
-
-    else if (command == "find_packets_of_type")
-    {
-
-        if(argv[2] == __null || argv[3] == __null) 
-        {
-            cout << "Please enter the packet type and filename." << endl;
-            return 1;
-        }
-        char type = char(argv[2][0]);
-
-        vector<L0Packet> packets = L0Packet::get_packets(string(argv[3]));
-
-        for (int i = 0; i < packets.size(); i++)
-        {
-            L0Packet packet = packets[i];
-            char data_format    = packet.get_data_format();
-            int  sequence_count = packet.primary_header("packet_sequence_count");
-            if (data_format == type)
-            {
-                cout << "Packet #" << sequence_count << " at index " << i << " is type " << data_format << endl;
-            }
-        }
     }
 
     else if (command == "print_index_records")
@@ -237,6 +160,102 @@ int main(int argc, char* argv[])
         cout << "Packet Length: "         << record["packet_length"]   << endl;
         cout << "Error Flag: "            << record["error_flag"]      << endl;
     }
+
+    else if (command == "print_complex_samples")
+    {
+
+        if(argv[2] == __null || argv[3] == __null) 
+        {
+            cout << "Please enter the packet index and filename." << endl;
+            return 1;
+        }
+        ifstream data = open_file(string(argv[3]));
+
+        vector<L0Packet> packets = L0Packet::get_packets(data, stoi(argv[2]) + 1);
+
+        vector<complex<float>> complex_samples = packets[stoi(argv[2])].get_complex_samples();
+
+        for (complex<float> sample : complex_samples)
+        {
+            cout << sample << endl;
+        }
+    }
+
+    else if (command == "find_packets_of_type")
+    {
+
+        if(argv[2] == __null || argv[3] == __null) 
+        {
+            cout << "Please enter the packet type and filename." << endl;
+            return 1;
+        }
+        char type = char(argv[2][0]);
+
+        vector<L0Packet> packets = L0Packet::get_packets(string(argv[3]));
+
+        for (int i = 0; i < packets.size(); i++)
+        {
+            L0Packet packet = packets[i];
+            char data_format    = packet.get_data_format();
+            int  sequence_count = packet.primary_header("packet_sequence_count");
+            if (data_format == type)
+            {
+                cout << "Packet #" << sequence_count << " at index " << i << " is type " << data_format << endl;
+            }
+        }
+    }
+
+    else if (command == "print_swaths")
+    {
+        if(argv[2] == __null) 
+        {
+            cout << "Please enter the filename." << endl;
+            return 1;
+        }
+        vector<L0Packet> packets = L0Packet::get_packets(string(argv[2]));
+
+        unordered_map<string, int> swaths;
+
+        for (L0Packet packet : packets) swaths[packet.get_swath()]++;
+
+        for (pair<string, int> swath : swaths) cout << swath.first << ": " << swath.second << endl;
+    }
+
+    else if (command == "time")
+    {
+
+        if(argv[2] == __null || argv[3] == __null) 
+        {
+            cout << "Please enter the packet count to time and a filename." << endl;
+            return 1;
+        }
+        double runtime = time_packet_generation(string(argv[3]), stoi(argv[2]), false, 0);
+
+        cout << "Decoded " << stoi(argv[2]) << " packets in " << runtime << "s." << endl;
+    }
+
+    else if (command == "thread_test")
+    {
+
+        if(argv[2] == __null) 
+        {
+            cout << "Please enter the filename." << endl;
+            return 1;
+        }
+        thread_test(string(argv[2]));
+    }
+
+    else if (command == "omp_test")
+    {
+        
+        if(argv[2] == __null) 
+        {
+            cout << "Please enter the filename." << endl;
+            return 1;
+        }
+        omp_test(string(argv[2]));
+    }
+
 
     else
     {
