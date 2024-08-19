@@ -23,6 +23,20 @@ The sample data is the VV file from this product: S1A_IW_RAW__0SDV_20240806T1352
 #### bin/main
 
 ```bash
+$ bin/main help
+print_headers [packet_index] [path]
+print_modes [packet_index] [path]
+print_pulse_info [packet_index] [path]
+print_complex_samples [packet_index] [path]
+print_index_records [path]
+print_annotation_record [record_index] [path]
+time [num_packets] [path]
+thread_test [path]
+omp_test [path]
+find_packets_of_type [packet_type] [path]
+```
+
+```bash
 # Print the primary and secondary headers
 $ bin/main print_headers [packet_index] [path/to/data.dat]
 ```
