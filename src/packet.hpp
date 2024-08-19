@@ -185,4 +185,6 @@ public:
     static L0Packet get_next_packet(ifstream& data);
 
     static vector<L0Packet> get_packets(ifstream& data, const int& num_packets = 0);
+
+    static vector<L0Packet> get_packets(const string& filename);
 };

@@ -67,6 +67,14 @@ L0Packet L0Packet::get_next_packet(ifstream& data)
 
 
 /* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
+vector<L0Packet> L0Packet::get_packets(const string& filename)
+{
+    ifstream data = open_file(filename);
+    return get_packets(data);
+}
+
+
+/* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
 vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
 {
     vector<L0Packet> packets;

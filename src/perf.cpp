@@ -12,8 +12,10 @@ Description: Functions for evaluating the performance of packet decoding.
 
 
 /* Returns the time in seconds that it takes to decode the complex samples of num_packets packets */
-double time_packet_generation(ifstream& data, const int& num_packets, const bool& log, const int& log_interval)
+double time_packet_generation(const string& filename, const int& num_packets, const bool& log, const int& log_interval)
 {
+    ifstream data = open_file(filename);
+
     double total_runtime = 0.0;
     for (int i = 0; i < num_packets; i++)
     {
@@ -57,11 +59,9 @@ double time_packet_generation(ifstream& data, const int& num_packets, const bool
 }
 
 
-void omp_test(string filename)
+void omp_test(const string& filename)
 {
-    ifstream data = open_file(filename);
-
-    vector<L0Packet> packets = L0Packet::get_packets(data);
+    vector<L0Packet> packets = L0Packet::get_packets(filename);
 
     const int num_packets = packets.size();
 
@@ -94,11 +94,9 @@ void thread_runner(
 }
 
 
-void thread_test(string filename)
-{
-    ifstream data = open_file(filename);
-    
-    vector<L0Packet> packets = L0Packet::get_packets(data);
+void thread_test(const string& filename)
+{ 
+    vector<L0Packet> packets = L0Packet::get_packets(filename);
     vector<thread>   threads;
 
     const int num_packets = packets.size();

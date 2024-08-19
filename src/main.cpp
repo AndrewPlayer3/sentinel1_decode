@@ -86,9 +86,7 @@ int main(int argc, char* argv[])
             cout << "Please enter the packet count to time and a filename." << endl;
             return 1;
         }
-        ifstream data = open_file(string(argv[3]));
-
-        double runtime = time_packet_generation(data, stoi(argv[2]), false, 0);
+        double runtime = time_packet_generation(string(argv[3]), stoi(argv[2]), false, 0);
 
         cout << "Decoded " << stoi(argv[2]) << " packets in " << runtime << "s." << endl;
     }
@@ -165,11 +163,9 @@ int main(int argc, char* argv[])
             cout << "Please enter the packet type and filename." << endl;
             return 1;
         }
-        ifstream data = open_file(string(argv[3]));
-
         char type = char(argv[2][0]);
 
-        vector<L0Packet> packets = L0Packet::get_packets(data);
+        vector<L0Packet> packets = L0Packet::get_packets(string(argv[3]));
 
         for (int i = 0; i < packets.size(); i++)
         {
