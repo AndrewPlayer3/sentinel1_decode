@@ -16,8 +16,8 @@ vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_valu
     {
         for (int j = 0; j < cols; j++)
         {
-            float real = complex_values[i][j].real()
-            float imag = complex_values[i][j].imag()
+            float real = complex_values[i][j].real();
+            float imag = complex_values[i][j].imag();
 
             float mag = sqrt((real * real) + (imag * imag));
 
