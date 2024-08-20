@@ -14,7 +14,7 @@ vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_valu
 
     for (int i = 0; i < rows; i++)
     {
-        for (const complex<float>& c : complex_values[i])
+        for (int j = 0; j < cols; j++)
         {
             float mag = sqrt((c.real() * c.real()) + (c.imag() * c.imag()));
 
