@@ -15,16 +15,14 @@ Description: Main function with random command-line arguments for testing purpos
 
 using namespace std;
 
-namespace plt = matplotlibcpp;
-
 
 void plot_complex_samples(const vector<complex<float>>& complex_samples)
 {
     vector<float> norm = norm_1d(complex_samples);
 
-    plt::figure();
-    plt::plot(norm);
-    plt::show();
+    matplotlibcpp::figure();
+    matplotlibcpp::plot(norm);
+    matplotlibcpp::show();
 }
 
 
@@ -49,17 +47,13 @@ void plot_complex_image(const vector<vector<complex<float>>>& complex_samples)
     int rows = complex_samples.size();
     int cols = complex_samples[0].size();
 
-    vector<vector<float>> norm = norm_2d(complex_samples);
-
-    vector<float> norm_flattened = flatten(norm);
-
-    const float* real_samples_ptr = &(norm_flattened[0]);
+    vector<float> flat = flatten(norm_2d(complex_samples));
 
     cout << "Calling Plot" << endl;
 
-    plt::figure();
-    plt::imshow(real_samples_ptr, rows, cols, 1);
-    plt::show();
+    matplotlibcpp::figure();
+    matplotlibcpp::imshow(&flat[0], rows, cols, 1);
+    matplotlibcpp::show();
 }
 
 

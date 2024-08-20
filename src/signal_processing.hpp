@@ -4,6 +4,7 @@
 #include <vector>
 #include <complex>
 
+#include "omp.h"
 #include "fftw3.h"
 
 using namespace std;
@@ -14,6 +15,10 @@ vector<float> flatten(const vector<vector<float>>& values);
 vector<float> norm_1d(const vector<complex<float>>& complex_values);
 
 vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_values);
+
+vector<float> magnitude_1d(const vector<complex<float>>& complex_values);
+
+vector<vector<float>> magnitude_2d(const vector<vector<complex<float>>>& complex_values);
 
 vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_signal);
 
