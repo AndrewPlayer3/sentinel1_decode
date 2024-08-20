@@ -8,116 +8,27 @@ Description: Main function with random command-line arguments for testing purpos
              https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17
 */
 
-#include <thread>
-
-#include "fftw3.h"
+#include "packet.hpp"
+#include "signal_processing.hpp"
 
 #include "../include/matplotlibcpp.h"
-
-#include "packet.hpp"
 
 using namespace std;
 
 namespace plt = matplotlibcpp;
 
 
-vector<vector<complex<float>>> compute_2d_dft(const vector<vector<complex<float>>>& complex_samples)
+void plot_complex_samples(const vector<complex<float>>& complex_samples)
 {
-    int dft_size_1 = complex_samples.size();
-    int dft_size_2 = complex_samples[0].size();
-
-    fftw_complex *in, *out;
-    fftw_plan plan;
-
-    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size_1 * dft_size_2);
-    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size_1 * dft_size_2);
-
-    for (int i = 0; i < dft_size_1; i++)
-    {
-        for (int j = 0; j < dft_size_2; j++)
-        {
-            in[i*dft_size_2+j][0] = complex_samples[i][j].real();
-            in[i*dft_size_2+j][1] = complex_samples[i][j].imag();
-        }
-    }
-
-    plan = fftw_plan_dft_2d(dft_size_1, dft_size_2, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-
-    fftw_execute(plan);
-
-    vector<vector<complex<float>>> complex_signal_fft;
-    complex_signal_fft.resize(dft_size_1);
-    for (int i = 0; i < dft_size_1; i++)
-    {
-        complex_signal_fft[i].resize(dft_size_2);
-        for (int j = 0; j < dft_size_2; j++)
-        {
-            complex_signal_fft[i][j] = complex<float>(out[i*dft_size_2+j][0], out[i*dft_size_2+j][1]);
-        }
-    }
-
-    fftw_destroy_plan(plan);
-
-    fftw_free(in); fftw_free(out);
-
-    return complex_signal_fft;
-}
-
-
-vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_signal)
-{
-    int dft_size = complex_signal.size();
-
-    fftw_complex *in, *out;
-    fftw_plan plan;
-
-    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size);
-    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size);
-
-    for (int i = 0; i < dft_size; i++)
-    {
-        in[i][0] = complex_signal[i].real();
-        in[i][1] = complex_signal[i].imag();
-    }
-
-    plan = fftw_plan_dft_1d(dft_size, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-
-    fftw_execute(plan);
-
-    vector<complex<float>> complex_signal_fft;
-    complex_signal_fft.reserve(dft_size);
-    for (int i = 0; i < dft_size; i++)
-    {
-        complex_signal_fft.push_back(complex<float>(out[i][0], out[i][1]));
-    }
-
-    fftw_destroy_plan(plan);
-
-    fftw_free(in); fftw_free(out);
-
-    return complex_signal_fft;
-}
-
-
-void plot_complex_samples(const vector<complex<float>>& complex_samples, const bool& plot_real = true)
-{
-    vector<float> real_parts;
-    vector<float> imag_parts;
-
-    for (complex<float> sample : complex_samples)
-    {
-        real_parts.push_back(sample.real());
-        imag_parts.push_back(sample.imag());
-    }
+    vector<float> norm = norm_1d(complex_samples);
 
     plt::figure();
-    if (plot_real) plt::plot(real_parts);
-    else           plt::plot(imag_parts);
+    plt::plot(norm);
     plt::show();
 }
 
 
-void plot_complex_samples(string filename, const int& packet_index, const bool& plot_real = true)
+void plot_complex_samples(string filename, const int& packet_index)
 {
     ifstream data = open_file(filename);
 
@@ -125,40 +36,26 @@ void plot_complex_samples(string filename, const int& packet_index, const bool& 
 
     vector<complex<float>> complex_samples = packets[packet_index].get_complex_samples();
 
-    vector<float> real_parts;
-    vector<float> imag_parts;
-
-    for (complex<float> sample : complex_samples)
-    {
-        real_parts.push_back(sample.real());
-        imag_parts.push_back(sample.imag());
-    }
-
-    plt::figure();
-    if (plot_real) plt::plot(real_parts);
-    else           plt::plot(imag_parts);
-    plt::show();
+    plot_complex_samples(complex_samples);
 }
 
 
 void plot_complex_image(const vector<vector<complex<float>>>& complex_samples)
 {
-    vector<float> real_samples;
-    
-    real_samples.reserve(complex_samples.size() * complex_samples[0].size());
+    cout << "Setting Up Normalized Real-Value Vector for Plotting" << endl;
 
-    for (int i = 0; i < complex_samples.size(); i++)
-    {
-        for (complex<float> complex_value : complex_samples[i])
-        {
-            real_samples.push_back(complex_value.real());
-        }
-    }
-
-    const float* real_samples_ptr = &(real_samples[0]);
+    float max_value = 0;    
 
     int rows = complex_samples.size();
     int cols = complex_samples[0].size();
+
+    vector<vector<float>> norm = norm_2d(complex_samples);
+
+    vector<float> norm_flattened = flatten(norm);
+
+    const float* real_samples_ptr = &(norm_flattened[0]);
+
+    cout << "Calling Plot" << endl;
 
     plt::figure();
     plt::imshow(real_samples_ptr, rows, cols, 1);
@@ -166,7 +63,7 @@ void plot_complex_image(const vector<vector<complex<float>>>& complex_samples)
 }
 
 
-void plot_fft(string filename, const int& packet_index, const bool& plot_real = true)
+void plot_fft(string filename, const int& packet_index, const bool& plot_norm = true)
 {
     ifstream data = open_file(filename);
 
@@ -180,11 +77,15 @@ void plot_fft(string filename, const int& packet_index, const bool& plot_real = 
 }
 
 
-void plot_2dfft(string filename, const string& swath, const bool& plot_real = true)
+void plot_fft2d(string filename, const string& swath, const bool& plot_real = true)
 {
+    cout << "Parsing Packets" << endl;
+    
     vector<L0Packet> packets = L0Packet::get_packets(filename);
 
     vector<vector<complex<float>>> complex_samples;
+
+    cout << "Decoding Complex Samples" << endl;
 
     #pragma omp parallel for
     for (L0Packet packet : packets)
@@ -203,9 +104,13 @@ void plot_2dfft(string filename, const string& swath, const bool& plot_real = tr
 
 void plot_swath(string filename, const string& swath)
 {
+    cout << "Parsing Packets" << endl;
+    
     ifstream data = open_file(filename);
 
     vector<L0Packet> packets = L0Packet::get_packets(data);
+
+    cout << "Decoding Complex Samples" << endl;
 
     vector<vector<complex<float>>> complex_samples;
 
@@ -238,7 +143,15 @@ int main(int argc, char* argv[])
 
     string command = string(argv[1]);
 
-    if (command == "plot_complex_samples")
+    if (command == "help" or command == "--help" or command == "-h")
+    {
+        cout << "plot_complex_samples [packet_index] [path]" << endl;
+        cout << "plot_swath [swath: S1, IW1, etc...] [path]" << endl;
+        cout << "plot_fft [packet_index] [path]"             << endl;
+        cout << "plot_fft2 [swath: S1, IW1, etc...] [path]"  << endl;
+    }
+
+    else if (command == "plot_complex_samples")
     {
         if(argv[2] == __null || argv[3] == __null) 
         {
@@ -271,7 +184,7 @@ int main(int argc, char* argv[])
         plot_fft(string(argv[3]), stoi(argv[2]));
     }
 
-    else if (command == "plot_2dfft")
+    else if (command == "plot_fft2")
     {
         if(argv[2] == __null || argv[3] == __null) 
         {
@@ -279,7 +192,7 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        plot_2dfft(string(argv[3]), string(argv[2]));
+        plot_fft2d(string(argv[3]), string(argv[2]));
     }
 
     else
