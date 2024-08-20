@@ -90,7 +90,15 @@ void plot_fft2d(string filename, const string& swath, const bool& plot_real = tr
         }
     }
 
-    vector<vector<complex<float>>> complex_samples_fft = compute_2d_dft(complex_samples);
+    int fft_rows = complex_samples.size();
+    int fft_cols = complex_samples[0].size();
+
+    vector<vector<complex<float>>> complex_samples_fft = compute_2d_dft(
+        complex_samples,
+        fft_rows,
+        fft_cols,
+        false
+    );
 
     plot_complex_image(complex_samples_fft);
 }
@@ -134,6 +142,10 @@ int main(int argc, char* argv[])
         cout << "Please enter a command." << endl;
         return 1;
     }
+
+    fftwf_init_threads();
+
+    fftwf_plan_with_nthreads(omp_get_max_threads());
 
     string command = string(argv[1]);
 
@@ -193,6 +205,8 @@ int main(int argc, char* argv[])
     {
         cout << command << " is not a valid command." << endl;
     }
+
+    fftwf_cleanup_threads();
 
     return 0;
 }
