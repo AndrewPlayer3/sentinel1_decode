@@ -18,7 +18,7 @@ using namespace std;
 
 void plot_complex_samples(const vector<complex<float>>& complex_samples)
 {
-    vector<float> norm = norm_1d(complex_samples);
+    vector<float> norm = norm_1d(complex_samples, true);
 
     matplotlibcpp::figure();
     matplotlibcpp::plot(norm);
@@ -47,7 +47,7 @@ void plot_complex_image(const vector<vector<complex<float>>>& complex_samples)
     int rows = complex_samples.size();
     int cols = complex_samples[0].size();
 
-    vector<float> flat = flatten(norm_2d(complex_samples));
+    vector<float> flat = flatten(norm_2d(complex_samples, true));
 
     cout << "Calling Plot" << endl;
 
@@ -57,7 +57,7 @@ void plot_complex_image(const vector<vector<complex<float>>>& complex_samples)
 }
 
 
-void plot_fft(string filename, const int& packet_index, const bool& plot_norm = true)
+void plot_fft(string filename, const int& packet_index)
 {
     ifstream data = open_file(filename);
 

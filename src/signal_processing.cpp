@@ -23,7 +23,7 @@ vector<float> flatten(const vector<vector<float>>& values)
 }
 
 
-vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_values)
+vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_values, const bool& log_scale = false)
 {
     float max_value = 0;    
 
@@ -51,7 +51,7 @@ vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_valu
     {
         for (int j = 0; j < cols; j++)
         {
-            norm[i][j] = norm[i][j] / max_value;
+            norm[i][j] = log_scale ? 20 * log10(norm[i][j] / max_value) : norm[i][j] / max_value;
         }
     }
 
@@ -59,7 +59,7 @@ vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_valu
 }
 
 
-vector<float> norm_1d(const vector<complex<float>>& complex_values)
+vector<float> norm_1d(const vector<complex<float>>& complex_values, const bool& log_scale = false)
 {
     int num_samples = complex_values.size();
 
@@ -81,7 +81,7 @@ vector<float> norm_1d(const vector<complex<float>>& complex_values)
 
     for (int i = 0; i < num_samples; i++)
     {
-        norm[i] = norm[i] / max_value;
+        norm[i] = log_scale ? 20 * log10(norm[i] / max_value) : norm[i] / max_value;
     }
 
     return norm;

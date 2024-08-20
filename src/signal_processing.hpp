@@ -12,9 +12,9 @@ using namespace std;
 
 vector<float> flatten(const vector<vector<float>>& values);
 
-vector<float> norm_1d(const vector<complex<float>>& complex_values);
+vector<float> norm_1d(const vector<complex<float>>& complex_values, const bool& log_scale);
 
-vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_values);
+vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_values, const bool& log_scale);
 
 vector<float> magnitude_1d(const vector<complex<float>>& complex_values);
 
