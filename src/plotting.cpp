@@ -21,6 +21,84 @@ using namespace std;
 namespace plt = matplotlibcpp;
 
 
+vector<vector<complex<float>>> compute_2d_dft(const vector<vector<complex<float>>>& complex_samples)
+{
+    int dft_size_1 = complex_samples.size();
+    int dft_size_2 = complex_samples[0].size();
+
+    fftw_complex *in, *out;
+    fftw_plan plan;
+
+    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size_1 * dft_size_2);
+    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size_1 * dft_size_2);
+
+    for (int i = 0; i < dft_size_1; i++)
+    {
+        for (int j = 0; j < dft_size_2; j++)
+        {
+            in[i*dft_size_2+j][0] = complex_samples[i][j].real();
+            in[i*dft_size_2+j][1] = complex_samples[i][j].imag();
+        }
+    }
+
+    plan = fftw_plan_dft_2d(dft_size_1, dft_size_2, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+
+    fftw_execute(plan);
+
+    vector<vector<complex<float>>> complex_signal_fft;
+    complex_signal_fft.resize(dft_size_1);
+    for (int i = 0; i < dft_size_1; i++)
+    {
+        complex_signal_fft[i].resize(dft_size_2);
+        for (int j = 0; j < dft_size_2; j++)
+        {
+            complex_signal_fft[i][j] = complex<float>(out[i*dft_size_2+j][0], out[i*dft_size_2+j][1]);
+        }
+    }
+
+    fftw_destroy_plan(plan);
+
+    fftw_free(in); fftw_free(out);
+
+    return complex_signal_fft;
+}
+
+
+vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_signal)
+{
+    int dft_size = complex_signal.size();
+
+    fftw_complex *in, *out;
+    fftw_plan plan;
+
+    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size);
+    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size);
+
+    for (int i = 0; i < dft_size; i++)
+    {
+        in[i][0] = complex_signal[i].real();
+        in[i][1] = complex_signal[i].imag();
+    }
+
+    plan = fftw_plan_dft_1d(dft_size, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+
+    fftw_execute(plan);
+
+    vector<complex<float>> complex_signal_fft;
+    complex_signal_fft.reserve(dft_size);
+    for (int i = 0; i < dft_size; i++)
+    {
+        complex_signal_fft.push_back(complex<float>(out[i][0], out[i][1]));
+    }
+
+    fftw_destroy_plan(plan);
+
+    fftw_free(in); fftw_free(out);
+
+    return complex_signal_fft;
+}
+
+
 void plot_complex_samples(const vector<complex<float>>& complex_samples, const bool& plot_real = true)
 {
     vector<float> real_parts;
@@ -63,39 +141,28 @@ void plot_complex_samples(string filename, const int& packet_index, const bool& 
 }
 
 
-
-vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_signal)
+void plot_complex_image(const vector<vector<complex<float>>>& complex_samples)
 {
-    int dft_size = complex_signal.size();
+    vector<float> real_samples;
+    
+    real_samples.reserve(complex_samples.size() * complex_samples[0].size());
 
-    fftw_complex *in, *out;
-    fftw_plan plan;
-
-    in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size);
-    out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * dft_size);
-
-    for (int i = 0; i < dft_size; i++)
+    for (int i = 0; i < complex_samples.size(); i++)
     {
-        in[i][0] = complex_signal[i].real();
-        in[i][1] = complex_signal[i].imag();
+        for (complex<float> complex_value : complex_samples[i])
+        {
+            real_samples.push_back(complex_value.real());
+        }
     }
 
-    plan = fftw_plan_dft_1d(dft_size, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+    const float* real_samples_ptr = &(real_samples[0]);
 
-    fftw_execute(plan);
+    int rows = complex_samples.size();
+    int cols = complex_samples[0].size();
 
-    vector<complex<float>> complex_signal_fft;
-    complex_signal_fft.reserve(dft_size);
-    for (int i = 0; i < dft_size; i++)
-    {
-        complex_signal_fft.push_back(complex<float>(out[i][0], out[i][1]));
-    }
-
-    fftw_destroy_plan(plan);
-
-    fftw_free(in); fftw_free(out);
-
-    return complex_signal_fft;
+    plt::figure();
+    plt::imshow(real_samples_ptr, rows, cols, 1);
+    plt::show();
 }
 
 
@@ -110,6 +177,27 @@ void plot_fft(string filename, const int& packet_index, const bool& plot_real = 
     vector<complex<float>> complex_samples_fft = compute_1d_dft(complex_samples);
 
     plot_complex_samples(complex_samples_fft);
+}
+
+
+void plot_2dfft(string filename, const string& swath, const bool& plot_real = true)
+{
+    vector<L0Packet> packets = L0Packet::get_packets(filename);
+
+    vector<vector<complex<float>>> complex_samples;
+
+    #pragma omp parallel for
+    for (L0Packet packet : packets)
+    {
+        if (packet.get_swath() == swath)
+        {
+            complex_samples.push_back(packet.get_complex_samples());
+        }
+    }
+
+    vector<vector<complex<float>>> complex_samples_fft = compute_2d_dft(complex_samples);
+
+    plot_complex_image(complex_samples_fft);
 }
 
 
@@ -136,28 +224,7 @@ void plot_swath(string filename, const string& swath)
         return;
     }
 
-    vector<float> real_samples;
-    
-    real_samples.reserve(complex_samples.size() * complex_samples[0].size());
-
-    for (int i = 0; i < complex_samples.size(); i++)
-    {
-        
-        vector<float> real_values = {};
-        for (complex<float> complex_value : complex_samples[i])
-        {
-            real_samples.push_back(complex_value.real());
-        }
-    }
-
-    const float* real_samples_ptr = &(real_samples[0]);
-
-    int rows = complex_samples.size();
-    int cols = complex_samples[0].size();
-
-    plt::figure();
-    plt::imshow(real_samples_ptr, rows, cols, 1);
-    plt::show();
+    plot_complex_image(complex_samples);
 }
 
 
@@ -181,6 +248,7 @@ int main(int argc, char* argv[])
 
         plot_complex_samples(string(argv[3]), stoi(argv[2]));
     }
+
     else if (command == "plot_swath")
     {
         if(argv[2] == __null || argv[3] == __null) 
@@ -191,6 +259,7 @@ int main(int argc, char* argv[])
 
         plot_swath(string(argv[3]), string(argv[2]));
     }
+
     else if (command == "plot_fft")
     {
         if(argv[2] == __null || argv[3] == __null) 
@@ -201,6 +270,18 @@ int main(int argc, char* argv[])
 
         plot_fft(string(argv[3]), stoi(argv[2]));
     }
+
+    else if (command == "plot_2dfft")
+    {
+        if(argv[2] == __null || argv[3] == __null) 
+        {
+            cout << "Please enter the swath and the filename." << endl;
+            return 1;
+        }
+
+        plot_2dfft(string(argv[3]), string(argv[2]));
+    }
+
     else
     {
         cout << command << " is not a valid command." << endl;
