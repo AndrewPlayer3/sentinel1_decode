@@ -3,29 +3,9 @@
 using namespace std;
 
 
-vector<float> flatten(const vector<vector<float>>& values)
-{
-    int rows = values.size();
-    int cols = values[0].size();
-
-    vector<float> flat(rows * cols);
-
-    #pragma omp parallel for collapse(2)
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            flat[i * cols + j] = values[i][j];
-        }
-    }
-
-    return flat;
-}
-
-
 vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_values, const bool& log_scale = false)
 {
-    float max_value = 0;    
+    float max_value = 0.0;    
 
     int rows = complex_values.size();
     int cols = complex_values[0].size();
@@ -34,12 +14,9 @@ vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_valu
 
     for (int i = 0; i < rows; i++)
     {
-        for (int j = 0; j < cols; j++)
+        for (const complex<float>& c : complex_values[i])
         {
-            float real = complex_values[i][j].real();
-            float imag = complex_values[i][j].imag();
-
-            float mag = sqrt(pow(real, 2) + pow(imag, 2));
+            float mag = sqrt((c.real() * c.real()) + (c.imag() * c.imag()));
 
             norm[i][j] = mag;
 
@@ -92,8 +69,6 @@ vector<float> magnitude_1d(const vector<complex<float>>& complex_values)
 {
     int num_samples = complex_values.size();
 
-    float max_value = 0;
-
     vector<float> magnitude(num_samples);
 
     #pragma omp parallel for
@@ -104,9 +79,7 @@ vector<float> magnitude_1d(const vector<complex<float>>& complex_values)
 
         float mag = sqrt(pow(real, 2) + pow(imag, 2));
 
-        magnitude[i] = mag;
-
-        if (mag > max_value) max_value = mag;
+        magnitude[i] = mag;    
     }
 
     return magnitude;
@@ -144,8 +117,6 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal)
 {
     cout << "Initializing 1D Complex Vector for FFTW" << endl;
     
-    fftwf_init_threads();
-    
     int fft_threads = 8;
     int fft_size    = signal.size();
 
@@ -153,10 +124,7 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal)
 
     cout << "Executing 1D DFT Plan" << endl;
 
-    fftwf_plan_with_nthreads(omp_get_max_threads());
-    fftwf_plan plan;
-
-    plan = fftwf_plan_dft_1d(
+    fftwf_plan plan = fftwf_plan_dft_1d(
         fft_size,
         reinterpret_cast<fftwf_complex*>(signal_fft.data()),
         reinterpret_cast<fftwf_complex*>(signal_fft.data()),
@@ -168,22 +136,20 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal)
 
     fftwf_destroy_plan(plan);
 
-    fftwf_cleanup_threads();
-
     return signal_fft;
 }
 
 
-vector<vector<complex<float>>> compute_2d_dft(const vector<vector<complex<float>>>& signal)
-{
+vector<vector<complex<float>>> compute_2d_dft(
+    const vector<vector<complex<float>>>& signal,
+    int fft_rows = 0,
+    int fft_cols = 0,
+    const bool& inverse = false
+) {
     cout << "Initializing 1D Complex Vector for FFTW" << endl;
 
-    fftwf_init_threads();
-
-    int fft_threads = 8;
-    int fft_rows    = signal.size();
-    int fft_cols    = signal[0].size();
-
+    if (not fft_rows) fft_rows = signal.size();
+    if (not fft_cols) fft_cols = signal[0].size();
 
     vector<complex<float>> signal_fftw_io(fft_rows * fft_cols);
 
@@ -196,7 +162,10 @@ vector<vector<complex<float>>> compute_2d_dft(const vector<vector<complex<float>
     }
 
     cout << "Executing 2D DFT Plan" << endl;
-    fftwf_plan_with_nthreads(omp_get_max_threads());
+
+    int fft_threads   = 8;
+    int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
+
     fftwf_plan plan = fftwf_plan_dft_2d(
         fft_rows, fft_cols, 
         reinterpret_cast<fftwf_complex*>(signal_fftw_io.data()),
@@ -210,13 +179,10 @@ vector<vector<complex<float>>> compute_2d_dft(const vector<vector<complex<float>
 
     fftwf_destroy_plan(plan);
 
-    fftwf_cleanup_threads();
-
     cout << "Copying Complex Data into 2D Vector" << endl;
 
     vector<vector<complex<float>>> signal_fft(fft_rows, vector<complex<float>>(fft_cols));
 
-    #pragma omp parallel for collapse(2)
     for (int i = 0; i < fft_rows; i++)
     {
         for (int j = 0; j < fft_cols; j++)
