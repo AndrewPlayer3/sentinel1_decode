@@ -157,13 +157,29 @@ Decoded 51937 packets in 32.0043s.
 ```
 #### bin/plot
 ```bash
+$ bin/plot help
+complex_samples [packet_index] [mode] [path]
+swath [swath] [path]
+fft [packet_index] [fft_size] [path] [--inverse]
+fft2 [swath] [path] [fft_rows] [fft_cols] [--inverse]
+fft_axis [swath] [axis] [fft_size] [path] [--inverse]
+Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
+```
+```bash
 # Plot the real part of a packet's complex samples
-$ bin/plot plot_complex_samples [packet_index] [path/to/sample.dat]
+$ bin/plot complex_samples [packet_index] [path/to/sample.dat]
 ```
 ```
-$ bin/plot plot_complex_samples 0 sample_data/sample.dat
+$ bin/plot complex_samples 0 sample_data/sample.dat
 ```
 ![plot_command_example](imgs/complex_sample_plot_example.png)
+```bash
+$ bin/plot swath [swath] [path] [--norm_log|--norm|--mag|--real|--imag]
+```
+```bash
+$ bin/plot swath IW1 data/sample/sample.dat --norm_log
+```
+![plot_swath_example](imgs/iw1_swath.png)
 
 ## Requirements
 
