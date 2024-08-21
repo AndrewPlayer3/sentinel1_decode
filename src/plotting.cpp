@@ -154,7 +154,6 @@ void print_help(vector<string> help_strings)
 }
 
 
-
 int main(int argc, char* argv[]) 
 {
     vector<string> help_strings = {
@@ -162,7 +161,7 @@ int main(int argc, char* argv[])
         "swath [swath] [path]",
         "fft [packet_index] [fft_size] [path] [--inverse]",
         "fft2 [swath] [path] [fft_rows] [fft_cols] [--inverse]",
-        "fft_axis [swath] [path] [axis] [fft_size] [--inverse]",
+        "fft_axis [swath] [axis] [fft_size] [path] [--inverse]",
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 
@@ -202,6 +201,7 @@ int main(int argc, char* argv[])
     {
         cout << command << " is not a valid command." << endl;
     }
+
     fftwf_cleanup_threads();
 
     return 0;

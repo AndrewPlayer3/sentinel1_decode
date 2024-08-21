@@ -154,6 +154,25 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal, int 
 }
 
 
+vector<vector<complex<float>>> transpose(const vector<vector<complex<float>>>& arr)
+{
+    int rows = arr.size();
+    int cols = arr[0].size();
+
+    vector<vector<complex<float>>> arr_t(cols, vector<complex<float>>(rows));
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < cols; i++)
+    {
+        for (int j = 0; j < rows; j++)
+        {
+            arr_t[i][j] = arr[j][i];
+        }
+    }
+    return arr_t;
+}
+
+
 // TODO: Find matrix math library to do this with efficiency.
 vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size = 0, const int& axis = 0, const bool& inverse = false)
 {
@@ -161,97 +180,55 @@ vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>
     {
         throw invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
     }
+    if (fft_size == 0)
+    {
+        fft_size = axis ? signals.size() : signals[0].size();
+    }
+    if (not axis)
+    {
+        cout << "Tranposing Vector for Row-Axis 1D FFT" << endl;;
 
+        return transpose(_compute_1d_dft(transpose(signals), fft_size, inverse));
+    }
+    return _compute_1d_dft(signals, fft_size, inverse);
+}
+
+
+vector<vector<complex<float>>> _compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size, const bool& inverse)
+{
     int signal_rows   = signals.size();
     int signal_cols   = signals[0].size();
     int min_fft_size  = 8;
-    int max_fft_size  = axis ? signal_cols : signal_rows;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    if (fft_size == 0)
+    cout << "Initializing Complex Arrays" << endl;
+
+    vector<vector<complex<float>>> fft_array_in = signals;
+    vector<vector<complex<float>>> fft_array_out(signal_rows, vector<complex<float>>(fft_size));
+    vector<fftwf_plan> plans(signal_rows);
+
+    cout << "Initializing Plans, Excecuting FFTs" << endl;
+
+    for (int row = 0; row < signal_rows; row++)
     {
-        fft_size = max_fft_size;
+        fftwf_plan plan = fftwf_plan_dft_1d(
+            fft_size,
+            reinterpret_cast<fftwf_complex*>(fft_array_in[row].data()),
+            reinterpret_cast<fftwf_complex*>(fft_array_out[row].data()),
+            fft_direction,
+            FFTW_ESTIMATE
+        );
+        fftwf_execute(plan);
+        fftwf_destroy_plan(plan);
     }
-    else if (fft_size < min_fft_size or fft_size > max_fft_size)
-    {
-        throw invalid_argument("FFT size must be in [8, signal_length_for_axis].");
-    }
-
-    cout << "Initializing Complex Arrays and FFTW Plan" << endl;
-    
-    // axis = 0 => fft_array_in  is (signal_cols, signal_rows)
-    //             fft_array_out is (signal_cols, fft_size)
-    //
-    // axis = 1 => fft_array_in  is (signal_rows, signal_cols)
-    //             fft_array_out is (signal_rows, fft_size)
-
-    int out_array_rows = axis ? signal_rows : signal_cols;
-
-    vector<vector<complex<float>>> fft_array_in;
-    vector<vector<complex<float>>> fft_array_out(out_array_rows, vector<complex<float>>(fft_size));
-    vector<fftwf_plan> plans;
-
-    if (axis)
-    {   
-        fft_array_in = signals;
-        for (int i = 0; i < signal_rows; i++)
-        {
-            plans.push_back(fftwf_plan_dft_1d(
-                fft_size,
-                reinterpret_cast<fftwf_complex*>(fft_array_in[i].data()),
-                reinterpret_cast<fftwf_complex*>(fft_array_out[i].data()),
-                fft_direction,
-                FFTW_ESTIMATE
-            ));
-        }
-    }
-    else
-    {
-        fft_array_in.resize(signal_cols, vector<complex<float>>(signal_rows));
-        for (int i = 0; i < signal_cols; i++)
-        {
-            for (int j = 0; j < signal_rows; j++)
-            {
-                fft_array_in[i][j] = signals[j][i];  // transpose the signal
-            }
-            plans.push_back(fftwf_plan_dft_1d(
-                fft_size,
-                reinterpret_cast<fftwf_complex*>(fft_array_in[i].data()),
-                reinterpret_cast<fftwf_complex*>(fft_array_out[i].data()),
-                fft_direction,
-                FFTW_ESTIMATE
-            ));
-        }
-    }
-
-    if (inverse) cout << "Executing IFFTs" << endl;
-    else         cout << "Executing FFTs"  << endl;
-
-    for (fftwf_plan& plan : plans) fftwf_execute(plan);
-
-    cout << "Destroying Plans" << endl;
-
-    for (fftwf_plan& plan : plans) fftwf_destroy_plan(plan);
 
     cout << "Setting FFT Output Data" << endl;
 
     float norm_factor = inverse ? 1.0f / (fft_size) : 1.0f;
 
-    if (not axis)
+    if (inverse)
     {
-        vector<vector<complex<float>>> array_out(fft_size, vector<complex<float>>(out_array_rows));
-        for (int i = 0; i < fft_size; i++)
-        {
-            for (int j = 0; j < out_array_rows; j++)
-            {
-                array_out[i][j] = fft_array_out[j][i] * norm_factor;
-            }
-        }
-        return array_out;
-    }
-    else if (inverse)
-    {
-        for (int i = 0; i < out_array_rows; i++)
+        for (int i = 0; i < signal_rows; i++)
         {
             for (int j = 0; j < fft_size; j++)
             {

@@ -11,16 +11,19 @@ vector<vector<complex<float>>> decode_swath(const string& filename, const string
 
     vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
 
-    cout << "Found " << packets.size() << " packets in " << swath << "." << endl;
+    int num_packets = packets.size();
 
-    vector<vector<complex<float>>> complex_samples;
+    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
+
+    vector<vector<complex<float>>> complex_samples(num_packets);
 
     cout << "Decoding Complex Samples" << endl;
 
     #pragma omp parallel for
-    for (L0Packet packet : packets)
+    for (int i = 0; i < num_packets; i++)
     {
-        complex_samples.push_back(packet.get_complex_samples());
+        L0Packet packet = packets[i];
+        complex_samples[i] = packet.get_complex_samples();
     }
 
     if (complex_samples.size() < 1)

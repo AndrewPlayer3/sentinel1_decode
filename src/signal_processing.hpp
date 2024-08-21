@@ -26,6 +26,8 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_sign
 
 vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size, const int& axis, const bool& inverse);
 
+vector<vector<complex<float>>> _compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size, const bool& inverse);
+
 vector<vector<complex<float>>> compute_2d_dft(
     const vector<vector<complex<float>>>& complex_samples,
     const bool& inverse,
