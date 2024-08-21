@@ -7,295 +7,201 @@ Description: Main function with random command-line arguments for testing purpos
              For additional information on Level-0 product decoding, see:
              https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17
 */
-
-#include "packet.hpp"
-#include "signal_processing.hpp"
-
-#include "../include/matplotlibcpp.h"
-
-using namespace std;
+#include "plot.hpp"
 
 
-void plot_complex_samples(const vector<complex<float>>& complex_samples)
-{
-    vector<float> norm = norm_1d(complex_samples, true);
+unordered_map<string, bool> parse_options(
+    const unordered_map<string, bool>& options,
+          char* args[],
+    const int&  arg_index
+) {
+    unordered_map<string, bool> selections = options;
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(norm);
-    matplotlibcpp::show();
-}
+    int index = arg_index;
 
-
-void plot_complex_samples(string filename, const int& packet_index)
-{
-    ifstream data = open_file(filename);
-
-    vector<L0Packet> packets = L0Packet::get_packets(data, packet_index + 1);
-
-    vector<complex<float>> complex_samples = packets[packet_index].get_complex_samples();
-
-    plot_complex_samples(complex_samples);
-}
-
-
-void plot_complex_image(const vector<vector<complex<float>>>& complex_samples, const bool& norm = true, const bool& log_scale = true)
-{
-    cout << "Setting Up Normalized Real-Value Vector for Plotting" << endl;
-
-    float max_value = 0;    
-
-    int rows = complex_samples.size();
-    int cols = complex_samples[0].size();
-
-    vector<float> samples = norm ? flatten(norm_2d(complex_samples, log_scale)) : flatten(magnitude_2d(complex_samples));
-
-    cout << "Calling Plot" << endl;
-
-    matplotlibcpp::figure();
-    matplotlibcpp::imshow(&samples[0], rows, cols, 1);
-    matplotlibcpp::show();
-}
-
-
-void plot_fft(string filename, const int& packet_index)
-{
-    ifstream data = open_file(filename);
-
-    vector<L0Packet> packets = L0Packet::get_packets(data, packet_index + 1);
-
-    vector<complex<float>> complex_samples = packets[packet_index].get_complex_samples();
-
-    vector<complex<float>> complex_samples_fft = compute_1d_dft(complex_samples);
-
-    plot_complex_samples(complex_samples_fft);
-}
-
-
-void plot_fft2d(string filename, const string& swath, int fft_rows, int fft_cols, const bool& inverse, const bool& norm, const bool& log_scale)
-{
-    cout << "Parsing Packets" << endl;
-    
-    vector<L0Packet> packets = L0Packet::get_packets(filename);
-
-    vector<vector<complex<float>>> complex_samples;
-
-    cout << "Decoding Complex Samples" << endl;
-
-    #pragma omp parallel for
-    for (L0Packet packet : packets)
+    while(args[index] != __null)
     {
-        if (packet.get_swath() == swath)
+        string users_option = string(args[index]);
+
+        if (selections.contains(users_option))
         {
-            complex_samples.push_back(packet.get_complex_samples());
+            selections[users_option] = !selections[users_option];
+        }
+        index += 1;
+    }
+    return selections;
+}
+
+
+void validate_args(
+    const string& command,
+    const vector<string>& command_args,
+          char*   args[],
+    const int&    start_index = 2,
+    const string& help = ""
+) {
+    string error_string = "Error! " + command + " is missing the following argument: ";
+
+    int end_index = command_args.size() + start_index;
+    for (int i = start_index; i < end_index; i++)
+    {
+        if (args[i] == __null)
+        {
+            throw runtime_error(error_string + command_args[i]);
         }
     }
-
-    if (not fft_rows) fft_rows = complex_samples.size();
-    if (not fft_cols) fft_cols = complex_samples[0].size();
-
-    vector<vector<complex<float>>> complex_samples_fft = compute_2d_dft(
-        complex_samples,
-        inverse,
-        fft_rows,
-        fft_cols
-    );
-
-    plot_complex_image(complex_samples_fft, norm, log_scale);
 }
 
 
-void plot_fft_axis(string filename, const string& swath, const int& axis, int fft_size, const bool& inverse, const bool& norm, const bool& log_scale)
+string parse_scaling_mode(unordered_map<string, bool> options)
 {
-    cout << "Parsing Packets" << endl;
-    
-    vector<L0Packet> packets = L0Packet::get_packets(filename);
+    string mode;
 
-    vector<vector<complex<float>>> complex_samples;
+    if (options["--norm_log"]) return "norm_log";
+    if (options["--norm"])     return "norm";
+    if (options["--mag"])      return "mag";
+    if (options["--real"])     return "real";
+    if (options["--imag"])     return "imag";
 
-    cout << "Decoding Complex Samples" << endl;
-
-    #pragma omp parallel for
-    for (L0Packet packet : packets)
-    {
-        if (packet.get_swath() == swath)
-        {
-            complex_samples.push_back(packet.get_complex_samples());
-        }
-    }
-
-    int fft_rows = complex_samples.size();
-    int fft_cols = complex_samples[0].size();
-    
-    if (fft_size <= 0)
-    {
-        fft_size = axis ? fft_cols : fft_rows;
-    }
-
-    vector<vector<complex<float>>> complex_samples_fft = compute_1d_dft(
-        complex_samples,
-        fft_size,
-        axis,
-        inverse
-    );
-
-    cout << "Input Rows: " << fft_rows << " Input Cols: " << fft_cols << endl;
-    cout << "Output Rows: " << complex_samples_fft.size() << " Output Cols: " << complex_samples_fft[0].size() << endl;
-
-    plot_complex_image(complex_samples_fft, norm, log_scale);
+    else return "real";
 }
 
 
-void plot_swath(string filename, const string& swath)
+void fft_axis_command(char *argv[], unordered_map<string, bool>& options)
 {
-    cout << "Parsing Packets" << endl;
-    
-    ifstream data = open_file(filename);
+    vector<string> args = {"swath", "axis", "fft_size", "filepath"};
 
-    vector<L0Packet> packets = L0Packet::get_packets(data);
+    validate_args("fft_axis", args, argv);
 
-    cout << "Decoding Complex Samples" << endl;
+    string swath    = string(argv[2]);
+    int    axis     = stoi(argv[3]);
+    int    fft_size = stoi(argv[4]);
+    string filepath = string(argv[5]);
+    bool   inverse  = options["--inverse"];
+    string scaling  = parse_scaling_mode(options);
 
-    vector<vector<complex<float>>> complex_samples;
-
-    #pragma omp parallel for
-    for (L0Packet packet : packets)
-    {
-        if (packet.get_swath() == swath)
-        {
-            complex_samples.push_back(packet.get_complex_samples());
-        }
-    }
-
-    if (complex_samples.size() < 1)
-    {
-        cout << "No samples found for swath " << swath << endl;
-        return;
-    }
-
-    plot_complex_image(complex_samples);
+    plot_fft_axis(filepath, swath, axis, fft_size, inverse, scaling);
 }
+
+
+void fft2_command(char *argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"swath", "fft_rows", "fft_cols", "filepath"};
+
+    validate_args("fft2", args, argv);
+
+    string swath    = string(argv[2]);
+    int    fft_rows = stoi(argv[3]);
+    int    fft_cols = stoi(argv[4]);
+    string filepath = string(argv[5]);
+    bool   inverse  = options["--inverse"];
+    string scaling  = parse_scaling_mode(options);
+
+    plot_fft2d(filepath, swath, fft_rows, fft_cols, inverse, scaling);
+}
+
+
+void fft_command(char *argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"packet_index", "fft_size", "filepath"};
+
+    validate_args("fft", args, argv);
+
+    string filename     = string(argv[4]);
+    int    packet_index = stoi(argv[2]);
+    int    fft_size     = stoi(argv[3]);
+    bool   inverse      = options["--inverse"];
+    string scaling      = parse_scaling_mode(options);
+
+    plot_fft(filename, packet_index, fft_size, inverse, scaling);
+}
+
+
+void swath_command(char *argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"swath", "filepath"};
+
+    validate_args("swath", args, argv, 2);
+
+    string filepath = string(argv[3]);
+    string swath    = string(argv[2]);
+    string scaling  = parse_scaling_mode(options);
+
+    plot_swath(filepath, swath, scaling);
+}
+
+
+void complex_samples_command(char *argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"packet_index", "filepath"};
+
+    validate_args("complex_samples", args, argv);
+
+    string filename     = string(argv[3]);
+    int    packet_index = stoi(argv[2]); 
+    string scaling      = parse_scaling_mode(options);
+
+    plot_complex_samples(filename, packet_index, scaling);
+}
+
+
+void print_help(vector<string> help_strings)
+{
+    for (string help_string : help_strings)
+    {
+        cout << help_string << endl;
+    }
+}
+
 
 
 int main(int argc, char* argv[]) 
 {
+    vector<string> help_strings = {
+        "complex_samples [packet_index] [mode] [path]",
+        "swath [swath] [path]",
+        "fft [packet_index] [fft_size] [path] [--inverse]",
+        "fft2 [swath] [path] [fft_rows] [fft_cols] [--inverse]",
+        "fft_axis [swath] [path] [axis] [fft_size] [--inverse]",
+        "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
+    };
+
     if(argv[1] == __null) 
     {
-        cout << "Please enter a command." << endl;
+        cout << "Please enter a command:" << endl;
+        print_help(help_strings);
         return 1;
     }
 
     fftwf_init_threads();
-
     fftwf_plan_with_nthreads(omp_get_max_threads());
 
     string command = string(argv[1]);
 
-    if (command == "help" or command == "--help" or command == "-h")
+    unordered_map<string, bool> options = {
+        {"--inverse",  false},
+        {"--norm",     false},
+        {"--norm_log", false},
+        {"--mag",      false},
+        {"--real",     false},
+        {"--imag",     false}
+    };
+    options = parse_options(options, argv, 2);
+
+    if      (command == "complex_samples") complex_samples_command(&(argv[0]), options);
+    else if (command == "swath")           swath_command(&(argv[0]), options);
+    else if (command == "fft")             fft_command(&(argv[0]), options); 
+    else if (command == "fft2")            fft2_command(&(argv[0]), options);
+    else if (command == "fft_axis")        fft_axis_command(&(argv[0]), options);
+
+    else if (command == "help" or command == "--help" or command == "-h")
     {
-        cout << "plot_complex_samples [packet_index] [path]" << endl;
-        cout << "plot_swath [swath: S1, IW1, etc...] [path]" << endl;
-        cout << "plot_fft [packet_index] [path]"             << endl;
-        cout << "plot_fft2 [swath: S1, IW1, etc...] [path]"  << endl;
+        print_help(help_strings);
     }
-
-    else if (command == "plot_complex_samples")
-    {
-        if(argv[2] == __null || argv[3] == __null) 
-        {
-            cout << "Please enter the packet index and filename." << endl;
-            return 1;
-        }
-
-        plot_complex_samples(string(argv[3]), stoi(argv[2]));
-    }
-
-    else if (command == "plot_swath")
-    {
-        if(argv[2] == __null || argv[3] == __null) 
-        {
-            cout << "Please enter the swath and filename." << endl;
-            return 1;
-        }
-
-        plot_swath(string(argv[3]), string(argv[2]));
-    }
-
-    else if (command == "plot_fft")
-    {
-        if(argv[2] == __null || argv[3] == __null) 
-        {
-            cout << "Please enter the packet index and filename." << endl;
-            return 1;
-        }
-
-        plot_fft(string(argv[3]), stoi(argv[2]));
-    }
-
-    else if (command == "plot_fft2")
-    {
-        if(argv[2] == __null || argv[3] == __null || argv[4] == __null || argv[5] == __null) 
-        {
-            cout << "Please enter the swath, filename, fft_row_size, and fft_col_size, respectively." << endl;
-            return 1;
-        }
-
-        bool inverse   = false;
-        bool norm      = false;
-        bool log_scale = false;
-
-        int arg_index = 6;
-        while(argv[arg_index] != __null)
-        {
-            string option = string(argv[arg_index]);
-
-            if (option == "--inverse")
-            {
-                cout << "Calculating IFFT instead of FFT" << endl;
-                inverse = true;
-            }
-            else if (option == "--norm") norm = true;
-            else if (option == "--log_scale") log_scale = true;
-            arg_index += 1;
-        }
-
-        plot_fft2d(string(argv[3]), string(argv[2]), stoi(argv[4]), stoi(argv[5]), inverse, norm, log_scale);
-    }
-
-    else if (command == "plot_fft_axis")
-    {
-        if(argv[2] == __null || argv[3] == __null || argv[4] == __null || argv[5] == __null) 
-        {
-            cout << "Please enter the swath, filename, axis, and fft size, respectively." << endl;
-            return 1;
-        }
-
-        bool inverse   = false;
-        bool norm      = false;
-        bool log_scale = false;
-
-        int arg_index = 6;
-        while(argv[arg_index] != __null)
-        {
-            string option = string(argv[arg_index]);
-
-            if (option == "--inverse")
-            {
-                cout << "Calculating IFFT instead of FFT" << endl;
-                inverse = true;
-            }
-            else if (option == "--norm") norm = true;
-            else if (option == "--log_scale") log_scale = true;
-            arg_index += 1;
-        }
-
-        plot_fft_axis(string(argv[3]), string(argv[2]), stoi(argv[4]), stoi(argv[5]), inverse, norm, log_scale);
-    }
-
     else
     {
         cout << command << " is not a valid command." << endl;
     }
-
     fftwf_cleanup_threads();
 
     return 0;
