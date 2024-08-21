@@ -104,6 +104,43 @@ vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
 }
 
 
+/* Returns all packets that are inside of the provided swath */
+vector<L0Packet> L0Packet::get_packets_in_swath(const string& filename, const string& swath)
+{
+    ifstream data = open_file(filename);
+    return get_packets_in_swath(data, swath);
+}
+
+
+/* Returns all packets that are inside of the provided swath */
+vector<L0Packet> L0Packet::get_packets_in_swath(ifstream& data, const string& swath)
+{
+    vector<L0Packet> packets;
+
+    int index = 0;
+
+    while (!data.eof())
+    {
+        try
+        {
+            L0Packet packet = L0Packet::get_next_packet(data);
+
+            if (packet.is_empty()) break;
+
+            if (packet.get_swath() == swath) packets.push_back(packet);
+
+            index += 1;
+        }
+        catch(runtime_error)
+        {
+            cout << "Caught a runtime error while decoding packet #" << index << ". Skipping..." << endl;
+            continue;
+        }
+    }
+    return packets;
+}
+
+
 /* Returns the length of the baq blocks in bytes */
 int L0Packet::get_baq_block_length()
 {   

@@ -183,8 +183,8 @@ public:
     vector<complex<float>> get_complex_samples();
 
     static L0Packet get_next_packet(ifstream& data);
-
     static vector<L0Packet> get_packets(ifstream& data, const int& num_packets = 0);
-
     static vector<L0Packet> get_packets(const string& filename);
+    static vector<L0Packet> get_packets_in_swath(const string& filename, const string& swath);
+    static vector<L0Packet> get_packets_in_swath(ifstream& data, const string& swath);
 };
