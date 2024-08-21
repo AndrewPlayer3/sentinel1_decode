@@ -116,14 +116,15 @@ vector<vector<float>> magnitude_2d(const vector<vector<complex<float>>>& complex
 }
 
 
-vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal)
+vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal, int fft_size = 0, const bool& inverse = false)
 {
     cout << "Initializing 1D Complex Vector for FFTW" << endl;
-    
-    int fft_threads = 8;
-    int fft_size    = signal.size();
+
+    if (fft_size <= 0) fft_size = signal.size();
 
     vector<complex<float>> fft_vector = signal;
+
+    int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
     cout << "Executing 1D DFT Plan" << endl;
 
@@ -131,13 +132,23 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal)
         fft_size,
         reinterpret_cast<fftwf_complex*>(fft_vector.data()),
         reinterpret_cast<fftwf_complex*>(fft_vector.data()),
-        FFTW_FORWARD,
+        fft_direction,
         FFTW_ESTIMATE
     );
 
     fftwf_execute(plan);
 
+    cout << "Destroying DFT Plan" << endl;
+
     fftwf_destroy_plan(plan);
+
+    if (inverse)
+    {
+        for (int i = 0; i < fft_size; i++)
+        {
+            fft_vector[i] /= fft_size;
+        }
+    }
 
     return fft_vector;
 }
@@ -218,7 +229,6 @@ vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>
 
     for (fftwf_plan& plan : plans) fftwf_execute(plan);
 
-
     cout << "Destroying Plans" << endl;
 
     for (fftwf_plan& plan : plans) fftwf_destroy_plan(plan);
@@ -262,8 +272,16 @@ vector<vector<complex<float>>> compute_2d_dft(
 ) {
     cout << "Initializing 1D Complex Vector for FFTW" << endl;
 
-    if (not fft_rows) fft_rows = signal.size();
-    if (not fft_cols) fft_cols = signal[0].size();
+    if (fft_rows == 0) fft_rows = signal.size();
+    if (fft_cols == 0) fft_cols = signal[0].size();
+
+    bool rows_out_of_lims = fft_rows < 0 or fft_rows > signal.size();
+    bool cols_out_of_lims = fft_cols < 0 or fft_cols > signal[0].size();
+
+    if (rows_out_of_lims or cols_out_of_lims)
+    {
+        throw invalid_argument("Invalid FFT size for signal.");
+    }
 
     vector<complex<float>> signal_fftw(fft_rows * fft_cols);
 

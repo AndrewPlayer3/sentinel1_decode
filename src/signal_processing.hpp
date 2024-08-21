@@ -22,7 +22,7 @@ vector<float> magnitude_1d(const vector<complex<float>>& complex_values);
 
 vector<vector<float>> magnitude_2d(const vector<vector<complex<float>>>& complex_values);
 
-vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_signal);
+vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_signal, int fft_size, const bool& inverse);
 
 vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size, const int& axis, const bool& inverse);
 
