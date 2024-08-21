@@ -24,11 +24,13 @@ vector<vector<float>> magnitude_2d(const vector<vector<complex<float>>>& complex
 
 vector<complex<float>> compute_1d_dft(const vector<complex<float>>& complex_signal);
 
+vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size, const int& axis, const bool& inverse);
+
 vector<vector<complex<float>>> compute_2d_dft(
     const vector<vector<complex<float>>>& complex_samples,
+    const bool& inverse,
     int fft_rows,
-    int fft_cols,
-    const bool& inverse
+    int fft_cols
 );
 
 

@@ -123,14 +123,14 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal)
     int fft_threads = 8;
     int fft_size    = signal.size();
 
-    vector<complex<float>> signal_fft = signal;
+    vector<complex<float>> fft_vector = signal;
 
     cout << "Executing 1D DFT Plan" << endl;
 
     fftwf_plan plan = fftwf_plan_dft_1d(
         fft_size,
-        reinterpret_cast<fftwf_complex*>(signal_fft.data()),
-        reinterpret_cast<fftwf_complex*>(signal_fft.data()),
+        reinterpret_cast<fftwf_complex*>(fft_vector.data()),
+        reinterpret_cast<fftwf_complex*>(fft_vector.data()),
         FFTW_FORWARD,
         FFTW_ESTIMATE
     );
@@ -139,41 +139,155 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal)
 
     fftwf_destroy_plan(plan);
 
-    return signal_fft;
+    return fft_vector;
+}
+
+
+// TODO: Find matrix math library to do this with efficiency.
+vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size = 0, const int& axis = 0, const bool& inverse = false)
+{
+    if (axis != 0 and axis != 1) 
+    {
+        throw invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
+    }
+
+    int signal_rows   = signals.size();
+    int signal_cols   = signals[0].size();
+    int min_fft_size  = 8;
+    int max_fft_size  = axis ? signal_cols : signal_rows;
+    int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
+
+    if (fft_size == 0)
+    {
+        fft_size = max_fft_size;
+    }
+    else if (fft_size < min_fft_size or fft_size > max_fft_size)
+    {
+        throw invalid_argument("FFT size must be in [8, signal_length_for_axis].");
+    }
+
+    cout << "Initializing Complex Arrays and FFTW Plan" << endl;
+    
+    // axis = 0 => fft_array_in  is (signal_cols, signal_rows)
+    //             fft_array_out is (signal_cols, fft_size)
+    //
+    // axis = 1 => fft_array_in  is (signal_rows, signal_cols)
+    //             fft_array_out is (signal_rows, fft_size)
+
+    int out_array_rows = axis ? signal_rows : signal_cols;
+
+    vector<vector<complex<float>>> fft_array_in;
+    vector<vector<complex<float>>> fft_array_out(out_array_rows, vector<complex<float>>(fft_size));
+    vector<fftwf_plan> plans;
+
+    if (axis)
+    {   
+        fft_array_in = signals;
+        for (int i = 0; i < signal_rows; i++)
+        {
+            plans.push_back(fftwf_plan_dft_1d(
+                fft_size,
+                reinterpret_cast<fftwf_complex*>(fft_array_in[i].data()),
+                reinterpret_cast<fftwf_complex*>(fft_array_out[i].data()),
+                fft_direction,
+                FFTW_ESTIMATE
+            ));
+        }
+    }
+    else
+    {
+        fft_array_in.resize(signal_cols, vector<complex<float>>(signal_rows));
+        for (int i = 0; i < signal_cols; i++)
+        {
+            for (int j = 0; j < signal_rows; j++)
+            {
+                fft_array_in[i][j] = signals[j][i];  // transpose the signal
+            }
+            plans.push_back(fftwf_plan_dft_1d(
+                fft_size,
+                reinterpret_cast<fftwf_complex*>(fft_array_in[i].data()),
+                reinterpret_cast<fftwf_complex*>(fft_array_out[i].data()),
+                fft_direction,
+                FFTW_ESTIMATE
+            ));
+        }
+    }
+
+    if (inverse) cout << "Executing IFFTs" << endl;
+    else         cout << "Executing FFTs"  << endl;
+
+    for (fftwf_plan& plan : plans) fftwf_execute(plan);
+
+
+    cout << "Destroying Plans" << endl;
+
+    for (fftwf_plan& plan : plans) fftwf_destroy_plan(plan);
+
+    cout << "Setting FFT Output Data" << endl;
+
+    float norm_factor = inverse ? 1.0f / (fft_size) : 1.0f;
+
+    if (not axis)
+    {
+        vector<vector<complex<float>>> array_out(fft_size, vector<complex<float>>(out_array_rows));
+        for (int i = 0; i < fft_size; i++)
+        {
+            for (int j = 0; j < out_array_rows; j++)
+            {
+                array_out[i][j] = fft_array_out[j][i] * norm_factor;
+            }
+        }
+        return array_out;
+    }
+    else if (inverse)
+    {
+        for (int i = 0; i < out_array_rows; i++)
+        {
+            for (int j = 0; j < fft_size; j++)
+            {
+                fft_array_out[i][j] *= norm_factor;
+            }
+        }
+    }
+
+    return fft_array_out;
 }
 
 
 vector<vector<complex<float>>> compute_2d_dft(
     const vector<vector<complex<float>>>& signal,
+    const bool& inverse = false,
     int fft_rows = 0,
-    int fft_cols = 0,
-    const bool& inverse = false
+    int fft_cols = 0
 ) {
     cout << "Initializing 1D Complex Vector for FFTW" << endl;
 
     if (not fft_rows) fft_rows = signal.size();
     if (not fft_cols) fft_cols = signal[0].size();
 
-    vector<complex<float>> signal_fftw_io(fft_rows * fft_cols);
+    vector<complex<float>> signal_fftw(fft_rows * fft_cols);
 
     for (int i = 0; i < fft_rows; i++)
     {
         for (int j = 0; j < fft_cols; j++)
         {
-            signal_fftw_io[i*fft_cols+j] = signal[i][j];
+            signal_fftw[i*fft_cols+j] = signal[i][j];
         }
     }
 
-    cout << "Executing 2D DFT Plan" << endl;
+    fftwf_plan plan;
 
-    int fft_threads   = 8;
+    if (inverse) cout << "Executing 2D IFFT Plan" << endl;
+    else cout << "Executing 2D FFT Plan"  << endl;
+
+    float norm_factor = inverse ? 1.0f / (fft_rows * fft_cols) : 1.0f;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    fftwf_plan plan = fftwf_plan_dft_2d(
+    plan = fftwf_plan_dft_2d(
         fft_rows, fft_cols, 
-        reinterpret_cast<fftwf_complex*>(signal_fftw_io.data()),
-        reinterpret_cast<fftwf_complex*>(signal_fftw_io.data()),
-        FFTW_FORWARD, FFTW_ESTIMATE
+        reinterpret_cast<fftwf_complex*>(signal_fftw.data()),
+        reinterpret_cast<fftwf_complex*>(signal_fftw.data()),
+        fft_direction, FFTW_ESTIMATE
     );
 
     fftwf_execute(plan);
@@ -190,7 +304,7 @@ vector<vector<complex<float>>> compute_2d_dft(
     {
         for (int j = 0; j < fft_cols; j++)
         {
-            signal_fft[i][j] = signal_fftw_io[i*fft_cols+j];
+            signal_fft[i][j] = signal_fftw[i*fft_cols+j] * norm_factor;
         }
     }
 
