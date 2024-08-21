@@ -71,7 +71,7 @@ void plot_fft(string filename, const int& packet_index)
 }
 
 
-void plot_fft2d(string filename, const string& swath, const bool& inverse, const bool& norm, const bool& log_scale)
+void plot_fft2d(string filename, const string& swath, int fft_rows, int fft_cols, const bool& inverse, const bool& norm, const bool& log_scale)
 {
     cout << "Parsing Packets" << endl;
     
@@ -90,8 +90,8 @@ void plot_fft2d(string filename, const string& swath, const bool& inverse, const
         }
     }
 
-    int fft_rows = complex_samples.size();
-    int fft_cols = complex_samples[0].size();
+    if (not fft_rows) fft_rows = complex_samples.size();
+    if (not fft_cols) fft_cols = complex_samples[0].size();
 
     vector<vector<complex<float>>> complex_samples_fft = compute_2d_dft(
         complex_samples,
@@ -233,9 +233,9 @@ int main(int argc, char* argv[])
 
     else if (command == "plot_fft2")
     {
-        if(argv[2] == __null || argv[3] == __null) 
+        if(argv[2] == __null || argv[3] == __null || argv[4] == __null || argv[5] == __null) 
         {
-            cout << "Please enter the swath and the filename." << endl;
+            cout << "Please enter the swath, filename, fft_row_size, and fft_col_size, respectively." << endl;
             return 1;
         }
 
@@ -243,7 +243,7 @@ int main(int argc, char* argv[])
         bool norm      = false;
         bool log_scale = false;
 
-        int arg_index = 4;
+        int arg_index = 6;
         while(argv[arg_index] != __null)
         {
             string option = string(argv[arg_index]);
@@ -258,14 +258,14 @@ int main(int argc, char* argv[])
             arg_index += 1;
         }
 
-        plot_fft2d(string(argv[3]), string(argv[2]), inverse, norm, log_scale);
+        plot_fft2d(string(argv[3]), string(argv[2]), stoi(argv[4]), stoi(argv[5]), inverse, norm, log_scale);
     }
 
     else if (command == "plot_fft_axis")
     {
-        if(argv[2] == __null || argv[3] == __null || argv[4] == __null) 
+        if(argv[2] == __null || argv[3] == __null || argv[4] == __null || argv[5] == __null) 
         {
-            cout << "Please enter the swath, axis, and filename, respectively." << endl;
+            cout << "Please enter the swath, filename, axis, and fft size, respectively." << endl;
             return 1;
         }
 
