@@ -182,7 +182,7 @@ vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>
     }
     if (fft_size == 0)
     {
-        fft_size = axis ? signals.size() : signals[0].size();
+        fft_size = axis ? signals[0].size() : signals.size();
     }
     if (not axis)
     {

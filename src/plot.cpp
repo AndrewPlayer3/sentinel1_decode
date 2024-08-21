@@ -166,11 +166,6 @@ void plot_fft_axis(
     int fft_rows = complex_samples.size();
     int fft_cols = complex_samples[0].size();
 
-    if (fft_size <= 0)
-    {
-        fft_size = axis ? fft_cols : fft_rows;
-    }
-
     vector<vector<complex<float>>> complex_samples_fft = compute_1d_dft(
         complex_samples,
         fft_size,
@@ -182,7 +177,7 @@ void plot_fft_axis(
     int out_cols = complex_samples_fft[0].size();
 
     cout << "Input Rows: "  << fft_rows  << " Input Cols: "  << fft_cols << endl;
-    cout << "Output Rows: " << out_rows  << " Output Cols: " << out_rows << endl;
+    cout << "Output Rows: " << out_rows  << " Output Cols: " << out_cols << endl;
 
     plot_complex_image(complex_samples_fft, scaling_mode);
 }
