@@ -116,6 +116,25 @@ vector<vector<float>> magnitude_2d(const vector<vector<complex<float>>>& complex
 }
 
 
+vector<vector<complex<float>>> transpose(const vector<vector<complex<float>>>& arr)
+{
+    int rows = arr.size();
+    int cols = arr[0].size();
+
+    vector<vector<complex<float>>> arr_t(cols, vector<complex<float>>(rows));
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < cols; i++)
+    {
+        for (int j = 0; j < rows; j++)
+        {
+            arr_t[i][j] = arr[j][i];
+        }
+    }
+    return arr_t;
+}
+
+
 vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal, int fft_size = 0, const bool& inverse = false)
 {
     cout << "Initializing 1D Complex Vector for FFTW" << endl;
@@ -151,25 +170,6 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal, int 
     }
 
     return fft_vector;
-}
-
-
-vector<vector<complex<float>>> transpose(const vector<vector<complex<float>>>& arr)
-{
-    int rows = arr.size();
-    int cols = arr[0].size();
-
-    vector<vector<complex<float>>> arr_t(cols, vector<complex<float>>(rows));
-
-    #pragma omp parallel for collapse(2)
-    for (int i = 0; i < cols; i++)
-    {
-        for (int j = 0; j < rows; j++)
-        {
-            arr_t[i][j] = arr[j][i];
-        }
-    }
-    return arr_t;
 }
 
 
