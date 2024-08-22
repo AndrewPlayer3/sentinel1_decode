@@ -177,9 +177,9 @@ $ bin/plot complex_samples 0 sample_data/sample.dat
 $ bin/plot swath [swath] [path] [--norm_log|--norm|--mag|--real|--imag]
 ```
 ```bash
-$ bin/plot swath IW1 data/sample/sample.dat --norm_log
+$ bin/plot swath IW3 data/sample/sample.dat --norm
 ```
-![plot_swath_example](imgs/iw1_swath.png)
+![plot_swath_example](imgs/iw3_swath.png)
 
 ## Requirements
 
