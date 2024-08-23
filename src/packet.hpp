@@ -181,6 +181,7 @@ public:
     void print_pulse_info();
 
     vector<complex<float>> get_complex_samples();
+    vector<complex<float>> get_replica_chirp();
 
     static L0Packet get_next_packet(ifstream& data);
     static vector<L0Packet> get_packets(ifstream& data, const int& num_packets = 0);

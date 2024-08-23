@@ -407,6 +407,45 @@ void L0Packet::_set_data_format()
 }
 
 
+vector<complex<float>> L0Packet::get_replica_chirp()
+{
+    if (!_complex_samples_set_flag)
+    {
+        _set_complex_samples();
+    }
+
+    int num_samples = _complex_samples.size();
+
+    float txpsf = get_start_frequency();
+    float txprr = get_tx_ramp_rate();
+    float txpl  = get_pulse_length();
+    float phi_1 = txpsf - (txprr * (-0.5 * txpl));
+    float phi_2 = txprr / 2;
+
+    float range_start = -0.5 * txpl;
+    float range_end   =  0.5 * txpl;
+    float delta       = txpl / num_samples;
+
+    vector<float> time(num_samples);
+    vector<complex<float>> chirp(num_samples);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        if (i == 0) time[i] = range_start;
+        else time[i] = time[i-1] + delta;
+    }
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        float t  = time[i]; 
+        chirp[i] = float(1.0 / num_samples) * exp(I * 2.0f * PI * ((phi_1 * t) + phi_2 * (t * t)));
+    }
+
+    return chirp;
+}
+
+
+
 /***********************************************************************/
 /*                                                                     */
 /* DECODING COMPLEX SAMPLES                                            */

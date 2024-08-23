@@ -1,7 +1,7 @@
 /*
 By: Andrew Player
 Name: structs.hpp
-Description: Some data structs/tables containing information necessary for decoding Level-0 Products.
+Description: Some data structs/tables and constants containing information necessary for decoding Level-0 Products.
              They are all from "SAR Space Packet Protocol Data Unit", which can be found at:
              https://sentinels.copernicus.eu/documents/247904/2142675/Sentinel-1-SAR-Space-Packet-Protocol-Data-Unit.pdf
              For additional information on Level-0 product decoding, see:
@@ -12,9 +12,15 @@ Description: Some data structs/tables containing information necessary for decod
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 using namespace std;
 
+
+const complex<float> I(0.0f, 1.0f); 
+
+const float PI             = 3.14159235;
+const float SPEED_OF_LIGHT = 299792458.0;
 
 const double F_REF = 37.53472224;
 
