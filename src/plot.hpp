@@ -6,7 +6,23 @@
 using namespace std;
 
 
-vector<vector<complex<float>>> decode_swath(const string& filename, const string& swath);
+vector<vector<complex<float>>> decode_swath(
+    const string& filename,
+    const string& swath
+);
+
+void plot_pulse(
+    const string& filename,
+    const int&    packet_index,
+    const string& scaling_mode
+);
+
+void plot_pulse_compression(
+    const string& filename,
+    const int&    packet_index,
+    const bool&   do_fft,
+    const string& scaling_mode
+);
 
 void plot_swath(
     const string& filename,
