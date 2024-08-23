@@ -3,8 +3,10 @@
 using namespace std;
 
 
-vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_values, const bool& log_scale = false)
-{
+vector<vector<float>> norm_2d(
+    const vector<vector<complex<float>>>& complex_values,
+    const bool& log_scale = false
+) {
     float max_value = 0.0;    
 
     int rows = complex_values.size();
@@ -39,8 +41,10 @@ vector<vector<float>> norm_2d(const vector<vector<complex<float>>>& complex_valu
 }
 
 
-vector<float> norm_1d(const vector<complex<float>>& complex_values, const bool& log_scale = false)
-{
+vector<float> norm_1d(
+    const vector<complex<float>>& complex_values,
+    const bool& log_scale = false
+) {
     int num_samples = complex_values.size();
 
     float max_value = 0;
@@ -135,8 +139,11 @@ vector<vector<complex<float>>> transpose(const vector<vector<complex<float>>>& a
 }
 
 
-vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal, int fft_size = 0, const bool& inverse = false)
-{
+vector<complex<float>> compute_1d_dft(
+    const vector<complex<float>>& signal,
+          int   fft_size = 0,
+    const bool& inverse  = false
+) {
     cout << "Initializing 1D Complex Vector for FFTW" << endl;
 
     if (fft_size <= 0) fft_size = signal.size();
@@ -174,8 +181,12 @@ vector<complex<float>> compute_1d_dft(const vector<complex<float>>& signal, int 
 
 
 // TODO: Find matrix math library to do this with efficiency.
-vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size = 0, const int& axis = 0, const bool& inverse = false)
-{
+vector<vector<complex<float>>> compute_axis_dft(
+    const vector<vector<complex<float>>>& signals,
+          int   fft_size = 0,
+    const int&  axis     = 0,
+    const bool& inverse  = false
+) {
     if (axis != 0 and axis != 1) 
     {
         throw invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
@@ -188,14 +199,17 @@ vector<vector<complex<float>>> compute_1d_dft(const vector<vector<complex<float>
     {
         cout << "Tranposing Vector for Row-Axis 1D FFT" << endl;;
 
-        return transpose(_compute_1d_dft(transpose(signals), fft_size, inverse));
+        return transpose(_compute_axis_dft(transpose(signals), fft_size, inverse));
     }
-    return _compute_1d_dft(signals, fft_size, inverse);
+    return _compute_axis_dft(signals, fft_size, inverse);
 }
 
 
-vector<vector<complex<float>>> _compute_1d_dft(const vector<vector<complex<float>>>& signals, int fft_size, const bool& inverse)
-{
+vector<vector<complex<float>>> _compute_axis_dft(
+    const vector<vector<complex<float>>>& signals,
+          int   fft_size,
+    const bool& inverse
+) {
     int signal_rows   = signals.size();
     int signal_cols   = signals[0].size();
     int min_fft_size  = 8;
