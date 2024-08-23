@@ -24,6 +24,18 @@ void plot_pulse_compression(
     const string& scaling_mode
 );
 
+void plot_pulse_image(
+    const string& filename,
+    const string& swath,
+    const string& scaling_mode
+);
+
+void plot_pulse_compressed_image(
+    const string& filename,
+    const string& swath,
+    const string& scaling_mode
+);
+
 void plot_swath(
     const string& filename,
     const string& swath,
