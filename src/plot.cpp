@@ -343,9 +343,8 @@ void plot_pulse_compressed_image(
         pulse_compressed[i] = pulse_compression(complex_samples[i], replica_chirps[i]);
     }
 
-    vector<vector<complex<float>>> pre_azimuth = compute_axis_dft(pulse_compressed, 0, 1, true);
-
-    vector<vector<complex<float>>> azimuth = compute_axis_dft(pre_azimuth, 0, 0, false);
+    // Not proper yet, just for interesting visualization.
+    vector<vector<complex<float>>> azimuth = compute_2d_dft(pulse_compressed, true, 0, 0);
 
     auto compression_end = chrono::high_resolution_clock::now();
 
