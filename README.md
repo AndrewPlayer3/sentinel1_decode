@@ -180,7 +180,14 @@ $ bin/plot swath [swath] [path] [--norm_log|--norm|--mag|--real|--imag]
 $ bin/plot swath IW3 data/sample/sample.dat --norm
 ```
 ![plot_swath_example](imgs/iw3_swath.png)
-
+```bash
+$ bin/plot pulse_compressed_img [swath] [burst_number] [path] [--norm_log|--norm|--mag|--real|--imag]
+```
+```bash
+$ bin/plot pulse_compressed_img IW2 0 data/sample/sample.dat --norm
+```
+![range_compression_example](imgs/range_compression_zoomed.png)
+*zoomed in*
 ## Requirements
 
 The library code does not have any external requirements.
