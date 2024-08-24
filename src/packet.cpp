@@ -377,7 +377,6 @@ vector<complex<float>> L0Packet::get_replica_chirp()
     {
         _set_complex_samples();
     }
-    int num_samples = _complex_samples.size();
 
     float txpsf = get_start_frequency();
     float txprr = get_tx_ramp_rate();
@@ -385,9 +384,12 @@ vector<complex<float>> L0Packet::get_replica_chirp()
     float phi_1 = txpsf - (txprr * (-0.5 * txpl));
     float phi_2 = txprr / 2;
 
+    int range_dec   = secondary_header("range_decimation");
+    int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));
+
     float range_start = -0.5 * txpl;
     float range_end   =  0.5 * txpl;
-    float delta       = txpl / num_samples;
+    float delta       = txpl / (num_samples - 1);
 
     vector<float> time(num_samples);
     vector<complex<float>> chirp(num_samples);
