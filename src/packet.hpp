@@ -152,8 +152,8 @@ public:
     int  get_user_data_length() {return _user_data_length;}
     char get_data_format() {return _data_format;}
 
-    int primary_header(const string& key) {return _primary_header[key];}
-    int secondary_header(const string& key) {return _secondary_header[key];}
+    const int primary_header(const string& key) {return _primary_header.at(key);}
+    const int secondary_header(const string& key) {return _secondary_header.at(key);}
 
     int get_baq_block_length();
 

@@ -322,7 +322,7 @@ void L0Packet::print_primary_header()
 {
     for (string key : PRIMARY_HEADER_FIELDS) 
     {
-        cout << key << ": " << _primary_header[key] << endl;
+        cout << key << ": " << _primary_header.at(key) << endl;
     }
 }
 
@@ -336,7 +336,7 @@ void L0Packet::print_secondary_header()
         {
             continue;
         }
-        cout << key << ": " << _secondary_header[key] << endl;
+        cout << key << ": " << _secondary_header.at(key) << endl;
     }
 }
 
