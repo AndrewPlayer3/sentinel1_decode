@@ -187,6 +187,13 @@ $ bin/plot range_compressed_burst [swath] [burst_number] [path] [--norm_log|--no
 $ bin/plot range_compressed_burst IW1 2 data/sample/sample.dat --norm
 ```
 ![range_compression_example](imgs/range_compressed.png)
+```bash
+$ bin/plot range_compressed_swath [swath] [path] [--norm_log|--norm|--mag|--real|--imag]
+```
+```bash
+$ bin/plot range_compressed_swath IW1 data/sample/sample.dat --norm
+```
+![range_compression_example](imgs/range_compressed_swath.png)
 *just a nice looking image*
 ![range_compression_example](imgs/range_compression_zoomed.png)
 ## Requirements

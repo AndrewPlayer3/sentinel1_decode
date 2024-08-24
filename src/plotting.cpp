@@ -126,6 +126,20 @@ void range_compressed_burst_command(char* argv[], unordered_map<string, bool>& o
 }
 
 
+void range_compressed_swath_command(char* argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"swath", "filepath"};
+
+    validate_args("range_compressed_swath", args, argv);
+
+    string swath     = string(argv[2]);
+    string filename  = string(argv[3]);
+    string scaling   = parse_scaling_mode(options);
+
+    plot_range_compressed_swath(filename, swath, scaling);
+}
+
+
 void fft_axis_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "burst_num", "axis", "fft_size", "filepath"};
@@ -240,6 +254,7 @@ int main(int argc, char* argv[])
         "fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]",
         "fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]",
         "range_compressed_burst [swath] [burst_num] [path]"
+        "range_compressed_swath [swath] [path]"
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 
@@ -276,6 +291,8 @@ int main(int argc, char* argv[])
     else if (command == "pulse_compression")      pulse_compression_command(&(argv[0]), options);
     else if (command == "burst_pulses")           pulse_image_command(&(argv[0]), options);
     else if (command == "range_compressed_burst") range_compressed_burst_command(&(argv[0]), options);
+    else if (command == "range_compressed_swath") range_compressed_swath_command(&(argv[0]), options);
+
 
     else if (command == "help" or command == "--help" or command == "-h")
     {
