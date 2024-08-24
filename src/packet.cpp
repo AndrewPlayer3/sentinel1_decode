@@ -41,7 +41,6 @@ L0Packet L0Packet::get_next_packet(ifstream& data)
         PRIMARY_HEADER,
         PRIMARY_HEADER_FIELDS
     );
-
     if (data.eof()) return L0Packet();
 
     vector<u_int8_t> secondary_bytes = read_bytes(data, 62);
@@ -61,7 +60,6 @@ L0Packet L0Packet::get_next_packet(ifstream& data)
         secondary_header,
         user_data
     );
-
     return packet;
 }
 
@@ -91,12 +89,12 @@ vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
 
             if (!packet.is_empty()) packets.push_back(packet);
             else break;
-
             index += 1;
         }
         catch(runtime_error)
         {
-            cout << "Caught a runtime error while decoding packet #" << index << ". Skipping..." << endl;
+            cout << "Caught a runtime error while decoding packet #"
+                 << index << ". Skipping..." << endl;
             continue;
         }
     }
@@ -126,14 +124,13 @@ vector<L0Packet> L0Packet::get_packets_in_swath(ifstream& data, const string& sw
             L0Packet packet = L0Packet::get_next_packet(data);
 
             if (packet.is_empty()) break;
-
             if (packet.get_swath() == swath) packets.push_back(packet);
-
             index += 1;
         }
         catch(runtime_error)
         {
-            cout << "Caught a runtime error while decoding packet #" << index << ". Skipping..." << endl;
+            cout << "Caught a runtime error while decoding packet #" 
+                 << index << ". Skipping..." << endl;
             continue;
         }
     }
@@ -188,9 +185,7 @@ double L0Packet::get_start_frequency()
 {
     int sign = _secondary_header["pulse_start_frequency_sign"] == 0 ? -1 : 1;
     int mag  = _secondary_header["pulse_start_frequency_mag"];
-
     double txprr = get_tx_ramp_rate();
-
     return (sign * mag * (F_REF / 16384)) + (txprr / (4 * F_REF));
 }
 
@@ -209,19 +204,10 @@ double L0Packet::get_tx_ramp_rate()
 char L0Packet::get_tx_polarization()
 {
     int pol_code = _secondary_header["polarisation"];
-    
-    if (pol_code >= 0 && pol_code <= 3)
-    {
-        return 'H';
-    }
-    else if (pol_code >= 4 && pol_code <= 7)
-    {
-        return 'V';
-    }
-    else
-    {
-        throw runtime_error("The polarization code is invalid.");
-    }
+
+    if      (pol_code >= 0 && pol_code <= 3) return 'H';
+    else if (pol_code >= 4 && pol_code <= 7) return 'V';
+    else throw runtime_error("The polarization code is invalid.");
 }
 
 
@@ -230,12 +216,9 @@ char L0Packet::get_rx_polarization()
 {
     switch (_secondary_header["rx_channel_id"])
     {
-        case 0:
-            return 'V';
-        case 1:
-            return 'H';
-        default:
-            throw runtime_error("The rx_channel_id is invalid.");
+        case 0: return 'V';
+        case 1: return 'H';
+        default: throw runtime_error("The rx_channel_id is invalid.");
     }
 }
 
@@ -322,7 +305,7 @@ void L0Packet::print_primary_header()
 {
     for (string key : PRIMARY_HEADER_FIELDS) 
     {
-        cout << key << ": " << _primary_header[key] << endl;
+        cout << key << ": " << _primary_header.at(key) << endl;
     }
 }
 
@@ -336,7 +319,7 @@ void L0Packet::print_secondary_header()
         {
             continue;
         }
-        cout << key << ": " << _secondary_header[key] << endl;
+        cout << key << ": " << _secondary_header.at(key) << endl;
     }
 }
 
@@ -381,30 +364,47 @@ void L0Packet::_set_data_format()
     unordered_set<int> type_c_modes = { 3,  4,  5};
     unordered_set<int> type_d_modes = {12, 13, 14};
 
-    if (_baq_mode == 0) 
-    {
-        if (_test_mode % 3 == 0) 
-        {
-            _data_format = 'A';
-        } 
-        else 
-        {
-            _data_format = 'B';
-        }
-    }
-    else if (type_c_modes.contains(_baq_mode)) 
-    {
-        _data_format = 'C';
-    }
-    else if (type_d_modes.contains(_baq_mode)) 
-    {
-        _data_format = 'D';
-    }
-    else 
-    {
-        throw out_of_range("BAQ Mode is invalid.");
-    }
+    if (_baq_mode == 0) _test_mode % 3 == 0 ?  _data_format = 'A' : _data_format = 'B';
+    else if (type_c_modes.contains(_baq_mode)) _data_format = 'C';
+    else if (type_d_modes.contains(_baq_mode)) _data_format = 'D';
+    else throw out_of_range("BAQ Mode is invalid.");
 }
+
+
+vector<complex<float>> L0Packet::get_replica_chirp()
+{
+    if (!_complex_samples_set_flag)
+    {
+        _set_complex_samples();
+    }
+    int num_samples = _complex_samples.size();
+
+    float txpsf = get_start_frequency();
+    float txprr = get_tx_ramp_rate();
+    float txpl  = get_pulse_length();
+    float phi_1 = txpsf - (txprr * (-0.5 * txpl));
+    float phi_2 = txprr / 2;
+
+    float range_start = -0.5 * txpl;
+    float range_end   =  0.5 * txpl;
+    float delta       = txpl / num_samples;
+
+    vector<float> time(num_samples);
+    vector<complex<float>> chirp(num_samples);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        if (i == 0) time[i] = range_start;
+        else time[i] = time[i-1] + delta;
+    }
+    for (int i = 0; i < num_samples; i++)
+    {
+        float t  = time[i]; 
+        chirp[i] = float(1.0 / num_samples) * exp(I * 2.0f * PI * ((phi_1 * t) + phi_2 * (t * t)));
+    }
+    return chirp;
+}
+
 
 
 /***********************************************************************/
@@ -482,8 +482,7 @@ void L0Packet::_decode()
 /* Setter for _complex_samples - destroys _raw_user_data to free space */
 void L0Packet::_set_complex_samples()
 {
-    _complex_samples.reserve(_num_quads * 4);
-
+    _complex_samples.reserve(_num_quads*4);
     _decode();
     _complex_samples_set_flag = true;
 
@@ -518,7 +517,6 @@ vector<complex<float>> L0Packet::_get_complex_samples_types_a_and_b(
     auto get_s_value = [](u_int8_t sign, u_int16_t m_code) {return pow(-1, sign) * m_code;};
 
     vector<vector<double>> s_values;
-
     s_values.reserve(_num_quads);
 
     for(int i = 0; i < _num_quads; i++)
@@ -530,10 +528,8 @@ vector<complex<float>> L0Packet::_get_complex_samples_types_a_and_b(
             get_s_value(QO.signs[i], QO.m_codes[i])
         });
     }
-
     vector<complex<float>> complex_samples;
-
-    complex_samples.reserve(_num_quads * 4);
+    complex_samples.reserve(_num_quads*4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
@@ -542,7 +538,6 @@ vector<complex<float>> L0Packet::_get_complex_samples_types_a_and_b(
         complex_samples.push_back(complex<float>(components[0], components[2]));
         complex_samples.push_back(complex<float>(components[1], components[3]));
     }
-
     return complex_samples;
 }
 
@@ -564,7 +559,6 @@ void L0Packet::_set_quad_types_a_and_b(H_CODE& component, int& bit_index)
         component.signs.push_back(sign);
         component.m_codes.push_back(m_code);
     }
-
     bit_index = _get_next_word_boundary(bit_index);
 }
 
@@ -588,11 +582,11 @@ double L0Packet::_get_s_values_type_c(
             int flag = BAQ_MODE_TO_M_CODE.at(_baq_mode);
 
             if      (m_code <  flag) return pow(-1, sign) * double(m_code);
-            else if (m_code == flag) return pow(-1, sign) * SIMPLE_RECONSTRUCTION_METHOD[0][_baq_mode - 3][threshold_index];
+            else if (m_code == flag) return pow(-1, sign) * SIMPLE_RECONSTRUCTION[0][_baq_mode-3][threshold_index];
             else throw runtime_error("Invalid m_code in s_value generation.");
         }
-        double sigma_factor              = THIDX_TO_SF_ARRAY[threshold_index];
-        double norm_reconstruction_level = NORMALIZED_RECONSTRUCTION_LEVELS[0][_baq_mode - 3][m_code];
+        double sigma_factor              = THIDX_TO_SF[threshold_index];
+        double norm_reconstruction_level = NORMALIZED_RECONSTRUCTION[0][_baq_mode - 3][m_code];
         return pow(-1.0, sign) * norm_reconstruction_level * sigma_factor;
 }
 
@@ -604,7 +598,6 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_c(
     QUAD& QO
 ) {
     vector<vector<double>> s_values;
-
     s_values.reserve(_num_quads);
 
     for (int block_id = 0; block_id < _num_baq_blocks; block_id++)
@@ -616,16 +609,31 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_c(
         for (int s_id = 0; s_id < block_length; s_id++)
         {
             s_values.push_back({
-                _get_s_values_type_c(threshold_id, IE.blocks[block_id].signs[s_id], IE.blocks[block_id].m_codes[s_id]),
-                _get_s_values_type_c(threshold_id, IO.blocks[block_id].signs[s_id], IO.blocks[block_id].m_codes[s_id]),
-                _get_s_values_type_c(threshold_id, QE.blocks[block_id].signs[s_id], QE.blocks[block_id].m_codes[s_id]),
-                _get_s_values_type_c(threshold_id, QO.blocks[block_id].signs[s_id], QO.blocks[block_id].m_codes[s_id])
+                _get_s_values_type_c(
+                    threshold_id,
+                    IE.blocks[block_id].signs[s_id],
+                    IE.blocks[block_id].m_codes[s_id]
+                ),
+                _get_s_values_type_c(
+                    threshold_id,
+                    IO.blocks[block_id].signs[s_id],
+                    IO.blocks[block_id].m_codes[s_id]
+                ),
+                _get_s_values_type_c(
+                    threshold_id,
+                    QE.blocks[block_id].signs[s_id],
+                    QE.blocks[block_id].m_codes[s_id]
+                ),
+                _get_s_values_type_c(
+                    threshold_id,
+                    QO.blocks[block_id].signs[s_id],
+                    QO.blocks[block_id].m_codes[s_id]
+                )
             });
         }
     }
     vector<complex<float>> complex_samples;
-
-    complex_samples.reserve(_num_quads * 4);
+    complex_samples.reserve(_num_quads*4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
@@ -634,7 +642,6 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_c(
         complex_samples.push_back(complex<float>(components[0], components[2]));
         complex_samples.push_back(complex<float>(components[1], components[3]));
     }
-
     return complex_samples;
 }
 
@@ -642,7 +649,7 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_c(
 H_CODE L0Packet::_get_h_code_type_c(int& bit_index, const bool& is_last_block)
 {
         int num_codes = is_last_block ? _num_quads - (128 * (_num_baq_blocks - 1)) : 128;
-        
+
         H_CODE h_code(num_codes);
 
         for (int i = 0; i < num_codes; i++)
@@ -657,7 +664,6 @@ H_CODE L0Packet::_get_h_code_type_c(int& bit_index, const bool& is_last_block)
             h_code.signs.push_back(sign);
             h_code.m_codes.push_back(m_code);
         }
-
         return h_code;
 }
 
@@ -683,10 +689,8 @@ void L0Packet::_set_quad_type_c(QUAD& component, int& bit_index)
             _thresholds.push_back(threshold);
             bit_index += threshold_bits;
         }
-
         component.blocks.push_back(_get_h_code_type_c(bit_index, is_last_block));
     }
-
     bit_index = _get_next_word_boundary(bit_index);
 }
 
@@ -711,10 +715,10 @@ double L0Packet::_get_s_values_type_d(
         int flag = BRC_TO_M_CODE[brc];
 
         if      (m_code <  flag) return pow(-1.0, sign) * m_code;
-        else if (m_code == flag) return pow(-1.0, sign) * SIMPLE_RECONSTRUCTION_METHOD[1][brc][threshold_index];
+        else if (m_code == flag) return pow(-1.0, sign) * SIMPLE_RECONSTRUCTION[1][brc][threshold_index];
         else throw runtime_error("MCode is greater than the comparison flag.");
     }
-    return pow(-1.0, sign) * NORMALIZED_RECONSTRUCTION_LEVELS[1][brc][m_code] * THIDX_TO_SF_ARRAY[threshold_index];
+    return pow(-1.0, sign) * NORMALIZED_RECONSTRUCTION[1][brc][m_code] * THIDX_TO_SF[threshold_index];
 }
 
 
@@ -738,10 +742,26 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_d(
         for (int s_id = 0; s_id < block_length; s_id++)
         {
             s_values.push_back({
-                _get_s_values_type_d(brc, threshold_id, IE.blocks[block_id].signs[s_id], IE.blocks[block_id].m_codes[s_id]),
-                _get_s_values_type_d(brc, threshold_id, IO.blocks[block_id].signs[s_id], IO.blocks[block_id].m_codes[s_id]),
-                _get_s_values_type_d(brc, threshold_id, QE.blocks[block_id].signs[s_id], QE.blocks[block_id].m_codes[s_id]),
-                _get_s_values_type_d(brc, threshold_id, QO.blocks[block_id].signs[s_id], QO.blocks[block_id].m_codes[s_id]),
+                _get_s_values_type_d(
+                    brc, threshold_id, 
+                    IE.blocks[block_id].signs[s_id],
+                    IE.blocks[block_id].m_codes[s_id]
+                ),
+                _get_s_values_type_d(
+                    brc, threshold_id,
+                    IO.blocks[block_id].signs[s_id],
+                    IO.blocks[block_id].m_codes[s_id]
+                ),
+                _get_s_values_type_d(
+                    brc, threshold_id,
+                    QE.blocks[block_id].signs[s_id],
+                    QE.blocks[block_id].m_codes[s_id]
+                ),
+                _get_s_values_type_d(
+                    brc, threshold_id,
+                    QO.blocks[block_id].signs[s_id],
+                    QO.blocks[block_id].m_codes[s_id]
+                ),
             });
         }
     }
@@ -756,31 +776,32 @@ vector<complex<float>> L0Packet::_get_complex_samples_type_d(
         complex_samples.push_back(complex<float>(components[0], components[2]));
         complex_samples.push_back(complex<float>(components[1], components[3]));
     }
-
     return complex_samples;
 }
 
 
-H_CODE L0Packet::_get_h_code_type_d(const u_int8_t& brc, int& bit_index, const bool& is_last_block)
-{
-        int num_codes = is_last_block ? _num_quads - (128 * (_num_baq_blocks - 1)) : 128;
+H_CODE L0Packet::_get_h_code_type_d(
+    const u_int8_t& brc,
+          int&      bit_index,
+    const bool&     is_last_block
+) {
+    int num_codes = is_last_block ? _num_quads - (128 * (_num_baq_blocks - 1)) : 128;
 
-        H_CODE h_code(num_codes);
+    H_CODE h_code(num_codes);
 
-        for (int i = 0; i < num_codes; i++)
-        {
-            int start_bit_index = bit_index;
-            int sign   = read_n_bits(_raw_user_data, bit_index, 1);
+    for (int i = 0; i < num_codes; i++)
+    {
+        int start_bit_index = bit_index;
+        int sign   = read_n_bits(_raw_user_data, bit_index, 1);
 
-            bit_index += 1;
+        bit_index += 1;
 
-            u_int16_t m_code = huffman_decode(_raw_user_data, brc, bit_index);
+        u_int16_t m_code = huffman_decode(_raw_user_data, brc, bit_index);
 
-            h_code.signs.push_back(sign);
-            h_code.m_codes.push_back(m_code);
-        }
-
-        return h_code;
+        h_code.signs.push_back(sign);
+        h_code.m_codes.push_back(m_code);
+    }
+    return h_code;
 }
 
 
@@ -810,6 +831,7 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
         else if (is_qe)
         {
             threshold = read_n_bits(_raw_user_data, bit_index, threshold_bits);
+    
             if (threshold > 256)
             {
                 throw runtime_error("Threshold Index is invalid.");

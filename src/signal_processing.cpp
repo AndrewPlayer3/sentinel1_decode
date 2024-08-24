@@ -3,6 +3,48 @@
 using namespace std;
 
 
+vector<float> hanning_window(const int& num_samples)
+{
+    vector<float> window(num_samples);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        window[i] = sin(PI * i / num_samples) * sin(PI * i / num_samples);
+    }
+
+    return window;
+}
+
+
+vector<complex<float>> apply_hanning_window(const vector<complex<float>>& complex_samples)
+{
+    int num_samples = complex_samples.size();
+
+    vector<float> window = hanning_window(num_samples);
+    vector<complex<float>> filtered_samples(num_samples);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        filtered_samples[i] = complex_samples[i] * window[i];
+    }
+    return filtered_samples;
+}
+
+
+void apply_hanning_window_in_place(vector<complex<float>>& complex_samples)
+{
+    int num_samples = complex_samples.size();
+
+    vector<float> window = hanning_window(num_samples);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        complex_samples[i] *= window[i];
+    }
+}
+
+
+
 vector<vector<float>> norm_2d(
     const vector<vector<complex<float>>>& complex_values,
     const bool& log_scale = false
@@ -144,8 +186,6 @@ vector<complex<float>> compute_1d_dft(
           int   fft_size = 0,
     const bool& inverse  = false
 ) {
-    cout << "Initializing 1D Complex Vector for FFTW" << endl;
-
     if (fft_size <= 0) fft_size = signal.size();
 
     vector<complex<float>> fft_vector = signal;
@@ -163,8 +203,6 @@ vector<complex<float>> compute_1d_dft(
     );
 
     fftwf_execute(plan);
-
-    cout << "Destroying DFT Plan" << endl;
 
     fftwf_destroy_plan(plan);
 

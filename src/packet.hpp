@@ -101,19 +101,43 @@ private:
     void _decode();
     int  _get_next_word_boundary(const int& bit_index);
 
-    H_CODE _get_h_code_type_c(int& bit_index, const bool& is_last_block);
-    H_CODE _get_h_code_type_d(const u_int8_t& brc, int& bit_index, const bool& is_last_block);
-
-    double _get_s_values_type_c(const u_int16_t& threshold_id, const int& sign, const int& m_code);
-    double _get_s_values_type_d(const u_int8_t& brc, const u_int16_t& threshold_id, const int& sign, const int& m_code);
+    H_CODE _get_h_code_type_c(
+              int&  bit_index, 
+        const bool& is_last_block
+    );
+    H_CODE _get_h_code_type_d(
+        const u_int8_t& brc,
+              int&      bit_index,
+        const bool&     is_last_block
+    );
+    double _get_s_values_type_c(
+        const u_int16_t& threshold_id,
+        const int&       sign,
+        const int&       m_code
+    );
+    double _get_s_values_type_d(
+        const u_int8_t&  brc,
+        const u_int16_t& threshold_id,
+        const int&       sign,
+        const int&       m_code
+    );
 
     void _set_quad_type_d(QUAD& component, int& bit_index);
     void _set_quad_type_c(QUAD& component, int& bit_index);
     void _set_quad_types_a_and_b(H_CODE& component, int& bit_index);
 
-    vector<complex<float>> _get_complex_samples_type_d(QUAD& IE, QUAD& IO, QUAD& QE, QUAD& QO);
-    vector<complex<float>> _get_complex_samples_type_c(QUAD& IE, QUAD& IO, QUAD& QE, QUAD& QO);
-    vector<complex<float>> _get_complex_samples_types_a_and_b(H_CODE& IE, H_CODE& IO, H_CODE& QE, H_CODE& QO);
+    vector<complex<float>> _get_complex_samples_type_d(
+        QUAD& IE, QUAD& IO, 
+        QUAD& QE, QUAD& QO
+    );
+    vector<complex<float>> _get_complex_samples_type_c(
+        QUAD& IE, QUAD& IO,
+        QUAD& QE, QUAD& QO
+    );
+    vector<complex<float>> _get_complex_samples_types_a_and_b(
+        H_CODE& IE, H_CODE& IO,
+        H_CODE& QE, H_CODE& QO
+    );
 
 
 public:
@@ -152,8 +176,8 @@ public:
     int  get_user_data_length() {return _user_data_length;}
     char get_data_format() {return _data_format;}
 
-    int primary_header(const string& key) {return _primary_header[key];}
-    int secondary_header(const string& key) {return _secondary_header[key];}
+    const int primary_header(const string& key) {return _primary_header.at(key);}
+    const int secondary_header(const string& key) {return _secondary_header.at(key);}
 
     int get_baq_block_length();
 
@@ -181,6 +205,7 @@ public:
     void print_pulse_info();
 
     vector<complex<float>> get_complex_samples();
+    vector<complex<float>> get_replica_chirp();
 
     static L0Packet get_next_packet(ifstream& data);
     static vector<L0Packet> get_packets(ifstream& data, const int& num_packets = 0);

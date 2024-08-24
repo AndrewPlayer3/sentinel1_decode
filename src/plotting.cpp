@@ -96,6 +96,34 @@ void pulse_compression_command(char* argv[], unordered_map<string, bool>& option
 }
 
 
+void pulse_image_command(char* argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"swath", "filepath"};
+
+    validate_args("pulse_image", args, argv);
+
+    string swath    = string(argv[2]);
+    string filename = string(argv[3]);
+    string scaling  = parse_scaling_mode(options);
+
+    plot_pulse_image(filename, swath, scaling);
+}
+
+
+void pulse_compressed_image_command(char* argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"swath", "filepath"};
+
+    validate_args("pulse_compressed_image", args, argv);
+
+    string swath    = string(argv[2]);
+    string filename = string(argv[3]);
+    string scaling  = parse_scaling_mode(options);
+
+    plot_pulse_compressed_image(filename, swath, scaling);
+}
+
+
 void fft_axis_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "axis", "fft_size", "filepath"};
@@ -146,6 +174,21 @@ void fft_command(char *argv[], unordered_map<string, bool>& options)
 }
 
 
+void burst_command(char *argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"swath", "burst_num", "filepath"};
+
+    validate_args("burst", args, argv, 2);
+
+    string filepath  = string(argv[4]);
+    string swath     = string(argv[2]);
+    int    burst_num = stoi(argv[3]); 
+    string scaling   = parse_scaling_mode(options);
+
+    plot_burst(filepath, swath, burst_num, scaling);
+}
+
+
 void swath_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "filepath"};
@@ -188,6 +231,7 @@ int main(int argc, char* argv[])
     vector<string> help_strings = {
         "complex_samples [packet_index] [mode] [path]",
         "swath [swath] [path]",
+        "burst [swath] [burst_num] [path]",
         "fft [packet_index] [fft_size] [path] [--inverse]",
         "fft2 [swath] [path] [fft_rows] [fft_cols] [--inverse]",
         "fft_axis [swath] [axis] [fft_size] [path] [--inverse]",
@@ -217,13 +261,16 @@ int main(int argc, char* argv[])
     };
     options = parse_options(options, argv, 2);
 
-    if      (command == "complex_samples")   complex_samples_command(&(argv[0]), options);
-    else if (command == "swath")             swath_command(&(argv[0]), options);
-    else if (command == "fft")               fft_command(&(argv[0]), options); 
-    else if (command == "fft2")              fft2_command(&(argv[0]), options);
-    else if (command == "fft_axis")          fft_axis_command(&(argv[0]), options);
-    else if (command == "pulse")             pulse_command(&(argv[0]), options);
-    else if (command == "pulse_compression") pulse_compression_command(&(argv[0]), options);
+    if      (command == "complex_samples")      complex_samples_command(&(argv[0]), options);
+    else if (command == "swath")                swath_command(&(argv[0]), options);
+    else if (command == "burst")                burst_command(&(argv[0]), options);
+    else if (command == "fft")                  fft_command(&(argv[0]), options); 
+    else if (command == "fft2")                 fft2_command(&(argv[0]), options);
+    else if (command == "fft_axis")             fft_axis_command(&(argv[0]), options);
+    else if (command == "pulse")                pulse_command(&(argv[0]), options);
+    else if (command == "pulse_compression")    pulse_compression_command(&(argv[0]), options);
+    else if (command == "pulse_img")            pulse_image_command(&(argv[0]), options);
+    else if (command == "pulse_compressed_img") pulse_compressed_image_command(&(argv[0]), options);
 
     else if (command == "help" or command == "--help" or command == "-h")
     {

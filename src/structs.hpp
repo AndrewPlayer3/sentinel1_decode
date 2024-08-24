@@ -1,7 +1,7 @@
 /*
 By: Andrew Player
 Name: structs.hpp
-Description: Some data structs/tables containing information necessary for decoding Level-0 Products.
+Description: Some data structs/tables and constants containing information necessary for decoding Level-0 Products.
              They are all from "SAR Space Packet Protocol Data Unit", which can be found at:
              https://sentinels.copernicus.eu/documents/247904/2142675/Sentinel-1-SAR-Space-Packet-Protocol-Data-Unit.pdf
              For additional information on Level-0 product decoding, see:
@@ -12,9 +12,15 @@ Description: Some data structs/tables containing information necessary for decod
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 using namespace std;
 
+
+const complex<float> I(0.0f, 1.0f); 
+
+const float PI             = 3.14159235;
+const float SPEED_OF_LIGHT = 299792458.0;
 
 const double F_REF = 37.53472224;
 
@@ -279,7 +285,7 @@ const unordered_map<int, int> BAQ_MODE_TO_THIDX = {{3, 3}, {4, 7}, {5, 15}};
 const vector<u_int16_t> BRC_TO_THIDX = {3, 3, 5, 6, 8};
 
 // Figures 4-7 -> 4-11 from Pages 71 -> 73
-const vector<vector<vector<double>>> SIMPLE_RECONSTRUCTION_METHOD = {
+const vector<vector<vector<double>>> SIMPLE_RECONSTRUCTION = {
     {   // Values for BAQ Compressed Data ***
         { 3.0000,  3.0000,  3.1200,  3.5500,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
         { 7.0000,  7.0000,  7.0000,  7.1700,  7.4000,  7.7600,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
@@ -302,7 +308,7 @@ const unordered_map<int, int> BAQ_MODE_TO_M_CODE = {{3, 3}, {4, 5}, {5, 10}};
 const vector<int> BRC_TO_M_CODE = {3, 4, 6, 9, 15};
 
 // Table 5.2-2 from Page 79
-const vector<vector<vector<double>>> NORMALIZED_RECONSTRUCTION_LEVELS = {
+const vector<vector<vector<double>>> NORMALIZED_RECONSTRUCTION = {
     {   // Values for BAQ Compressed Data ***
         {0.2490, 0.7680, 1.3655, 2.1864, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
         {0.1290, 0.3900, 0.6601, 0.9471, 1.2623, 1.6261, 2.0793, 2.7467, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
@@ -319,7 +325,7 @@ const vector<vector<vector<double>>> NORMALIZED_RECONSTRUCTION_LEVELS = {
 
 
 // Table 5.2-3 from Page 80
-const vector<double> THIDX_TO_SF_ARRAY = {
+const vector<double> THIDX_TO_SF = {
       0.00,   0.63,   1.25,   1.88,   2.51,   3.13,   3.76,   4.39,   5.01,   5.64,   6.27,   6.89,   7.52,   8.15,   8.77,   9.40,  10.03,
      10.65,  11.28,  11.91,  12.53,  13.16,  13.79,  14.41,  15.04,  15.67,  16.29,  16.92,  17.55,  18.17,  18.80,  19.43,  20.06,  20.68,
      21.31,  21.93,  22.56,  23.19,  23.81,  24.44,  25.06,  25.69,  26.32,  26.94,  27.57,  28.20,  28.83,  29.45,  30.08,  30.71,  31.33,

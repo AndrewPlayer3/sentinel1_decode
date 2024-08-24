@@ -12,8 +12,12 @@ Description: Functions for evaluating the performance of packet decoding.
 
 
 /* Returns the time in seconds that it takes to decode the complex samples of num_packets packets */
-double time_packet_generation(const string& filename, const int& num_packets, const bool& log, const int& log_interval)
-{
+double time_packet_generation(
+    const string& filename, 
+    const int&    num_packets, 
+    const bool&   log, 
+    const int&    log_interval
+) {
     ifstream data = open_file(filename);
 
     double total_runtime = 0.0;
@@ -48,10 +52,7 @@ double time_packet_generation(const string& filename, const int& num_packets, co
             cout << "Caught runtime error while decoding packet #" << i << endl;
             continue;
         }
-        catch(length_error)
-        {
-            break;
-        }
+        catch(length_error) { break; }
     }
     if (log) cout << "Decoded " << num_packets << " packets in " << total_runtime << "s." << endl;
 
@@ -74,7 +75,6 @@ void omp_test(const string& filename)
     {
         complex_samples[i] = packets[i].get_complex_samples();
     }
-
     chrono::duration<double> difference = chrono::high_resolution_clock::now() - start;
 
     cout << "Decoded " << num_packets << " packets in " << difference.count() << "s." << endl;
@@ -120,12 +120,10 @@ void thread_test(const string& filename)
             end_index
         );
     }
-
     for (thread& thread : threads)
     {
         if (thread.joinable()) thread.join();
     }
-
     chrono::duration<double> difference = chrono::high_resolution_clock::now() - start;
 
     cout << "Decoded " << num_packets << " packets in " << difference.count() << "s." << endl;

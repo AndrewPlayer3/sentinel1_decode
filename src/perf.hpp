@@ -15,7 +15,12 @@ Description: Functions for evaluating the performance of packet decoding.
 #include "packet.hpp"
 
 
-double time_packet_generation(const string& filename, const int& num_packets, const bool& log, const int& log_interval);
+double time_packet_generation(
+    const string& filename,
+    const int&    num_packets,
+    const bool&   log,
+    const int&    log_interval
+);
 
 void omp_test(const string& filename);
 
