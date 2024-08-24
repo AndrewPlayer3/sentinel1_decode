@@ -354,12 +354,58 @@ void plot_range_compressed_burst(
         pulse_compressed[i] = pulse_compression(complex_samples[i], replica_chirps[i]);
     }
 
-    // vector<vector<complex<float>>> azimuth = compute_axis_dft(pulse_compressed, 0, 0, false);
+    auto compression_end = chrono::high_resolution_clock::now();
 
-    // Not proper yet, just for interesting visualization.
-    // vector<vector<complex<float>>> azimuth = compute_2d_dft(pulse_compressed, true, 0, 0);
+    chrono::duration<float> compression_time = compression_end - compression_start;
 
-    // azimuth = compute_axis_dft(azimuth, 0, 0, false);
+    cout << "Pulse compression completed in " << compression_time.count() << endl;
+
+    plot_complex_image(pulse_compressed, scaling_mode);
+}
+
+
+void plot_range_compressed_swath(
+    const string& filename,
+    const string& swath,
+    const string& scaling_mode
+) {
+
+    vector<L0Packet> packets = L0Packet::get_packets_in_swath(filename, swath);
+
+    int num_packets = packets.size();
+
+    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
+
+    vector<vector<complex<float>>> complex_samples(num_packets);
+    vector<vector<complex<float>>> replica_chirps(num_packets);
+
+    cout << "Decoding Complex Samples and Replica Chirps" << endl;
+
+    auto decoding_start = chrono::high_resolution_clock::now();
+
+    #pragma omp parallel for
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = packets[i];
+        complex_samples[i] = packet.get_complex_samples();
+        replica_chirps[i] = packet.get_replica_chirp();
+    }
+
+    auto decoding_end = chrono::high_resolution_clock::now();
+
+    chrono::duration<float> decode_time = decoding_end - decoding_start;
+
+    cout << "Decoded " << complex_samples.size() << " complex sample vectors, and " 
+         << replica_chirps.size() << " replica chirps, in " << decode_time.count() << "s" << endl;
+
+    vector<vector<complex<float>>> pulse_compressed(num_packets);
+
+    auto compression_start = chrono::high_resolution_clock::now();
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        pulse_compressed[i] = pulse_compression(complex_samples[i], replica_chirps[i]);
+    }
 
     auto compression_end = chrono::high_resolution_clock::now();
 

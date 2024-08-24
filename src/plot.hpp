@@ -40,6 +40,12 @@ void plot_range_compressed_burst(
     const string& scaling_mode
 );
 
+void plot_range_compressed_swath(
+    const string& filename,
+    const string& swath,
+    const string& scaling_mode
+);
+
 void plot_burst(
     const string& filename,
     const string& swath,
