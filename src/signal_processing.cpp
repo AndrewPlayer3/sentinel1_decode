@@ -3,6 +3,18 @@
 using namespace std;
 
 
+vector<complex<float>> conjugate(const vector<complex<float>>& complex_samples)
+{
+    vector<complex<float>> complex_conj(complex_samples.size());
+
+    for (int i = 0; i < complex_samples.size(); i++)
+    {
+        complex_conj[i] = complex_samples[i].real() - complex_samples[i].imag();
+    }
+    return complex_conj;
+}   
+
+
 vector<float> hanning_window(const int& num_samples)
 {
     vector<float> window(num_samples);
@@ -191,8 +203,6 @@ vector<complex<float>> compute_1d_dft(
     vector<complex<float>> fft_vector = signal;
 
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
-
-    cout << "Executing 1D DFT Plan" << endl;
 
     fftwf_plan plan = fftwf_plan_dft_1d(
         fft_size,

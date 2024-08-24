@@ -11,6 +11,8 @@
 using namespace std;
 
 
+vector<complex<float>> conjugate(const vector<complex<float>>& complex_samples);
+
 vector<float> hanning_window(const int& num_samples);
 
 void apply_hanning_window_in_place(
