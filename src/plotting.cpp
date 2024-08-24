@@ -174,6 +174,21 @@ void fft_command(char *argv[], unordered_map<string, bool>& options)
 }
 
 
+void burst_command(char *argv[], unordered_map<string, bool>& options)
+{
+    vector<string> args = {"swath", "burst_num", "filepath"};
+
+    validate_args("burst", args, argv, 2);
+
+    string filepath  = string(argv[4]);
+    string swath     = string(argv[2]);
+    int    burst_num = stoi(argv[3]); 
+    string scaling   = parse_scaling_mode(options);
+
+    plot_burst(filepath, swath, burst_num, scaling);
+}
+
+
 void swath_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "filepath"};
@@ -216,6 +231,7 @@ int main(int argc, char* argv[])
     vector<string> help_strings = {
         "complex_samples [packet_index] [mode] [path]",
         "swath [swath] [path]",
+        "burst [swath] [burst_num] [path]",
         "fft [packet_index] [fft_size] [path] [--inverse]",
         "fft2 [swath] [path] [fft_rows] [fft_cols] [--inverse]",
         "fft_axis [swath] [axis] [fft_size] [path] [--inverse]",
@@ -247,6 +263,7 @@ int main(int argc, char* argv[])
 
     if      (command == "complex_samples")      complex_samples_command(&(argv[0]), options);
     else if (command == "swath")                swath_command(&(argv[0]), options);
+    else if (command == "burst")                burst_command(&(argv[0]), options);
     else if (command == "fft")                  fft_command(&(argv[0]), options); 
     else if (command == "fft2")                 fft2_command(&(argv[0]), options);
     else if (command == "fft_axis")             fft_axis_command(&(argv[0]), options);

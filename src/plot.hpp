@@ -1,3 +1,5 @@
+#include <set>
+
 #include "packet.hpp"
 #include "signal_processing.hpp"
 
@@ -33,6 +35,13 @@ void plot_pulse_image(
 void plot_pulse_compressed_image(
     const string& filename,
     const string& swath,
+    const string& scaling_mode
+);
+
+void plot_burst(
+    const string& filename,
+    const string& swath,
+    const int&    burst_num,
     const string& scaling_mode
 );
 

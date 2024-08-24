@@ -3,6 +3,66 @@
 using namespace std;
 
 
+
+vector<vector<complex<float>>> decode_bursts(const string& filename, const string& swath, const int& burst_num)
+{
+    cout << "Parsing Packets" << endl;
+    
+    ifstream data = open_file(filename);
+
+    vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
+
+    int num_packets = packets.size();
+
+    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
+
+    vector<L0Packet> burst_packets;
+
+    set<int> burst_nums;
+
+    for (L0Packet& packet : packets)
+    {
+        if (packet.get_data_format() == 'D')
+        {
+            int packet_burst_num = packet.secondary_header("azimuth_beam_address") / 100;
+            burst_nums.emplace(packet_burst_num);
+            if (packet_burst_num == burst_num)
+            {
+                burst_packets.push_back(packet);
+            }
+        }
+    }
+    num_packets = burst_packets.size();
+
+    if (num_packets == 0)
+    {
+        cout << "No packets found for burst #" << burst_num << endl;
+        cout << "Available burst numbers are: " << endl;
+        for (int num : burst_nums) cout << num << endl;
+        exit(0);
+    }
+
+    cout << "Decoding " << num_packets << " Complex Samples for Burst #" << burst_num << endl;
+
+    vector<vector<complex<float>>> complex_samples(num_packets);
+
+    #pragma omp parallel for
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = burst_packets[i];
+        complex_samples[i] = packet.get_complex_samples();
+    }
+
+    if (complex_samples.size() < 1)
+    {
+        throw runtime_error("No samples found for swath " + swath);
+    }
+
+    return complex_samples;
+}
+
+
+
 vector<vector<complex<float>>> decode_swath(const string& filename, const string& swath)
 {
     cout << "Parsing Packets" << endl;
@@ -246,7 +306,6 @@ void plot_pulse_compressed_image(
 
     auto compression_start = chrono::high_resolution_clock::now();
 
-    #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
         pulse_compressed[i] = pulse_compression(complex_samples[i], replica_chirps[i]);
@@ -352,6 +411,18 @@ void plot_fft_axis(
     cout << "Output Rows: " << out_rows  << " Output Cols: " << out_cols << endl;
 
     plot_complex_image(complex_samples_fft, scaling_mode);
+}
+
+
+void plot_burst(
+    const string& filename,
+    const string& swath,
+    const int&    burst_num,
+    const string& scaling_mode
+) {
+    vector<vector<complex<float>>> complex_samples = decode_bursts(filename, swath, burst_num);
+
+    plot_complex_image(complex_samples, scaling_mode);
 }
 
 
