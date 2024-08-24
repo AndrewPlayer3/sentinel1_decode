@@ -98,63 +98,67 @@ void pulse_compression_command(char* argv[], unordered_map<string, bool>& option
 
 void pulse_image_command(char* argv[], unordered_map<string, bool>& options)
 {
-    vector<string> args = {"swath", "filepath"};
+    vector<string> args = {"swath", "burst_num", "filepath"};
 
     validate_args("pulse_image", args, argv);
 
-    string swath    = string(argv[2]);
-    string filename = string(argv[3]);
-    string scaling  = parse_scaling_mode(options);
+    string swath     = string(argv[2]);
+    int    burst_num = stoi(argv[3]);
+    string filename  = string(argv[4]);
+    string scaling   = parse_scaling_mode(options);
 
-    plot_pulse_image(filename, swath, scaling);
+    plot_pulse_image(filename, swath, burst_num, scaling);
 }
 
 
 void pulse_compressed_image_command(char* argv[], unordered_map<string, bool>& options)
 {
-    vector<string> args = {"swath", "filepath"};
+    vector<string> args = {"swath", "burst_num", "filepath"};
 
     validate_args("pulse_compressed_image", args, argv);
 
-    string swath    = string(argv[2]);
-    string filename = string(argv[3]);
-    string scaling  = parse_scaling_mode(options);
+    string swath     = string(argv[2]);
+    int    burst_num = stoi(argv[3]);
+    string filename  = string(argv[4]);
+    string scaling   = parse_scaling_mode(options);
 
-    plot_pulse_compressed_image(filename, swath, scaling);
+    plot_pulse_compressed_image(filename, swath, burst_num, scaling);
 }
 
 
 void fft_axis_command(char *argv[], unordered_map<string, bool>& options)
 {
-    vector<string> args = {"swath", "axis", "fft_size", "filepath"};
+    vector<string> args = {"swath", "burst_num", "axis", "fft_size", "filepath"};
 
     validate_args("fft_axis", args, argv);
 
     string swath    = string(argv[2]);
-    int    axis     = stoi(argv[3]);
-    int    fft_size = stoi(argv[4]);
-    string filepath = string(argv[5]);
+    int    burst_num = stoi(argv[3]);
+    int    axis     = stoi(argv[4]);
+    int    fft_size = stoi(argv[5]);
+    string filepath = string(argv[6]);
     bool   inverse  = options["--inverse"];
     string scaling  = parse_scaling_mode(options);
 
-    plot_fft_axis(filepath, swath, axis, fft_size, inverse, scaling);
+    plot_fft_axis(filepath, swath, burst_num, axis, fft_size, inverse, scaling);
 }
 
 
 void fft2_command(char *argv[], unordered_map<string, bool>& options)
 {
-    vector<string> args = {"swath", "fft_rows", "fft_cols", "filepath"};
+    vector<string> args = {"swath", "burst_num", "fft_rows", "fft_cols", "filepath"};
 
     validate_args("fft2", args, argv);
 
     string swath    = string(argv[2]);
-    int    fft_rows = stoi(argv[3]);
-    int    fft_cols = stoi(argv[4]);
-    string filepath = string(argv[5]);
+    int    burst_num = stoi(argv[3]);
+    int    fft_rows = stoi(argv[4]);
+    int    fft_cols = stoi(argv[5]);
+    string filepath = string(argv[6]);
     bool   inverse  = options["--inverse"];
     string scaling  = parse_scaling_mode(options);
 
-    plot_fft2d(filepath, swath, fft_rows, fft_cols, inverse, scaling);
+    plot_fft2d(filepath, swath, burst_num, fft_rows, fft_cols, inverse, scaling);
 }
 
 
@@ -233,8 +237,8 @@ int main(int argc, char* argv[])
         "swath [swath] [path]",
         "burst [swath] [burst_num] [path]",
         "fft [packet_index] [fft_size] [path] [--inverse]",
-        "fft2 [swath] [path] [fft_rows] [fft_cols] [--inverse]",
-        "fft_axis [swath] [axis] [fft_size] [path] [--inverse]",
+        "fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]",
+        "fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]",
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 

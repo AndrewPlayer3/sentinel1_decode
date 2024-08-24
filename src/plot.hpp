@@ -29,12 +29,14 @@ void plot_pulse_compression(
 void plot_pulse_image(
     const string& filename,
     const string& swath,
+    const int&    burst_num,
     const string& scaling_mode
 );
 
 void plot_pulse_compressed_image(
     const string& filename,
     const string& swath,
+    const int&    burst_num,
     const string& scaling_mode
 );
 
@@ -67,6 +69,7 @@ void plot_complex_image(
 void plot_fft2d(
     const string& filename,
     const string& swath,
+    const int&    burst_num,
           int     fft_rows,
           int     fft_cols,
     const bool&   inverse,
@@ -76,6 +79,7 @@ void plot_fft2d(
 void plot_fft_axis(
     const string& filename,
     const string& swath,
+    const int&    burst_num,
     const int&    axis,
           int     fft_size,
     const bool&   inverse,
