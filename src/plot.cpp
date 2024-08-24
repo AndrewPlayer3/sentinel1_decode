@@ -16,23 +16,35 @@ vector<vector<complex<float>>> decode_bursts(const string& filename, const strin
 
     cout << "Found " << num_packets << " packets in " << swath << "." << endl;
 
+    vector<vector<L0Packet>> bursts; 
     vector<L0Packet> burst_packets;
-
     set<int> burst_nums;
+    int previous_az = 0;
+    int num_bursts = 0;
 
-    for (L0Packet& packet : packets)
+    for (int i = 0; i < num_packets; i++)
     {
+        L0Packet packet = packets[i];
         if (packet.get_data_format() == 'D')
         {
-            int packet_burst_num = packet.secondary_header("azimuth_beam_address") / 100;
-            burst_nums.emplace(packet_burst_num);
-            if (packet_burst_num == burst_num)
+            int az = packet.secondary_header("azimuth_beam_address");
+            if (i == 0) previous_az = az;
+            if (az != previous_az and az != previous_az + 1)
             {
-                burst_packets.push_back(packet);
+                bursts.push_back(burst_packets);
+                burst_packets = vector<L0Packet>();
+                burst_nums.emplace(num_bursts++);
             }
+            burst_packets.push_back(packet);
+            previous_az = az;
         }
     }
-    num_packets = burst_packets.size();
+
+    cout << bursts.size() << endl;
+
+    vector<L0Packet> burst = bursts[burst_num];
+
+    num_packets = burst.size();
 
     if (num_packets == 0)
     {
@@ -49,7 +61,7 @@ vector<vector<complex<float>>> decode_bursts(const string& filename, const strin
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
-        L0Packet packet = burst_packets[i];
+        L0Packet packet = burst[i];
         complex_samples[i] = packet.get_complex_samples();
     }
 
