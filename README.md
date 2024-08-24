@@ -187,7 +187,7 @@ $ bin/plot pulse_compressed_img [swath] [burst_number] [path] [--norm_log|--norm
 $ bin/plot pulse_compressed_img IW2 0 data/sample/sample.dat --norm
 ```
 ![range_compression_example](imgs/range_compression_zoomed.png)
-*zoomed in*
+*not proper pulse compression yet, just looks interesting - zoomed in*
 ## Requirements
 
 The library code does not have any external requirements.
