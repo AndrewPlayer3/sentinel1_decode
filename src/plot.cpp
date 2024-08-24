@@ -176,19 +176,20 @@ void plot_pulse(
 vector<complex<float>> process_replica(const vector<complex<float>> replica_chirp)
 {
     int num_samples = replica_chirp.size();
-    vector<complex<float>> replica_chirp_fft   = compute_1d_dft(replica_chirp, 0, false);
+    vector<complex<float>> replica_chirp_fft   = replica_chirp;// compute_1d_dft(replica_chirp, 0, false);
     vector<complex<float>> replica_chirp_conj = conjugate(replica_chirp_fft);
     vector<complex<float>> weighted_replica = replica_chirp_conj;
     vector<float> norm = magnitude_1d(weighted_replica);
-    vector<float> energy(num_samples);
+    float energy = 0.0;
     for (int i = 0; i < num_samples; i++)
     {
-        energy[i] = norm[i] * norm[i];
+        energy += (norm[i] * norm[i]);
     }
+    energy /= norm.size();
     vector<complex<float>> replica_out(num_samples);
     for (int i = 0; i < num_samples; i++)
     {
-        replica_out[i] = weighted_replica[i];
+        replica_out[i] = weighted_replica[i] / energy;
     }
     return replica_out;
 }
@@ -343,8 +344,12 @@ void plot_pulse_compressed_image(
         pulse_compressed[i] = pulse_compression(complex_samples[i], replica_chirps[i]);
     }
 
+    // vector<vector<complex<float>>> azimuth = compute_axis_dft(pulse_compressed, 0, 0, false);
+
     // Not proper yet, just for interesting visualization.
-    vector<vector<complex<float>>> azimuth = compute_2d_dft(pulse_compressed, true, 0, 0);
+    // vector<vector<complex<float>>> azimuth = compute_2d_dft(pulse_compressed, true, 0, 0);
+
+    // azimuth = compute_axis_dft(azimuth, 0, 0, false);
 
     auto compression_end = chrono::high_resolution_clock::now();
 
@@ -352,7 +357,7 @@ void plot_pulse_compressed_image(
 
     cout << "Pulse compression completed in " << compression_time.count() << endl;
 
-    plot_complex_image(azimuth, scaling_mode);
+    plot_complex_image(pulse_compressed, scaling_mode);
 }
 
 
