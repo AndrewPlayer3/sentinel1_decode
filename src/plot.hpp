@@ -33,7 +33,7 @@ void plot_pulse_image(
     const string& scaling_mode
 );
 
-void plot_pulse_compressed_image(
+void plot_range_compressed_burst(
     const string& filename,
     const string& swath,
     const int&    burst_num,

@@ -173,13 +173,12 @@ void plot_pulse(
 }
 
 
-vector<complex<float>> process_replica(const vector<complex<float>> replica_chirp)
+vector<complex<float>> process_replica(const vector<complex<float>>& replica_chirp)
 {
     int num_samples = replica_chirp.size();
-    vector<complex<float>> replica_chirp_fft   = replica_chirp;// compute_1d_dft(replica_chirp, 0, false);
-    vector<complex<float>> replica_chirp_conj = conjugate(replica_chirp_fft);
-    vector<complex<float>> weighted_replica = replica_chirp_conj;
-    vector<float> norm = magnitude_1d(weighted_replica);
+    vector<complex<float>> replica_chirp_conj = conjugate(replica_chirp);
+    vector<complex<float>> weighted_chirp = apply_hanning_window(replica_chirp_conj);
+    vector<float> norm = magnitude_1d(weighted_chirp);
     float energy = 0.0;
     for (int i = 0; i < num_samples; i++)
     {
@@ -189,7 +188,7 @@ vector<complex<float>> process_replica(const vector<complex<float>> replica_chir
     vector<complex<float>> replica_out(num_samples);
     for (int i = 0; i < num_samples; i++)
     {
-        replica_out[i] = weighted_replica[i] / energy;
+        replica_out[i] = weighted_chirp[i] / energy;
     }
     return replica_out;
 }
@@ -199,19 +198,30 @@ vector<complex<float>> pulse_compression(
     const vector<complex<float>>& complex_samples,
     const vector<complex<float>>& replica_chirp
 ) {
-    vector<complex<float>> pulse_compressed(complex_samples.size());
+    int num_samples     = complex_samples.size();
+    int replica_samples = replica_chirp.size();
 
-    int num_samples = complex_samples.size();
+    vector<complex<float>> pulse_compressed(num_samples);
 
     vector<complex<float>> complex_samples_fft = compute_1d_dft(complex_samples,  0, false);
     vector<complex<float>> reference = process_replica(replica_chirp);
 
+    vector<complex<float>> chirp(num_samples);
+
     for (int i = 0; i < num_samples; i++)
     {
-        pulse_compressed[i] = complex_samples_fft[i] * reference[i];
+        if (i < replica_samples) chirp[i] = reference[i];
+        else                     chirp[i] = 0.0;
+    }
+
+    chirp = compute_1d_dft(chirp,  0, false);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        pulse_compressed[i] = complex_samples_fft[i] * chirp[i];
     }    
 
-    return compute_1d_dft(pulse_compressed, 0, true);
+    return compute_1d_dft(pulse_compressed, num_samples, true);
 }
 
 
@@ -294,7 +304,7 @@ void plot_pulse_image(
 
 
 
-void plot_pulse_compressed_image(
+void plot_range_compressed_burst(
     const string& filename,
     const string& swath,
     const int&    burst_num,

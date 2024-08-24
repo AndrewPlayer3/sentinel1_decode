@@ -5,9 +5,11 @@ using namespace std;
 
 vector<complex<float>> conjugate(const vector<complex<float>>& complex_samples)
 {
-    vector<complex<float>> complex_conj(complex_samples.size());
+    int num_samples = complex_samples.size();
 
-    for (int i = 0; i < complex_samples.size(); i++)
+    vector<complex<float>> complex_conj(num_samples);
+
+    for (int i = 0; i < num_samples; i++)
     {
         complex_conj[i] = complex_samples[i].real() - complex_samples[i].imag();
     }

@@ -181,13 +181,14 @@ $ bin/plot swath IW3 data/sample/sample.dat --norm
 ```
 ![plot_swath_example](imgs/iw3_swath.png)
 ```bash
-$ bin/plot pulse_compressed_img [swath] [burst_number] [path] [--norm_log|--norm|--mag|--real|--imag]
+$ bin/plot range_compressed_burst [swath] [burst_number] [path] [--norm_log|--norm|--mag|--real|--imag]
 ```
 ```bash
-$ bin/plot pulse_compressed_img IW2 0 data/sample/sample.dat --norm
+$ bin/plot range_compressed_burst IW1 2 data/sample/sample.dat --norm
 ```
+![range_compression_example](imgs/range_compressed.png)
+*just a nice looking image*
 ![range_compression_example](imgs/range_compression_zoomed.png)
-*not proper pulse compression yet, just looks interesting - zoomed in*
 ## Requirements
 
 The library code does not have any external requirements.
