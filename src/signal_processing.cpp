@@ -186,8 +186,6 @@ vector<complex<float>> compute_1d_dft(
           int   fft_size = 0,
     const bool& inverse  = false
 ) {
-    cout << "Initializing 1D Complex Vector for FFTW" << endl;
-
     if (fft_size <= 0) fft_size = signal.size();
 
     vector<complex<float>> fft_vector = signal;
@@ -205,8 +203,6 @@ vector<complex<float>> compute_1d_dft(
     );
 
     fftwf_execute(plan);
-
-    cout << "Destroying DFT Plan" << endl;
 
     fftwf_destroy_plan(plan);
 
