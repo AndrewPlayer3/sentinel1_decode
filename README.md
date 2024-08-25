@@ -6,6 +6,13 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
 
 *This code has been moved from my previous repo [sar_processing](https://github.com/andrewplayer3/sar_processing). That repo also contains a Python implementation of level-0 decoding that can be interacted with in Jupyter; although, it is much slower than this version.*
 
+## Current Results
+
+Ships outside of Shanghai (S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW): 
+![shanghai_ships](imgs/shanghai.png)
+Range Compression via `bin/plot range_compressed_burst IW2 ... --norm_log`:
+![shanghai_range_compression](imgs/shanghai_range_compression.png)
+
 ## Usage
 
 ### Compiling
@@ -15,6 +22,7 @@ Currently, there are two basic CLI utilities that can be built using `build.sh`.
  * bin/plot provides cli commands for plotting complex samples.
 
 Both of these CLI's currently exist for my testing purposes and functionality will be changing regularly. You may need to edit this with your include paths and/or preferred compiler.
+
 
 ### Commands
 
