@@ -12,12 +12,12 @@ Description: Some data structs/tables and constants containing information neces
 
 #include <vector>
 #include <string>
+#include <complex>
 #include <unordered_map>
 
-using namespace std;
+#include "misc_types.h"
 
-
-const complex<float> I(0.0f, 1.0f); 
+const std::complex<float> I(0.0f, 1.0f); 
 
 const float PI             = 3.14159235;
 const float SPEED_OF_LIGHT = 299792458.0;
@@ -30,7 +30,7 @@ const u_int8_t WORD_SIZE             = 16;
 
 
 // Table 2.4-1 from Page 13
-const vector<int> PRIMARY_HEADER = {
+const INT_VEC_1D PRIMARY_HEADER = {
     3,   // Packet Version Number
     1,   // Packet Type
     1,   // Secondary Header Flag
@@ -43,7 +43,7 @@ const vector<int> PRIMARY_HEADER = {
 
 
 // Table 2.4-1 from Page 13
-const vector<string> PRIMARY_HEADER_FIELDS = {
+const STRING_VEC_1D PRIMARY_HEADER_FIELDS = {
     "packet_version_number",
     "packet_type",
     "secondary_header_flag",
@@ -56,7 +56,7 @@ const vector<string> PRIMARY_HEADER_FIELDS = {
 
 
 // Tables 3.2-1 -> 3.2-19 from Pages 15 -> 54
-const vector<int> SECONDARY_HEADER = {
+const INT_VEC_1D SECONDARY_HEADER = {
     32,  // Coarse Time
     16,  // Fine Time
     32,  // Sync Marker
@@ -107,7 +107,7 @@ const vector<int> SECONDARY_HEADER = {
 
 
 // Tables 3.2-1 -> 3.2-19 from Pages 15 -> 54
-const vector<string> SECONDARY_HEADER_FIELDS = {
+const STRING_VEC_1D SECONDARY_HEADER_FIELDS = {
     "coarse_time",
     "fine_time",
     "sync_marker",
@@ -158,10 +158,10 @@ const vector<string> SECONDARY_HEADER_FIELDS = {
 
 
 // Figures 4-7 -> 4-11 from Pages 71 -> 73
-const vector<int> BRC_TO_HUFFMAN_START_BIT_LEN = {1, 1, 1, 2, 2};
+const INT_VEC_1D BRC_TO_HUFFMAN_START_BIT_LEN = {1, 1, 1, 2, 2};
 
 // Figures 4-7 -> 4-11 from Pages 71 -> 73
-const vector<unordered_map<u_int16_t, u_int8_t>> HUFFMAN_CODINGS = {
+const std::vector<std::unordered_map<u_int16_t, u_int8_t>> HUFFMAN_CODINGS = {
     {
         {0, 0},
         {2, 1},
@@ -218,7 +218,7 @@ const vector<unordered_map<u_int16_t, u_int8_t>> HUFFMAN_CODINGS = {
 
 
 // Figures 4-7 -> 4-11 from Pages 71 -> 73
-const vector<vector<unordered_map<u_int16_t, u_int8_t>>> HUFFMAN_CODINGS_WITH_LENGTH = {
+const std::vector<std::vector<std::unordered_map<u_int16_t, u_int8_t>>> HUFFMAN_CODINGS_WITH_LENGTH = {
     {
         {{0, 0}},
         {{2, 1}},
@@ -279,13 +279,13 @@ const vector<vector<unordered_map<u_int16_t, u_int8_t>>> HUFFMAN_CODINGS_WITH_LE
 
 
 // Table 5.2-1 from Page 78
-const unordered_map<int, int> BAQ_MODE_TO_THIDX = {{3, 3}, {4, 7}, {5, 15}};
+const std::unordered_map<int, int> BAQ_MODE_TO_THIDX = {{3, 3}, {4, 7}, {5, 15}};
 
 // Table 5.2-1 from Page 78
-const vector<u_int16_t> BRC_TO_THIDX = {3, 3, 5, 6, 8};
+const UINT16_VEC_1D BRC_TO_THIDX = {3, 3, 5, 6, 8};
 
 // Figures 4-7 -> 4-11 from Pages 71 -> 73
-const vector<vector<vector<double>>> SIMPLE_RECONSTRUCTION = {
+const std::vector<D_VEC_2D> SIMPLE_RECONSTRUCTION = {
     {   // Values for BAQ Compressed Data ***
         { 3.0000,  3.0000,  3.1200,  3.5500,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
         { 7.0000,  7.0000,  7.0000,  7.1700,  7.4000,  7.7600,  0.0000,  0.0000,  0.0000,  0.0000,  0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
@@ -302,13 +302,13 @@ const vector<vector<vector<double>>> SIMPLE_RECONSTRUCTION = {
 
 
 // Table 5.2-1 from Page 78
-const unordered_map<int, int> BAQ_MODE_TO_M_CODE = {{3, 3}, {4, 5}, {5, 10}};
+const std::unordered_map<int, int> BAQ_MODE_TO_M_CODE = {{3, 3}, {4, 5}, {5, 10}};
 
 // Table 5.2-2 from Page 79
-const vector<int> BRC_TO_M_CODE = {3, 4, 6, 9, 15};
+const INT_VEC_1D BRC_TO_M_CODE = {3, 4, 6, 9, 15};
 
 // Table 5.2-2 from Page 79
-const vector<vector<vector<double>>> NORMALIZED_RECONSTRUCTION = {
+const std::vector<D_VEC_2D> NORMALIZED_RECONSTRUCTION = {
     {   // Values for BAQ Compressed Data ***
         {0.2490, 0.7680, 1.3655, 2.1864, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
         {0.1290, 0.3900, 0.6601, 0.9471, 1.2623, 1.6261, 2.0793, 2.7467, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
@@ -325,7 +325,7 @@ const vector<vector<vector<double>>> NORMALIZED_RECONSTRUCTION = {
 
 
 // Table 5.2-3 from Page 80
-const vector<double> THIDX_TO_SF = {
+const D_VEC_1D THIDX_TO_SF = {
       0.00,   0.63,   1.25,   1.88,   2.51,   3.13,   3.76,   4.39,   5.01,   5.64,   6.27,   6.89,   7.52,   8.15,   8.77,   9.40,  10.03,
      10.65,  11.28,  11.91,  12.53,  13.16,  13.79,  14.41,  15.04,  15.67,  16.29,  16.92,  17.55,  18.17,  18.80,  19.43,  20.06,  20.68,
      21.31,  21.93,  22.56,  23.19,  23.81,  24.44,  25.06,  25.69,  26.32,  26.94,  27.57,  28.20,  28.83,  29.45,  30.08,  30.71,  31.33,
@@ -345,7 +345,7 @@ const vector<double> THIDX_TO_SF = {
 
 
 // Table 3.2-4 from Page 19
-const vector<string> ECC_CODE_TO_SENSOR_MODE = {
+const STRING_VEC_1D ECC_CODE_TO_SENSOR_MODE = {
     "contingency",
     "stripmap_1",
     "stripmap_2",
@@ -398,7 +398,7 @@ const vector<string> ECC_CODE_TO_SENSOR_MODE = {
 
 
 // Table 3.2-4 from Page 19
-const unordered_map<int, string> SWATH_NUM_TO_STRING = {
+const std::unordered_map<int, std::string> SWATH_NUM_TO_STRING = {
     {0, "S1"},
     {1, "S2"},
     {2, "S3"},
@@ -470,7 +470,7 @@ const unordered_map<int, string> SWATH_NUM_TO_STRING = {
 };
 
 
-const vector<float> RANGE_DECIMATION = {
+const F_VEC_1D RANGE_DECIMATION = {
     112.6041667,
     100.0925926,
     0.000000000,

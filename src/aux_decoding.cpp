@@ -8,30 +8,28 @@ Description: Funtions for reading packets, index info, and annotation info from 
              https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17
 */
 
-#include "aux_decoding.hpp"
-
-using namespace std;
+#include "aux_decoding.h"
 
 
-vector<unordered_map<string, u_int64_t>> index_decoder(const string& filename)
+std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(const std::string& filename)
 {
-    ifstream data = open_file(filename);
+    std::ifstream data = open_file(filename);
     return index_decoder(data);
 }
 
 
 /* Returns a vector of maps containing the index records */
-vector<unordered_map<string, u_int64_t>> index_decoder(ifstream& data)
+std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(std::ifstream& data)
 {
     int record_size = 36;
 
-    vector<unordered_map<string, u_int64_t>> index_records;
+    std::vector<std::unordered_map<std::string, u_int64_t>> index_records;
 
     while (!data.eof())
     {
-        vector<u_int8_t> record_bytes = read_bytes(data, record_size);
+        UINT8_VEC_1D record_bytes = read_bytes(data, record_size);
 
-        index_records.push_back(unordered_map<string, u_int64_t>({
+        index_records.push_back(std::unordered_map<std::string, u_int64_t>({
             {"date_time",     read_n_bits(record_bytes,   0, 64)},
             {"time_delta",    read_n_bits(record_bytes,  64, 64)},
             {"data_size",     read_n_bits(record_bytes, 128, 32)},
@@ -45,25 +43,25 @@ vector<unordered_map<string, u_int64_t>> index_decoder(ifstream& data)
 }
 
 
-vector<unordered_map<string, u_int64_t>> annotation_decoder(const string& filename)
+std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(const std::string& filename)
 {
-    ifstream data = open_file(filename);
+    std::ifstream data = open_file(filename);
     return annotation_decoder(data);
 }
 
 
 /* Returns a vector of maps containing the annotation records */
-vector<unordered_map<string, u_int64_t>> annotation_decoder(ifstream& data)
+std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(std::ifstream& data)
 {
     int record_size = 26;
 
-    vector<unordered_map<string, u_int64_t>> annotation_records;
+    std::vector<std::unordered_map<std::string, u_int64_t>> annotation_records;
 
     while (!data.eof())
     {
-        vector<u_int8_t> record_bytes = read_bytes(data, record_size);
+        UINT8_VEC_1D record_bytes = read_bytes(data, record_size);
 
-        annotation_records.push_back(unordered_map<string, u_int64_t>({
+        annotation_records.push_back(std::unordered_map<std::string, u_int64_t>({
             {"days_ul",             read_n_bits(record_bytes,   0, 16)},
             {"milliseconds_ul",     read_n_bits(record_bytes,  16, 32)},
             {"microseconds_ul",     read_n_bits(record_bytes,  48, 16)},

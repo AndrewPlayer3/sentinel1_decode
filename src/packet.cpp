@@ -8,7 +8,7 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
              https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17
 */
 
-#include "packet.hpp"
+#include "packet.h"
 
 
 /* Returns the length of the baq blocks in bytes */
@@ -80,7 +80,7 @@ char L0Packet::get_tx_polarization()
 
     if      (pol_code >= 0 && pol_code <= 3) return 'H';
     else if (pol_code >= 4 && pol_code <= 7) return 'V';
-    else throw runtime_error("The polarization code is invalid.");
+    else throw std::runtime_error("The polarization code is invalid.");
 }
 
 
@@ -91,36 +91,36 @@ char L0Packet::get_rx_polarization()
     {
         case 0: return 'V';
         case 1: return 'H';
-        default: throw runtime_error("The rx_channel_id is invalid.");
+        default: throw std::runtime_error("The rx_channel_id is invalid.");
     }
 }
 
 
 /* Returns the parity error status of the SES SSB message */
-string L0Packet::get_error_status()
+std::string L0Packet::get_error_status()
 {
     return _secondary_header.at("error_flag") == 0 ? "nominal" : "ssb_corrupt";
 }
 
 
 /* Returns the measurement, test, or rf characterization mode */
-string L0Packet::get_sensor_mode()
+std::string L0Packet::get_sensor_mode()
 {
     return ECC_CODE_TO_SENSOR_MODE[_secondary_header["ecc_number"]];
 }
 
 
 /* Returns the swath string representation */
-string L0Packet::get_swath()
+std::string L0Packet::get_swath()
 {
     return SWATH_NUM_TO_STRING.at(_secondary_header["swath_number"]);
 }
 
 
 /* Returns the type of baq compression */
-string L0Packet::get_baq_mode()
+std::string L0Packet::get_baq_mode()
 {
-    string baq_mode = unordered_map<int, string>({
+    std::string baq_mode = std::unordered_map<int, std::string>({
         {0,  "bypass_mode"},
         {3,  "3_bit_mode"},
         {4,  "4_bit_mode"},
@@ -135,9 +135,9 @@ string L0Packet::get_baq_mode()
 
 
 /* Returns the test mode, or measurement mode if not testing */
-string L0Packet::get_test_mode()
+std::string L0Packet::get_test_mode()
 {
-    string test_mode = unordered_map<int, string>({
+    std::string test_mode = std::unordered_map<int, std::string>({
         {0, "measurement_mode"},
         {1, "n_a"},
         {3, "n_a"},
@@ -149,16 +149,16 @@ string L0Packet::get_test_mode()
 
     if (test_mode == "")
     {
-        throw out_of_range("The test mode number is not in the range of valid values.");
+        throw std::out_of_range("The test mode number is not in the range of valid values.");
     }
     return test_mode;
 }
 
 
 /* Returns the type of signal that is being received */
-string L0Packet::get_signal_type()
+std::string L0Packet::get_signal_type()
 {
-    string signal_type = unordered_map<int, string>({
+    std::string signal_type = std::unordered_map<int, std::string>({
         {0,  "echo"},
         {1,  "noise"},
         {8,  "tx_cal"},
@@ -176,9 +176,9 @@ string L0Packet::get_signal_type()
 /* Prints the keys and values of the primary header */
 void L0Packet::print_primary_header() 
 {
-    for (string key : PRIMARY_HEADER_FIELDS) 
+    for (std::string key : PRIMARY_HEADER_FIELDS) 
     {
-        cout << key << ": " << _primary_header.at(key) << endl;
+        std::cout << key << ": " << _primary_header.at(key) << std::endl;
     }
 }
 
@@ -186,13 +186,13 @@ void L0Packet::print_primary_header()
 /* Prints the keys and values of the secondary header with no calculations applied */
 void L0Packet::print_secondary_header() 
 {
-    for (string key : SECONDARY_HEADER_FIELDS) 
+    for (std::string key : SECONDARY_HEADER_FIELDS) 
     {
         if (key.substr(0, 3) == "na_")
         {
             continue;
         }
-        cout << key << ": " << _secondary_header.at(key) << endl;
+        std::cout << key << ": " << _secondary_header.at(key) << std::endl;
     }
 }
 
@@ -200,13 +200,13 @@ void L0Packet::print_secondary_header()
 /* Prints information related to the operating modes */
 void L0Packet::print_modes()
 {
-    cout << "Data Format: "      << get_data_format()      << endl;
-    cout << "BAQ Mode: "         << get_baq_mode()         << endl;
-    cout << "BAQ Block Length: " << get_baq_block_length() << endl;
-    cout << "Test Mode: "        << get_test_mode()        << endl;
-    cout << "Sensor Mode: "      << get_sensor_mode()      << endl;
-    cout << "Signal Type: "      << get_signal_type()      << endl;
-    cout << "Error Status: "     << get_error_status()     << endl;
+    std::cout << "Data Format: "      << get_data_format()      << std::endl;
+    std::cout << "BAQ Mode: "         << get_baq_mode()         << std::endl;
+    std::cout << "BAQ Block Length: " << get_baq_block_length() << std::endl;
+    std::cout << "Test Mode: "        << get_test_mode()        << std::endl;
+    std::cout << "Sensor Mode: "      << get_sensor_mode()      << std::endl;
+    std::cout << "Signal Type: "      << get_signal_type()      << std::endl;
+    std::cout << "Error Status: "     << get_error_status()     << std::endl;
 }
 
 
@@ -216,35 +216,35 @@ void L0Packet::print_pulse_info()
     int range_decimation = _secondary_header["range_decimation"];
     int tx_pulse_number  = _secondary_header["tx_pulse_number"];
     
-    cout << "Swath: "                   << get_swath()           << endl;
-    cout << "RX Polarization: "         << get_rx_polarization() << endl;
-    cout << "TX Polarization: "         << get_tx_polarization() << endl;
-    cout << "Pulse Length: "            << get_pulse_length()    << endl;
-    cout << "TX Ramp Rate (TXPRR): "    << get_tx_ramp_rate()    << endl;
-    cout << "Start Frequency (TXPSF): " << get_start_frequency() << endl;
-    cout << "PRI: "                     << get_pri()             << endl;
-    cout << "SWL: "                     << get_swl()             << endl;
-    cout << "SWST: "                    << get_swst()            << endl;
-    cout << "RX Gain: "                 << get_rx_gain()         << endl;
-    cout << "Range Decimation: "        << range_decimation      << endl;
-    cout << "TX Pulse Number: "         << tx_pulse_number       << endl;
+    std::cout << "Swath: "                   << get_swath()           << std::endl;
+    std::cout << "RX Polarization: "         << get_rx_polarization() << std::endl;
+    std::cout << "TX Polarization: "         << get_tx_polarization() << std::endl;
+    std::cout << "Pulse Length: "            << get_pulse_length()    << std::endl;
+    std::cout << "TX Ramp Rate (TXPRR): "    << get_tx_ramp_rate()    << std::endl;
+    std::cout << "Start Frequency (TXPSF): " << get_start_frequency() << std::endl;
+    std::cout << "PRI: "                     << get_pri()             << std::endl;
+    std::cout << "SWL: "                     << get_swl()             << std::endl;
+    std::cout << "SWST: "                    << get_swst()            << std::endl;
+    std::cout << "RX Gain: "                 << get_rx_gain()         << std::endl;
+    std::cout << "Range Decimation: "        << range_decimation      << std::endl;
+    std::cout << "TX Pulse Number: "         << tx_pulse_number       << std::endl;
 }
 
 
 /* Sets the data format of the packet. The data format determines what type of decoding to do. */
 void L0Packet::_set_data_format() 
 {
-    unordered_set<int> type_c_modes = { 3,  4,  5};
-    unordered_set<int> type_d_modes = {12, 13, 14};
+    std::unordered_set<int> type_c_modes = { 3,  4,  5};
+    std::unordered_set<int> type_d_modes = {12, 13, 14};
 
     if (_baq_mode == 0) _test_mode % 3 == 0 ?  _data_format = 'A' : _data_format = 'B';
     else if (type_c_modes.contains(_baq_mode)) _data_format = 'C';
     else if (type_d_modes.contains(_baq_mode)) _data_format = 'D';
-    else throw out_of_range("BAQ Mode is invalid.");
+    else throw std::out_of_range("BAQ Mode is invalid.");
 }
 
 
-vector<complex<float>> L0Packet::get_replica_chirp()
+CF_VEC_1D L0Packet::get_replica_chirp()
 {
     if (!_signal_set_flag)
     {
@@ -264,8 +264,8 @@ vector<complex<float>> L0Packet::get_replica_chirp()
     float range_end   =  0.5 * txpl;
     float delta       = txpl / (num_samples - 1);
 
-    vector<float> time(num_samples);
-    vector<complex<float>> chirp(num_samples);
+    F_VEC_1D  time(num_samples);
+    CF_VEC_1D chirp(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -292,7 +292,7 @@ vector<complex<float>> L0Packet::get_replica_chirp()
 
 
 /* Returns the decoded complex sample data - only does the calculations the first time.  */
-vector<complex<float>> L0Packet::get_signal()
+CF_VEC_1D L0Packet::get_signal()
 {
     if (!_signal_set_flag)
     {
@@ -361,7 +361,7 @@ void L0Packet::_set_signal()
     _decode();
     _signal_set_flag = true;
 
-    vector<u_int8_t>().swap(_raw_user_data);
+    UINT8_VEC_1D().swap(_raw_user_data);
 }
 
 
@@ -383,7 +383,7 @@ int L0Packet::_get_next_word_boundary(const int& bit_index)
 /***********************************************************************/
 
 
-vector<complex<float>> L0Packet::_get_signal_types_a_and_b(
+CF_VEC_1D L0Packet::_get_signal_types_a_and_b(
     H_CODE& IE,
     H_CODE& IO,
     H_CODE& QE,
@@ -391,7 +391,7 @@ vector<complex<float>> L0Packet::_get_signal_types_a_and_b(
 ) {
     auto get_s_value = [](u_int8_t sign, u_int16_t m_code) {return pow(-1, sign) * m_code;};
 
-    vector<vector<double>> s_values;
+    D_VEC_2D s_values;
     s_values.reserve(_num_quads);
 
     for(int i = 0; i < _num_quads; i++)
@@ -403,15 +403,15 @@ vector<complex<float>> L0Packet::_get_signal_types_a_and_b(
             get_s_value(QO.signs[i], QO.m_codes[i])
         });
     }
-    vector<complex<float>> complex_samples;
+    CF_VEC_1D complex_samples;
     complex_samples.reserve(_num_quads*4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
-        vector<double> components = s_values[i-1];
+        D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(complex<float>(components[0], components[2]));
-        complex_samples.push_back(complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<float>(components[0], components[2]));
+        complex_samples.push_back(std::complex<float>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -458,7 +458,7 @@ double L0Packet::_get_s_values_type_c(
 
             if      (m_code <  flag) return pow(-1, sign) * double(m_code);
             else if (m_code == flag) return pow(-1, sign) * SIMPLE_RECONSTRUCTION[0][_baq_mode-3][threshold_index];
-            else throw runtime_error("Invalid m_code in s_value generation.");
+            else throw std::runtime_error("Invalid m_code in s_value generation.");
         }
         double sigma_factor              = THIDX_TO_SF[threshold_index];
         double norm_reconstruction_level = NORMALIZED_RECONSTRUCTION[0][_baq_mode - 3][m_code];
@@ -466,13 +466,13 @@ double L0Packet::_get_s_values_type_c(
 }
 
 
-vector<complex<float>> L0Packet::_get_signal_type_c(
+CF_VEC_1D L0Packet::_get_signal_type_c(
     QUAD& IE,
     QUAD& IO,
     QUAD& QE,
     QUAD& QO
 ) {
-    vector<vector<double>> s_values;
+    D_VEC_2D s_values;
     s_values.reserve(_num_quads);
 
     for (int block_id = 0; block_id < _num_baq_blocks; block_id++)
@@ -507,15 +507,15 @@ vector<complex<float>> L0Packet::_get_signal_type_c(
             });
         }
     }
-    vector<complex<float>> complex_samples;
+    CF_VEC_1D complex_samples;
     complex_samples.reserve(_num_quads*4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
-        vector<double> components = s_values[i-1];
+        D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(complex<float>(components[0], components[2]));
-        complex_samples.push_back(complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<float>(components[0], components[2]));
+        complex_samples.push_back(std::complex<float>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -559,7 +559,7 @@ void L0Packet::_set_quad_type_c(QUAD& component, int& bit_index)
             threshold = read_n_bits(_raw_user_data, bit_index, threshold_bits);
             if (threshold > 256)
             {
-                throw runtime_error("Threshold Index is invalid.");
+                throw std::runtime_error("Threshold Index is invalid.");
             }
             _thresholds.push_back(threshold);
             bit_index += threshold_bits;
@@ -591,20 +591,19 @@ double L0Packet::_get_s_values_type_d(
 
         if      (m_code <  flag) return pow(-1.0, sign) * m_code;
         else if (m_code == flag) return pow(-1.0, sign) * SIMPLE_RECONSTRUCTION[1][brc][threshold_index];
-        else throw runtime_error("MCode is greater than the comparison flag.");
+        else throw std::runtime_error("MCode is greater than the comparison flag.");
     }
     return pow(-1.0, sign) * NORMALIZED_RECONSTRUCTION[1][brc][m_code] * THIDX_TO_SF[threshold_index];
 }
 
 
-vector<complex<float>> L0Packet::_get_signal_type_d(
+CF_VEC_1D L0Packet::_get_signal_type_d(
     QUAD& IE,
     QUAD& IO,
     QUAD& QE,
     QUAD& QO
 ) {
-    vector<vector<double>> s_values;
-
+    D_VEC_2D s_values;
     s_values.reserve(_num_quads);
 
     for (int block_id = 0; block_id < _num_baq_blocks; block_id++)
@@ -640,16 +639,15 @@ vector<complex<float>> L0Packet::_get_signal_type_d(
             });
         }
     }
-    vector<complex<float>> complex_samples;
-
+    CF_VEC_1D complex_samples;
     complex_samples.reserve(_num_quads * 4);
 
     for (int i = 1; i <= _num_quads; i++)
     {
-        vector<double> components = s_values[i-1];
+        D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(complex<float>(components[0], components[2]));
-        complex_samples.push_back(complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<float>(components[0], components[2]));
+        complex_samples.push_back(std::complex<float>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -698,7 +696,7 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
             brc = read_n_bits(_raw_user_data, bit_index, brc_bits);
             if (brc > 4)
             {
-                throw runtime_error("BRC value is invalid.");
+                throw std::runtime_error("BRC value is invalid.");
             }
             _brc.push_back(brc);
             bit_index += brc_bits;
@@ -709,7 +707,7 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
     
             if (threshold > 256)
             {
-                throw runtime_error("Threshold Index is invalid.");
+                throw std::runtime_error("Threshold Index is invalid.");
             }
             _thresholds.push_back(threshold);
             bit_index += threshold_bits;
@@ -730,15 +728,15 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
 
 
 /* Returns the header dictionary with the values cast to integers with no calculations */
-unordered_map<string, int> L0Packet::_parse_header(
-    const vector<u_int8_t>&  bytes,
-    const vector<int>&       bit_lengths,
-    const vector<string>&    field_names
+std::unordered_map<std::string, int> L0Packet::_parse_header(
+    const UINT8_VEC_1D&  bytes,
+    const INT_VEC_1D&   bit_lengths,
+    const STRING_VEC_1D& field_names
 ) {
     int num_fields = field_names.size();
     int bit_index = 0;
 
-    unordered_map<string, int> header;
+    std::unordered_map<std::string, int> header;
 
     for (int i = 0; i < num_fields; i++) 
     {
@@ -751,18 +749,18 @@ unordered_map<string, int> L0Packet::_parse_header(
 
 
 /* Decode the next packet within the data stream */
-L0Packet L0Packet::get_next_packet(ifstream& data)
+L0Packet L0Packet::get_next_packet(std::ifstream& data)
 {
-    vector<u_int8_t> primary_bytes = read_bytes(data, 6);
-    unordered_map<string, int> primary_header = _parse_header(
+    UINT8_VEC_1D primary_bytes = read_bytes(data, 6);
+    std::unordered_map<std::string, int> primary_header = _parse_header(
         primary_bytes,
         PRIMARY_HEADER,
         PRIMARY_HEADER_FIELDS
     );
     if (data.eof()) return L0Packet();
 
-    vector<u_int8_t> secondary_bytes = read_bytes(data, 62);
-    unordered_map<string, int> secondary_header = _parse_header(
+    UINT8_VEC_1D secondary_bytes = read_bytes(data, 62);
+    std::unordered_map<std::string, int> secondary_header = _parse_header(
         secondary_bytes,
         SECONDARY_HEADER,
         SECONDARY_HEADER_FIELDS
@@ -771,7 +769,7 @@ L0Packet L0Packet::get_next_packet(ifstream& data)
     u_int32_t packet_length    = primary_header["packet_data_length"];
     u_int32_t user_data_length = packet_length + 1 - SECONDARY_HEADER_SIZE;
 
-    vector<u_int8_t> user_data = read_bytes(data, user_data_length);
+    UINT8_VEC_1D user_data = read_bytes(data, user_data_length);
 
     L0Packet packet = L0Packet(
         primary_header,
@@ -783,17 +781,17 @@ L0Packet L0Packet::get_next_packet(ifstream& data)
 
 
 /* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-vector<L0Packet> L0Packet::get_packets(const string& filename, const int& num_packets)
+std::vector<L0Packet> L0Packet::get_packets(const std::string& filename, const int& num_packets)
 {
-    ifstream data = open_file(filename);
+    std::ifstream data = open_file(filename);
     return get_packets(data);
 }
 
 
 /* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
+std::vector<L0Packet> L0Packet::get_packets(std::ifstream& data, const int& num_packets)
 {
-    vector<L0Packet> packets;
+    PACKET_VEC_1D packets;
 
     int index = 0;
 
@@ -809,10 +807,10 @@ vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
             else break;
             index += 1;
         }
-        catch(runtime_error)
+        catch(std::runtime_error)
         {
-            cout << "Caught a runtime error while decoding packet #"
-                 << index << ". Skipping..." << endl;
+            std::cout << "Caught a runtime error while decoding packet #"
+                 << index << ". Skipping..." << std::endl;
             continue;
         }
     }
@@ -821,17 +819,17 @@ vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
 
 
 /* Returns all packets that are inside of the provided swath */
-vector<L0Packet> L0Packet::get_packets_in_swath(const string& filename, const string& swath)
+std::vector<L0Packet> L0Packet::get_packets_in_swath(const std::string& filename, const std::string& swath)
 {
-    ifstream data = open_file(filename);
+    std::ifstream data = open_file(filename);
     return get_packets_in_swath(data, swath);
 }
 
 
 /* Returns all packets that are inside of the provided swath */
-vector<L0Packet> L0Packet::get_packets_in_swath(ifstream& data, const string& swath)
+std::vector<L0Packet> L0Packet::get_packets_in_swath(std::ifstream& data, const std::string& swath)
 {
-    vector<L0Packet> packets;
+    std::vector<L0Packet> packets;
 
     int index = 0;
 
@@ -845,17 +843,17 @@ vector<L0Packet> L0Packet::get_packets_in_swath(ifstream& data, const string& sw
             if (packet.get_swath() == swath) packets.push_back(packet);
             index += 1;
         }
-        catch(runtime_error)
+        catch(std::runtime_error)
         {
-            cout << "Caught a runtime error while decoding packet #" 
-                 << index << ". Skipping..." << endl;
+            std::cout << "Caught a runtime error while decoding packet #" 
+                 << index << ". Skipping..." << std::endl;
             continue;
         }
     }
 
     if (packets.size() == 0)
     {
-        throw runtime_error("No packets found for swath: " + swath);
+        throw std::runtime_error("No packets found for swath: " + swath);
     }
 
     return packets;
@@ -863,22 +861,22 @@ vector<L0Packet> L0Packet::get_packets_in_swath(ifstream& data, const string& sw
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-vector<vector<L0Packet>> L0Packet::get_packets_in_bursts(const string& filename, const string& swath)
+std::vector<std::vector<L0Packet>> L0Packet::get_packets_in_bursts(const std::string& filename, const std::string& swath)
 {
-    ifstream data = open_file(filename);
+    std::ifstream data = open_file(filename);
     return get_packets_in_bursts(data, swath);
 }
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-vector<vector<L0Packet>> L0Packet::get_packets_in_bursts(ifstream& data, const string& swath)
+std::vector<std::vector<L0Packet>> L0Packet::get_packets_in_bursts(std::ifstream& data, const std::string& swath)
 {
-    vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
+    std::vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
     int num_packets = packets.size();
 
-    vector<vector<L0Packet>> bursts; 
-    vector<L0Packet> burst_packets;
-    set<int> burst_nums;
+    std::vector<std::vector<L0Packet>> bursts; 
+    std::vector<L0Packet> burst_packets;
+    std::set<int> burst_nums;
     int previous_az = 0;
     int num_bursts = 0;
 
@@ -894,7 +892,7 @@ vector<vector<L0Packet>> L0Packet::get_packets_in_bursts(ifstream& data, const s
             if (az != previous_az and az != previous_az + 1)
             {
                 bursts.push_back(burst_packets);
-                burst_packets = vector<L0Packet>();
+                burst_packets = PACKET_VEC_1D();
                 burst_nums.emplace(num_bursts++);
             }
             burst_packets.push_back(packet);
@@ -908,11 +906,11 @@ vector<vector<L0Packet>> L0Packet::get_packets_in_bursts(ifstream& data, const s
 }
 
 
-vector<L0Packet> L0Packet::decode_packets(const vector<L0Packet>& packets)
+std::vector<L0Packet> L0Packet::decode_packets(const std::vector<L0Packet>& packets)
 {
     int num_packets = packets.size();
 
-    vector<L0Packet> packets_out(num_packets);
+    std::vector<L0Packet> packets_out(num_packets);
 
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
@@ -926,7 +924,7 @@ vector<L0Packet> L0Packet::decode_packets(const vector<L0Packet>& packets)
 }
 
 
-void L0Packet::decode_packets_in_place(vector<L0Packet>& packets)
+void L0Packet::decode_packets_in_place(std::vector<L0Packet>& packets)
 {
     int num_packets = packets.size();
     

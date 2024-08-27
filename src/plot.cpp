@@ -1,10 +1,9 @@
-#include "plot.hpp"
+#include "plot.h"
 
-using namespace std;
 
-vector<float> scale(const vector<complex<float>>& signal, const string& scaling_mode)
+F_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
 {
-    vector<float> samples(signal.size());
+    F_VEC_1D samples(signal.size());
 
     if      (scaling_mode == "norm_log") samples = norm_1d(signal, true);
     else if (scaling_mode == "norm"    ) samples = norm_1d(signal, false);
@@ -20,18 +19,18 @@ vector<float> scale(const vector<complex<float>>& signal, const string& scaling_
     }
     else
     {
-        throw invalid_argument(scaling_mode + " is not a valid scaling mode.");
+        throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
     }
     return samples;
 }
 
 
-vector<float> scale(const vector<vector<complex<float>>>& signal, const string& scaling_mode)
+F_VEC_1D scale(const CF_VEC_2D& signal, const std::string& scaling_mode)
 {
     int rows = signal.size();
     int cols = signal[0].size();
     
-    vector<float> samples(rows*cols);
+    F_VEC_1D samples(rows*cols);
 
     if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
     else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));
@@ -51,21 +50,15 @@ vector<float> scale(const vector<vector<complex<float>>>& signal, const string& 
     }
     else
     {
-        throw invalid_argument(scaling_mode + " is not a valid scaling mode.");
+        throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
     }
     return samples;
 }
 
 
-struct SIGNAL_PAIR {
-    vector<vector<complex<float>>> signals;
-    vector<vector<complex<float>>> replica_chirps;
-};
-
-
 SIGNAL_PAIR get_signal_pairs_from_swath(
-    const string& filename,
-    const string& swath_name
+    const std::string& filename,
+    const std::string& swath_name
 ) {
     Swath swath(filename, swath_name);
 
@@ -78,39 +71,39 @@ SIGNAL_PAIR get_signal_pairs_from_swath(
 
 
 void plot_pulse(
-    const string& filename,
-    const int&    packet_index,
-    const string& scaling_mode
+    const std::string& filename,
+    const int&         packet_index,
+    const std::string& scaling_mode
 ) {
-    ifstream data   = open_file(filename);
+    std::ifstream data   = open_file(filename);
     L0Packet packet = L0Packet::get_packets(data, packet_index + 1)[packet_index];
 
-    vector<complex<float>> signal        = packet.get_signal();
-    vector<complex<float>> replica_chirp = packet.get_replica_chirp();
+    CF_VEC_1D signal        = packet.get_signal();
+    CF_VEC_1D replica_chirp = packet.get_replica_chirp();
 
     plot_signal(replica_chirp, scaling_mode);
 }
 
 
 void plot_pulse_compression(
-    const string& filename,
-    const int&    packet_index,
-    const bool&   do_fft,
-    const string& scaling_mode
+    const std::string& filename,
+    const int&         packet_index,
+    const bool&        do_fft,
+    const std::string& scaling_mode
 ) {
-    ifstream data   = open_file(filename);
-    L0Packet packet = L0Packet::get_packets(data, packet_index + 1)[packet_index];
+    std::ifstream data = open_file(filename);
+    L0Packet packet    = L0Packet::get_packets(data, packet_index + 1)[packet_index];
 
-    vector<complex<float>> signal        = packet.get_signal();
-    vector<complex<float>> replica_chirp = packet.get_replica_chirp();
+    CF_VEC_1D signal        = packet.get_signal();
+    CF_VEC_1D replica_chirp = packet.get_replica_chirp();
 
-    vector<complex<float>> pulse_compressed(signal.size());
+    CF_VEC_1D pulse_compressed(signal.size());
 
     int num_samples = signal.size();
 
     if (do_fft)
     {
-        vector<complex<float>> pulse_compressed = pulse_compression(signal, replica_chirp);
+        CF_VEC_1D pulse_compressed = pulse_compression(signal, replica_chirp);
         plot_signal(pulse_compressed, scaling_mode);
         return;
     }
@@ -123,90 +116,90 @@ void plot_pulse_compression(
 
 
 void plot_pulse_image(
-    const string& filename,
-    const string& swath,
-    const int&    burst_num,
-    const string& scaling_mode
+    const std::string& filename,
+    const std::string& swath,
+    const int&         burst_num,
+    const std::string& scaling_mode
 ) {
-    cout << "Decoding Burst" << endl;
+    std::cout << "Decoding Burst" << std::endl;
 
     Burst burst(filename, swath, burst_num);
 
-    cout << "Decoded " << burst.get_num_packets() 
-         << " signals and replica chirps." << endl;
+    std::cout << "Decoded " << burst.get_num_packets() 
+         << " signals and replica chirps." << std::endl;
 
     plot_complex_image(burst.get_replica_chirps(), scaling_mode);
 }
 
 
 void plot_range_compressed_burst(
-    const string& filename,
-    const string& swath,
-    const int&    burst_num,
-    const string& scaling_mode
+    const std::string& filename,
+    const std::string& swath,
+    const int&         burst_num,
+    const std::string& scaling_mode
 ) {
-    cout << "Decoding Burst" << endl;
+    std::cout << "Decoding Burst" << std::endl;
 
     Burst burst(filename, swath, burst_num);
 
     int num_packets = burst.get_num_packets();
 
-    cout << "Decoded " << num_packets << " signals and replica chirps." << endl;
+    std::cout << "Decoded " << num_packets << " signals and replica chirps." << std::endl;
 
-    vector<vector<complex<float>>> pulse_compressed(num_packets);
+    CF_VEC_2D pulse_compressed(num_packets);
 
     for (int i = 0; i < num_packets; i++)
     {
         pulse_compressed[i] = pulse_compression(burst.get_signal(i), burst.get_replica_chirp(i));
     }
-    cout << "Pulse compression completed." << endl;
+    std::cout << "Pulse compression completed." << std::endl;
 
     plot_complex_image(pulse_compressed, scaling_mode);
 }
 
 
 void plot_range_compressed_swath(
-    const string& filename,
-    const string& swath_name,
-    const string& scaling_mode
+    const std::string& filename,
+    const std::string& swath_name,
+    const std::string& scaling_mode
 ) {
-    cout << "Decoding Complex Samples and Replica Chirps" << endl;
+    std::cout << "Decoding Complex Samples and Replica Chirps" << std::endl;
 
     SIGNAL_PAIR signal_pair = get_signal_pairs_from_swath(filename, swath_name);
 
     int num_signals = signal_pair.signals.size();
 
-    auto compression_start = chrono::high_resolution_clock::now();
+    std::chrono::time_point compression_start = std::chrono::high_resolution_clock::now();
 
-    vector<vector<complex<float>>> pulse_compressed(num_signals);
+    CF_VEC_2D pulse_compressed(num_signals);
 
     for (int i = 0; i < num_signals; i++)
     {
         pulse_compressed[i] = pulse_compression(signal_pair.signals[i], signal_pair.replica_chirps[i]);
     }
 
-    auto compression_end = chrono::high_resolution_clock::now();
+    std::chrono::time_point compression_end = std::chrono::high_resolution_clock::now();
 
-    chrono::duration<float> compression_time = compression_end - compression_start;
+    std::chrono::duration<float> compression_time = compression_end - compression_start;
 
-    cout << "Pulse compression completed in " << compression_time.count() << "s." << endl;
+    std::cout << "Pulse compression completed in " << compression_time.count() << "s." << std::endl;
 
     plot_complex_image(pulse_compressed, scaling_mode);
 }
 
 
 void plot_complex_image(
-    const vector<vector<complex<float>>>& signal,
-    const string& scaling_mode
+    const CF_VEC_2D&   signal,
+    const std::string& scaling_mode
 ) {
-    cout << "Flattening Vector for Plotting" << endl;
+    std::cout << "Flattening Vector for Plotting" << std::endl;
 
     int rows = signal.size();
     int cols = signal[0].size();
 
-    vector<float> samples = scale(signal, scaling_mode);
+    F_VEC_1D samples = scale(signal, scaling_mode);
 
-    cout << "Calling Plot" << endl;
+    std::cout << "Calling Plot" << std::endl;
 
     matplotlibcpp::figure();
     matplotlibcpp::imshow(&samples[0], rows, cols, 1);
@@ -215,42 +208,42 @@ void plot_complex_image(
 
 
 void plot_fft(
-    const string& filename,
-    const int&    packet_index,
-    const int&    fft_size,
-    const bool&   inverse,
-    const string& scaling_mode
+    const std::string& filename,
+    const int&         packet_index,
+    const int&         fft_size,
+    const bool&        inverse,
+    const std::string& scaling_mode
 ) {
-    ifstream data = open_file(filename);
+    std::ifstream data = open_file(filename);
 
-    cout << "Parsing Packets" << endl;
+    std::cout << "Parsing Packets" << std::endl;
 
-    vector<L0Packet> packets = L0Packet::get_packets(data, packet_index + 1);
+    PACKET_VEC_1D packets = L0Packet::get_packets(data, packet_index + 1);
 
-    vector<complex<float>> signal     = packets[packet_index].get_signal();
-    vector<complex<float>> signal_fft = compute_1d_dft(signal, fft_size, inverse);
+    CF_VEC_1D signal     = packets[packet_index].get_signal();
+    CF_VEC_1D signal_fft = compute_1d_dft(signal, fft_size, inverse);
 
     plot_signal(signal_fft, scaling_mode);
 }
 
 
 void plot_fft2d(
-    const string& filename,
-    const string& swath,
-    const int&    burst_num,
-          int     fft_rows,
-          int     fft_cols,
-    const bool&   inverse,
-    const string& scaling_mode
+    const std::string& filename,
+    const std::string& swath,
+    const int&         burst_num,
+          int          fft_rows,
+          int          fft_cols,
+    const bool&        inverse,
+    const std::string& scaling_mode
 ) {
     Burst burst = Burst(filename, swath, burst_num);
 
-    vector<vector<complex<float>>> signals = burst.get_signals();
+    CF_VEC_2D signals = burst.get_signals();
 
     if (not fft_rows) fft_rows = signals.size();
     if (not fft_cols) fft_cols = signals[0].size();
 
-    vector<vector<complex<float>>> signals_fft = compute_2d_dft(
+    CF_VEC_2D signals_fft = compute_2d_dft(
         signals,
         inverse,
         fft_rows,
@@ -262,20 +255,20 @@ void plot_fft2d(
 
 
 void plot_fft_axis(
-    const string& filename,
-    const string& swath,
-    const int&    burst_num,
-    const int&    axis,
-          int     fft_size,
-    const bool&   inverse,
-    const string& scaling_mode
+    const std::string& filename,
+    const std::string& swath,
+    const int&         burst_num,
+    const int&         axis,
+          int          fft_size,
+    const bool&        inverse,
+    const std::string& scaling_mode
 ) {
     Burst burst(filename, swath, burst_num);
 
     int fft_rows = burst.get_num_packets();
     int fft_cols = burst.get_signal(0).size();
 
-    vector<vector<complex<float>>> signals_fft = compute_axis_dft(
+    CF_VEC_2D signals_fft = compute_axis_dft(
         burst.get_signals(),
         fft_size,
         axis,
@@ -285,18 +278,18 @@ void plot_fft_axis(
     int out_rows = signals_fft.size();
     int out_cols = signals_fft[0].size();
 
-    cout << "Input Rows: "  << fft_rows  << " Input Cols: "  << fft_cols << endl;
-    cout << "Output Rows: " << out_rows  << " Output Cols: " << out_cols << endl;
+    std::cout << "Input Rows: "  << fft_rows  << " Input Cols: "  << fft_cols << std::endl;
+    std::cout << "Output Rows: " << out_rows  << " Output Cols: " << out_cols << std::endl;
 
     plot_complex_image(signals_fft, scaling_mode);
 }
 
 
 void plot_burst(
-    const string& filename,
-    const string& swath,
-    const int&    burst_num,
-    const string& scaling_mode
+    const std::string& filename,
+    const std::string& swath,
+    const int&         burst_num,
+    const std::string& scaling_mode
 ) {
     Burst burst(filename, swath, burst_num);
     plot_complex_image(burst.get_signals(), scaling_mode);
@@ -304,9 +297,9 @@ void plot_burst(
 
 
 void plot_swath(
-    const string& filename,
-    const string& swath_name,
-    const string& scaling_mode
+    const std::string& filename,
+    const std::string& swath_name,
+    const std::string& scaling_mode
 ) {
     Swath swath(filename, swath_name);
     plot_complex_image(swath.get_all_signals(), scaling_mode);
@@ -314,15 +307,15 @@ void plot_swath(
 
 
 void plot_signal(
-    const vector<complex<float>>& signal,
-    const string& scaling_mode
+    const CF_VEC_1D&   signal,
+    const std::string& scaling_mode
 ) {
 
-    cout << "Creating Real-Valued Vector for Plotting" << endl;
+    std::cout << "Creating Real-Valued Vector for Plotting" << std::endl;
 
-    vector<float> scaled_signal = scale(signal, scaling_mode);
+    F_VEC_1D scaled_signal = scale(signal, scaling_mode);
 
-    cout << "Plotting" << endl;
+    std::cout << "Plotting" << std::endl;
 
     matplotlibcpp::figure();
     matplotlibcpp::plot(scaled_signal);
@@ -331,11 +324,11 @@ void plot_signal(
 
 
 void plot_signal(
-    const string& filename,
+    const std::string& filename,
     const int&    packet_index,
-    const string& scaling_mode
+    const std::string& scaling_mode
 ) {
-    vector<L0Packet> packets = L0Packet::get_packets(filename, packet_index + 1);
+    PACKET_VEC_1D packets = L0Packet::get_packets(filename, packet_index + 1);
     plot_signal(packets[packet_index].get_signal(), scaling_mode);
 }
 

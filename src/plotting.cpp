@@ -7,21 +7,21 @@ Description: Main function with random command-line arguments for testing purpos
              For additional information on Level-0 product decoding, see:
              https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17
 */
-#include "plot.hpp"
+#include "plot.h"
 
 
-unordered_map<string, bool> parse_options(
-    const unordered_map<string, bool>& options,
+std::unordered_map<std::string, bool> parse_options(
+    const std::unordered_map<std::string, bool>& options,
           char* args[],
     const int&  arg_index
 ) {
-    unordered_map<string, bool> selections = options;
+    std::unordered_map<std::string, bool> selections = options;
 
     int index = arg_index;
 
     while(args[index] != __null)
     {
-        string users_option = string(args[index]);
+        std::string users_option = std::string(args[index]);
 
         if (selections.contains(users_option))
         {
@@ -34,12 +34,12 @@ unordered_map<string, bool> parse_options(
 
 
 void validate_args(
-    const string& command,
-    const vector<string>& command_args,
-    const vector<string>& arg_types,
-          char*   args[],
-    const int&    start_index = 2,
-    const string& help = ""
+    const std::string&   command,
+    const STRING_VEC_1D& command_args,
+    const STRING_VEC_1D& arg_types,
+          char*          args[],
+    const int&           start_index = 2,
+    const std::string&   help = ""
 ) {
     int end_index = command_args.size() + start_index;
     for (int i = start_index; i < end_index; i++)
@@ -47,30 +47,30 @@ void validate_args(
         int index = i - start_index;
         if (args[i] == __null)
         {
-            cout << command  << " is missing the following argument: "
-                 << command_args[index] << endl;
+            std::cout << command  << " is missing the following argument: "
+                 << command_args[index] << std::endl;
             exit(1);
         }
         try
         {
-            if      (arg_types[index] == "string") string(args[i]);
+            if      (arg_types[index] == "string") std::string(args[i]);
             else if (arg_types[index] == "char")   char(args[i][0]);
-            else if (arg_types[index] == "int")    stoi(args[i]);
-            else if (arg_types[index] == "float")  stof(args[i]);
-            else if (arg_types[index] == "path")   open_file(string(args[i]));
+            else if (arg_types[index] == "int")    std::stoi(args[i]);
+            else if (arg_types[index] == "float")  std::stof(args[i]);
+            else if (arg_types[index] == "path")   open_file(std::string(args[i]));
         }
         catch(...)
         {
-            cout << args[i] << " is not a valid " << command_args[index] << "." << endl;
+            std::cout << args[i] << " is not a valid " << command_args[index] << "." << std::endl;
             exit(1);
         }
     }
 }
 
 
-string parse_scaling_mode(unordered_map<string, bool> options)
+std::string parse_scaling_mode(std::unordered_map<std::string, bool> options)
 {
-    string mode;
+    std::string mode;
 
     if (options["--norm_log"]) return "norm_log";
     if (options["--norm"])     return "norm";
@@ -82,186 +82,186 @@ string parse_scaling_mode(unordered_map<string, bool> options)
 }
 
 
-void pulse_command(char* argv[], unordered_map<string, bool>& options)
+void pulse_command(char* argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args  = {"packet_index", "filepath"};
-    vector<string> types = {"int", "path"};
+    STRING_VEC_1D args  = {"packet_index", "filepath"};
+    STRING_VEC_1D types = {"int", "path"};
     validate_args("pulse", args, types, argv);
 
-    int packet_index = stoi(argv[2]);
-    string filename  = string(argv[3]);
-    string scaling   = parse_scaling_mode(options);
+    int packet_index     = std::stoi(argv[2]);
+    std::string filename = std::string(argv[3]);
+    std::string scaling  = parse_scaling_mode(options);
 
     plot_pulse(filename, packet_index, scaling);
 }
 
 
-void pulse_compression_command(char* argv[], unordered_map<string, bool>& options)
+void pulse_compression_command(char* argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"packet_index", "filepath"};
-    vector<string> types = {"int", "path"};
+    STRING_VEC_1D args  = {"packet_index", "filepath"};
+    STRING_VEC_1D types = {"int", "path"};
     validate_args("pulse_compression", args, types, argv);
 
-    int packet_index = stoi(argv[2]);
-    string filename  = string(argv[3]);
-    string scaling   = parse_scaling_mode(options);
-    bool   do_fft    = options["--fft"];
+    int packet_index     = std::stoi(argv[2]);
+    std::string filename = std::string(argv[3]);
+    std::string scaling  = parse_scaling_mode(options);
+    bool do_fft          = options["--fft"];
 
     plot_pulse_compression(filename, packet_index, do_fft, scaling);
 }
 
 
-void pulse_image_command(char* argv[], unordered_map<string, bool>& options)
+void pulse_image_command(char* argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"swath", "burst_num", "filepath"};
-    vector<string> types = {"string", "int", "path"};
+    STRING_VEC_1D args  = {"swath", "burst_num", "filepath"};
+    STRING_VEC_1D types = {"std::string", "int", "path"};
     validate_args("pulse_img", args, types, argv);
 
-    string swath     = string(argv[2]);
-    int    burst_num = stoi(argv[3]);
-    string filename  = string(argv[4]);
-    string scaling   = parse_scaling_mode(options);
+    std::string swath    = std::string(argv[2]);
+    int burst_num        = std::stoi(argv[3]);
+    std::string filename = std::string(argv[4]);
+    std::string scaling  = parse_scaling_mode(options);
 
     plot_pulse_image(filename, swath, burst_num, scaling);
 }
 
 
-void range_compressed_burst_command(char* argv[], unordered_map<string, bool>& options)
+void range_compressed_burst_command(char* argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"swath", "burst_num", "filepath"};
-    vector<string> types = {"string", "int", "path"};
+    STRING_VEC_1D args = {"swath", "burst_num", "filepath"};
+    STRING_VEC_1D types = {"string", "int", "path"};
     validate_args("range_compressed_burst", args, types, argv);
 
-    string swath     = string(argv[2]);
-    int    burst_num = stoi(argv[3]);
-    string filename  = string(argv[4]);
-    string scaling   = parse_scaling_mode(options);
+    std::string swath    = std::string(argv[2]);
+    int burst_num        = std::stoi(argv[3]);
+    std::string filename = std::string(argv[4]);
+    std::string scaling  = parse_scaling_mode(options);
 
     plot_range_compressed_burst(filename, swath, burst_num, scaling);
 }
 
 
-void range_compressed_swath_command(char* argv[], unordered_map<string, bool>& options)
+void range_compressed_swath_command(char* argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"swath", "filepath"};
-    vector<string> types = {"string", "path"};
+    STRING_VEC_1D args  = {"swath", "filepath"};
+    STRING_VEC_1D types = {"string", "path"};
     validate_args("range_compressed_swath", args, types, argv);
 
-    string swath     = string(argv[2]);
-    string filename  = string(argv[3]);
-    string scaling   = parse_scaling_mode(options);
+    std::string swath     = std::string(argv[2]);
+    std::string filename  = std::string(argv[3]);
+    std::string scaling   = parse_scaling_mode(options);
 
     plot_range_compressed_swath(filename, swath, scaling);
 }
 
 
-void fft_axis_command(char *argv[], unordered_map<string, bool>& options)
+void fft_axis_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"swath", "burst_num", "axis", "fft_size", "filepath"};
-    vector<string> types = {"string", "int", "int", "int", "path"};
+    STRING_VEC_1D args  = {"swath", "burst_num", "axis", "fft_size", "filepath"};
+    STRING_VEC_1D types = {"string", "int", "int", "int", "path"};
     validate_args("fft_axis", args, types, argv);
 
-    string swath    = string(argv[2]);
-    int    burst_num = stoi(argv[3]);
-    int    axis     = stoi(argv[4]);
-    int    fft_size = stoi(argv[5]);
-    string filepath = string(argv[6]);
-    bool   inverse  = options["--inverse"];
-    string scaling  = parse_scaling_mode(options);
+    std::string swath = std::string(argv[2]);
+    int  burst_num = std::stoi(argv[3]);
+    int  axis      = std::stoi(argv[4]);
+    int  fft_size  = std::stoi(argv[5]);
+    bool inverse   = options["--inverse"];
+    std::string filepath = std::string(argv[6]);
+    std::string scaling  = parse_scaling_mode(options);
 
     plot_fft_axis(filepath, swath, burst_num, axis, fft_size, inverse, scaling);
 }
 
 
-void fft2_command(char *argv[], unordered_map<string, bool>& options)
+void fft2_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"swath", "burst_num", "fft_rows", "fft_cols", "filepath"};
-    vector<string> types = {"string", "int", "int", "int", "path"};
+    STRING_VEC_1D args  = {"swath", "burst_num", "fft_rows", "fft_cols", "filepath"};
+    STRING_VEC_1D types = {"string", "int", "int", "int", "path"};
     validate_args("fft2", args, types, argv);
 
-    string swath    = string(argv[2]);
-    int    burst_num = stoi(argv[3]);
-    int    fft_rows = stoi(argv[4]);
-    int    fft_cols = stoi(argv[5]);
-    string filepath = string(argv[6]);
-    bool   inverse  = options["--inverse"];
-    string scaling  = parse_scaling_mode(options);
+    std::string swath = std::string(argv[2]);
+    int  burst_num = std::stoi(argv[3]);
+    int  fft_rows  = std::stoi(argv[4]);
+    int  fft_cols  = std::stoi(argv[5]);
+    bool inverse   = options["--inverse"];
+    std::string filepath = std::string(argv[6]);
+    std::string scaling  = parse_scaling_mode(options);
 
     plot_fft2d(filepath, swath, burst_num, fft_rows, fft_cols, inverse, scaling);
 }
 
 
-void fft_command(char *argv[], unordered_map<string, bool>& options)
+void fft_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"packet_index", "fft_size", "filepath"};
-    vector<string> types = {"int", "int", "path"};
+    STRING_VEC_1D args  = {"packet_index", "fft_size", "filepath"};
+    STRING_VEC_1D types = {"int", "int", "path"};
     validate_args("fft", args, types, argv);
 
-    string filename     = string(argv[4]);
-    int    packet_index = stoi(argv[2]);
-    int    fft_size     = stoi(argv[3]);
-    bool   inverse      = options["--inverse"];
-    string scaling      = parse_scaling_mode(options);
+    std::string filename = std::string(argv[4]);
+    int  packet_index = std::stoi(argv[2]);
+    int  fft_size     = std::stoi(argv[3]);
+    bool inverse      = options["--inverse"];
+    std::string scaling = parse_scaling_mode(options);
 
     plot_fft(filename, packet_index, fft_size, inverse, scaling);
 }
 
 
-void burst_command(char *argv[], unordered_map<string, bool>& options)
+void burst_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"swath", "burst_num", "filepath"};
-    vector<string> types = {"string", "int", "path"};
+    STRING_VEC_1D args  = {"swath", "burst_num", "filepath"};
+    STRING_VEC_1D types = {"string", "int", "path"};
     validate_args("burst", args, types, argv);
 
-    string filepath  = string(argv[4]);
-    string swath     = string(argv[2]);
-    int    burst_num = stoi(argv[3]); 
-    string scaling   = parse_scaling_mode(options);
+    std::string filepath  = std::string(argv[4]);
+    std::string swath     = std::string(argv[2]);
+    int burst_num = std::stoi(argv[3]); 
+    std::string scaling   = parse_scaling_mode(options);
 
     plot_burst(filepath, swath, burst_num, scaling);
 }
 
 
-void swath_command(char *argv[], unordered_map<string, bool>& options)
+void swath_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"swath", "filepath"};
-    vector<string> types = {"string", "path"};
+    STRING_VEC_1D args = {"swath", "filepath"};
+    STRING_VEC_1D types = {"std::string", "path"};
     validate_args("swath", args, types, argv);
 
-    string filepath = string(argv[3]);
-    string swath    = string(argv[2]);
-    string scaling  = parse_scaling_mode(options);
+    std::string filepath = std::string(argv[3]);
+    std::string swath    = std::string(argv[2]);
+    std::string scaling  = parse_scaling_mode(options);
 
     plot_swath(filepath, swath, scaling);
 }
 
 
-void signal_command(char *argv[], unordered_map<string, bool>& options)
+void signal_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
-    vector<string> args = {"packet_index", "filepath"};
-    vector<string> types = {"int", "path"};
+    STRING_VEC_1D args = {"packet_index", "filepath"};
+    STRING_VEC_1D types = {"int", "path"};
     validate_args("signal", args, types, argv);
 
-    string filename     = string(argv[3]);
-    int    packet_index = stoi(argv[2]); 
-    string scaling      = parse_scaling_mode(options);
+    std::string filename = std::string(argv[3]);
+    int packet_index     = std::stoi(argv[2]); 
+    std::string scaling  = parse_scaling_mode(options);
 
     plot_signal(filename, packet_index, scaling);
 }
 
 
-void print_help(vector<string> help_strings)
+void print_help(STRING_VEC_1D help_strings)
 {
-    for (string help_string : help_strings)
+    for (std::string help_string : help_strings)
     {
-        cout << help_string << endl;
+        std::cout << help_string << std::endl;
     }
 }
 
 
 int main(int argc, char* argv[]) 
 {
-    vector<string> help_strings = {
+    STRING_VEC_1D help_strings = {
         "signal [packet_index] [mode] [path]",
         "swath [swath] [path]",
         "burst [swath] [burst_num] [path]",
@@ -275,7 +275,7 @@ int main(int argc, char* argv[])
 
     if(argv[1] == __null) 
     {
-        cout << "Please enter a command:" << endl;
+        std::cout << "Please enter a command:" << std::endl;
         print_help(help_strings);
         return 1;
     }
@@ -283,9 +283,9 @@ int main(int argc, char* argv[])
     fftwf_init_threads();
     fftwf_plan_with_nthreads(omp_get_max_threads());
 
-    string command = string(argv[1]);
+    std::string command = std::string(argv[1]);
 
-    unordered_map<string, bool> options = {
+    std::unordered_map<std::string, bool> options = {
         {"--inverse",  false},
         {"--fft",      false},
         {"--norm",     false},
@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-        cout << command << " is not a valid command." << endl;
+        std::cout << command << " is not a valid command." << std::endl;
     }
 
     fftwf_cleanup_threads();

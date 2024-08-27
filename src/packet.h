@@ -16,16 +16,14 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 #include <set>
 #include <complex>
 
-#include "decoding_utils.hpp"
-
-
-using namespace std;
+#include "decoding_utils.h"
+#include "misc_types.h"
 
 
 /* H_CODE / S_CODE struct representing one element of a quadrature */
 struct H_CODE {
-    vector<u_int8_t> signs;
-    vector<u_int16_t> m_codes;
+    UINT8_VEC_1D  signs;
+    UINT16_VEC_1D m_codes;
 
     H_CODE() {
         signs.reserve(128);
@@ -42,15 +40,15 @@ struct H_CODE {
 
 /* Quadrature struct representing one of the IE, IO, QE, or QO quads */
 struct QUAD {
-    vector<H_CODE> blocks;
+    std::vector<H_CODE> blocks;
 
-    string key;
+    std::string key;
 
-    QUAD(const string& component_key) {
+    QUAD(const std::string& component_key) {
         key = component_key;
     }
 
-    QUAD(const string& component_key, const int& num_blocks)
+    QUAD(const std::string& component_key, const int& num_blocks)
     {
         key = component_key;
         blocks.reserve(num_blocks);
@@ -62,10 +60,10 @@ struct QUAD {
 class L0Packet 
 {
 private:
-    unordered_map<string, int> _primary_header;
-    unordered_map<string, int> _secondary_header;
+    std::unordered_map<std::string, int> _primary_header;
+    std::unordered_map<std::string, int> _secondary_header;
 
-    vector<u_int8_t> _raw_user_data;
+    UINT8_VEC_1D _raw_user_data;
 
     int _num_quads;
     int _test_mode;
@@ -80,10 +78,10 @@ private:
 
     void _set_data_format();
 
-    static unordered_map<string, int> _parse_header(
-        const vector<u_int8_t>&  bytes,
-        const vector<int>&       bit_lengths,
-        const vector<string>&    field_names
+    static std::unordered_map<std::string, int> _parse_header(
+        const UINT8_VEC_1D&  bytes,
+        const INT_VEC_1D&    bit_lengths,
+        const STRING_VEC_1D& field_names
     );
 
 
@@ -92,9 +90,9 @@ private:
     /* PAGES 61 -> 85                 */
     /**********************************/
 
-    vector<int> _brc = {};
-    vector<int> _thresholds = {};
-    vector<complex<float>> _signal;
+    INT_VEC_1D _brc = {};
+    INT_VEC_1D _thresholds = {};
+    CF_VEC_1D _signal;
 
     bool _signal_set_flag = false;
 
@@ -127,15 +125,15 @@ private:
     void _set_quad_type_c(QUAD& component, int& bit_index);
     void _set_quad_types_a_and_b(H_CODE& component, int& bit_index);
 
-    vector<complex<float>> _get_signal_type_d(
+    CF_VEC_1D _get_signal_type_d(
         QUAD& IE, QUAD& IO, 
         QUAD& QE, QUAD& QO
     );
-    vector<complex<float>> _get_signal_type_c(
+    CF_VEC_1D _get_signal_type_c(
         QUAD& IE, QUAD& IO,
         QUAD& QE, QUAD& QO
     );
-    vector<complex<float>> _get_signal_types_a_and_b(
+    CF_VEC_1D _get_signal_types_a_and_b(
         H_CODE& IE, H_CODE& IO,
         H_CODE& QE, H_CODE& QO
     );
@@ -145,9 +143,9 @@ public:
     L0Packet(){}    
 
     L0Packet(
-        unordered_map<string, int> primary_header,
-        unordered_map<string, int> secondary_header,
-        vector<u_int8_t> raw_user_data
+        std::unordered_map<std::string, int> primary_header,
+        std::unordered_map<std::string, int> secondary_header,
+        UINT8_VEC_1D raw_user_data
     ) {
         _primary_header   = primary_header;
         _secondary_header = secondary_header;
@@ -161,8 +159,8 @@ public:
 
         if (_user_data_length != _raw_user_data.size()) 
         {
-            cout << _user_data_length << " != " << _raw_user_data.size() << endl;
-            throw runtime_error("The lenght of the user data field is invalid.");
+            std::cout << _user_data_length << " != " << _raw_user_data.size() << std::endl;
+            throw std::runtime_error("The lenght of the user data field is invalid.");
         }
 
         _set_data_format();
@@ -177,8 +175,8 @@ public:
     int  get_user_data_length() {return _user_data_length;}
     char get_data_format() {return _data_format;}
 
-    const int primary_header(const string& key) {return _primary_header.at(key);}
-    const int secondary_header(const string& key) {return _secondary_header.at(key);}
+    const int primary_header(const std::string& key) {return _primary_header.at(key);}
+    const int secondary_header(const std::string& key) {return _secondary_header.at(key);}
 
     int get_baq_block_length();
 
@@ -193,28 +191,32 @@ public:
     char get_rx_polarization();
     char get_tx_polarization();
 
-    string get_baq_mode();
-    string get_test_mode();
-    string get_sensor_mode();
-    string get_signal_type();
-    string get_error_status();
-    string get_swath();
+    std::string get_baq_mode();
+    std::string get_test_mode();
+    std::string get_sensor_mode();
+    std::string get_signal_type();
+    std::string get_error_status();
+    std::string get_swath();
 
     void print_primary_header();
     void print_secondary_header();
     void print_modes();
     void print_pulse_info();
 
-    vector<complex<float>> get_signal();
-    vector<complex<float>> get_replica_chirp();
+    CF_VEC_1D get_signal();
+    CF_VEC_1D get_replica_chirp();
 
-    static L0Packet get_next_packet(ifstream& data);
-    static vector<L0Packet> get_packets(ifstream& data, const int& num_packets = 0);
-    static vector<L0Packet> get_packets(const string& filename, const int& num_packets = 0);
-    static vector<L0Packet> get_packets_in_swath(const string& filename, const string& swath);
-    static vector<L0Packet> get_packets_in_swath(ifstream& data, const string& swath);
-    static vector<vector<L0Packet>> get_packets_in_bursts(const string& filename, const string& swath);
-    static vector<vector<L0Packet>> get_packets_in_bursts(ifstream& data, const string& swath);
-    static vector<L0Packet> decode_packets(const vector<L0Packet>& packets);
-    static void decode_packets_in_place(vector<L0Packet>& packets);
+    static L0Packet get_next_packet(std::ifstream& data);
+    static std::vector<L0Packet> get_packets(std::ifstream& data, const int& num_packets = 0);
+    static std::vector<L0Packet> get_packets(const std::string& filename, const int& num_packets = 0);
+    static std::vector<L0Packet> get_packets_in_swath(const std::string& filename, const std::string& swath);
+    static std::vector<L0Packet> get_packets_in_swath(std::ifstream& data, const std::string& swath);
+    static std::vector<std::vector<L0Packet>> get_packets_in_bursts(const std::string& filename, const std::string& swath);
+    static std::vector<std::vector<L0Packet>> get_packets_in_bursts(std::ifstream& data, const std::string& swath);
+    static std::vector<L0Packet> decode_packets(const std::vector<L0Packet>& packets);
+    static void decode_packets_in_place(std::vector<L0Packet>& packets);
 };
+
+
+typedef struct std::vector<L0Packet>              PACKET_VEC_1D;
+typedef struct std::vector<std::vector<L0Packet>> PACKET_VEC_2D;

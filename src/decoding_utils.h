@@ -15,30 +15,31 @@ Description: Functions to assist reading and decompressing binary data.
 #include <unordered_map>
 #include <complex>
 
-#include "structs.hpp"
+#include "structs.h"
+#include "misc_types.h"
 
 
 u_int16_t huffman_decode(
-    const vector<u_int8_t>& data,
+    const UINT8_VEC_1D& data,
     const int& brc,
           int& bit_index
 );
 
 u_int16_t huffman_decode_with_length(
-    const vector<u_int8_t>& data,
+    const UINT8_VEC_1D& data,
     const int& brc,
           int& bit_index
 );
 
-vector<u_int8_t> read_bytes(
-    ifstream&  data,
+UINT8_VEC_1D read_bytes(
+    std::ifstream&  data,
     const int& num_bytes
 );
 
 u_int64_t read_n_bits(
-    const std::vector<u_int8_t>& data,
+    const UINT8_VEC_1D& data,
     const int& start_bit,
     const int& n
 );
 
-ifstream open_file(const string& filename);
+std::ifstream open_file(const std::string& filename);

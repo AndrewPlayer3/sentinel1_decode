@@ -10,9 +10,10 @@ Description: Funtions for reading packets, index info, and annotation info from 
 
 #pragma once
 
-#include "packet.hpp"
+#include "packet.h"
+#include "misc_types.h"
 
-vector<unordered_map<string, u_int64_t>> annotation_decoder(const string& filename);
-vector<unordered_map<string, u_int64_t>> annotation_decoder(ifstream& data);
-vector<unordered_map<string, u_int64_t>> index_decoder(const string& filename);
-vector<unordered_map<string, u_int64_t>> index_decoder(ifstream& data);
+std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(const std::string& filename);
+std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(std::ifstream& data);
+std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(const std::string& filename);
+std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(std::ifstream& data);

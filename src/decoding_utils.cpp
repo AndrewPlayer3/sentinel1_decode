@@ -9,17 +9,17 @@ Description: Functions to assist reading and decompressing binary data.
 */
 
 #include <iostream>
-#include "decoding_utils.hpp"
+#include "decoding_utils.h"
 
 
 /* Returns the next m_code using the relevant huffman tree for the given brc
    Checks length of bits in tree to handle edge cases but is slower than huffman_decode */
 u_int16_t huffman_decode_with_length(
-    const vector<u_int8_t>& data,
+    const UINT8_VEC_1D& data,
     const int& brc, 
           int& bit_index
 ) {
-    vector<unordered_map<u_int16_t, u_int8_t>> huffman_coding = HUFFMAN_CODINGS_WITH_LENGTH[brc];
+    std::vector<std::unordered_map<u_int16_t, u_int8_t>> huffman_coding = HUFFMAN_CODINGS_WITH_LENGTH[brc];
 
     u_int16_t bits     = -1;
     u_int8_t  bit_len  = BRC_TO_HUFFMAN_START_BIT_LEN[brc];
@@ -32,7 +32,7 @@ u_int16_t huffman_decode_with_length(
         if (!huffman_coding[bit_len - 1].contains(bits)) bit_len += 1;
         else break;
 
-        if (bit_len > 10) throw out_of_range("Max bit length exceeded in Huffman decoding.");
+        if (bit_len > 10) throw std::out_of_range("Max bit length exceeded in Huffman decoding.");
     }
     bit_index += bit_len;
 
@@ -42,11 +42,11 @@ u_int16_t huffman_decode_with_length(
 
 /* Returns the next m_code using the relevant huffman tree for the given brc */
 u_int16_t huffman_decode(
-    const vector<u_int8_t>& data,
+    const UINT8_VEC_1D& data,
     const int& brc, 
           int& bit_index
 ) {
-    unordered_map<u_int16_t, u_int8_t> huffman_coding = HUFFMAN_CODINGS[brc];
+    std::unordered_map<u_int16_t, u_int8_t> huffman_coding = HUFFMAN_CODINGS[brc];
 
     u_int16_t bits     = -1;
     u_int8_t  bit_len  = BRC_TO_HUFFMAN_START_BIT_LEN[brc];
@@ -70,7 +70,7 @@ u_int16_t huffman_decode(
 
         if (bit_len > 10) 
         {
-            throw out_of_range("Max bit length exceeded in Huffman decoding.");
+            throw std::out_of_range("Max bit length exceeded in Huffman decoding.");
         }
     }
     bit_index += bit_len;
@@ -80,11 +80,11 @@ u_int16_t huffman_decode(
 
 
 /* Returns a vector of the next num_bytes bytes from a data stream */
-vector<u_int8_t> read_bytes(
-    ifstream&  data,
+UINT8_VEC_1D read_bytes(
+    std::ifstream&  data,
     const int& num_bytes
 ) {
-    vector<u_int8_t> buffer(num_bytes);
+    UINT8_VEC_1D buffer(num_bytes);
     data.read(
         reinterpret_cast<char*>(buffer.data()),
         num_bytes
@@ -95,20 +95,20 @@ vector<u_int8_t> read_bytes(
 
 /* Returns the integer encoded by the n bits starting at start_bit in a vector of bytes */
 u_int64_t read_n_bits(
-    const std::vector<u_int8_t>& data,
+    const UINT8_VEC_1D& data,
     const int& start_bit,
     const int& n
 ) {
     if (n < 1 || n > 64) 
     {
-        throw invalid_argument("Invalid number of bits to read. Must be between 1 and 64.");
+        throw std::invalid_argument("Invalid number of bits to read. Must be between 1 and 64.");
     }
     int byte_index = start_bit / 8;
     int bit_offset = start_bit % 8;
 
     if (byte_index >= data.size()) 
     {
-        throw out_of_range("Start bit is outside of the data vector.");
+        throw std::out_of_range("Start bit is outside of the data vector.");
     }
     u_int64_t result = 0;
     int bits_read = 0;
@@ -117,7 +117,7 @@ u_int64_t read_n_bits(
     {
         if (byte_index >= data.size()) 
         {
-            throw out_of_range("Byte index exceeded data vector size.");
+            throw std::out_of_range("Byte index exceeded data vector size.");
         }
 
         int bits_left_in_byte = 8 - bit_offset;
@@ -137,12 +137,12 @@ u_int64_t read_n_bits(
 
 
 /* Return ifstream for the given file */
-ifstream open_file(const string& filename)
+std::ifstream open_file(const std::string& filename)
 {
     std::ifstream data(filename, std::ios::binary);
     if (!data.is_open()) 
     {
-        throw runtime_error("Unable to open: " + filename);
+        throw std::runtime_error("Unable to open: " + filename);
     }
     return data;
 }

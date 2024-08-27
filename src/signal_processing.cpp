@@ -1,15 +1,13 @@
-#include "signal_processing.hpp"
-
-using namespace std;
+#include "signal_processing.h"
 
 
-vector<complex<float>> get_reference_function(const vector<complex<float>>& replica_chirp)
+CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
 {
     int num_samples = replica_chirp.size();
 
-    vector<complex<float>> replica_chirp_conj = conjugate(replica_chirp);
-    vector<complex<float>> weighted_chirp     = apply_hanning_window(replica_chirp_conj);
-    vector<float> norm = magnitude_1d(weighted_chirp);
+    CF_VEC_1D replica_chirp_conj = conjugate(replica_chirp);
+    CF_VEC_1D weighted_chirp     = apply_hanning_window(replica_chirp_conj);
+    F_VEC_1D norm = magnitude_1d(weighted_chirp);
 
     float energy = 0.0;
     for (int i = 0; i < num_samples; i++)
@@ -18,7 +16,7 @@ vector<complex<float>> get_reference_function(const vector<complex<float>>& repl
     }
     energy /= norm.size();
 
-    vector<complex<float>> reference(num_samples);
+    CF_VEC_1D reference(num_samples);
     for (int i = 0; i < num_samples; i++)
     {
         reference[i] = weighted_chirp[i] / energy;
@@ -27,19 +25,19 @@ vector<complex<float>> get_reference_function(const vector<complex<float>>& repl
 }
 
 
-vector<complex<float>> pulse_compression(
-    const vector<complex<float>>& signal,
-    const vector<complex<float>>& replica_chirp
+CF_VEC_1D pulse_compression(
+    const CF_VEC_1D& signal,
+    const CF_VEC_1D& replica_chirp
 ) {
     int num_samples     = signal.size();
     int replica_samples = replica_chirp.size();
 
-    vector<complex<float>> pulse_compressed(num_samples);
+    CF_VEC_1D pulse_compressed(num_samples);
 
-    vector<complex<float>> signal_fft = compute_1d_dft(signal,  0, false);
-    vector<complex<float>> reference  = get_reference_function(replica_chirp);
+    CF_VEC_1D signal_fft = compute_1d_dft(signal,  0, false);
+    CF_VEC_1D reference  = get_reference_function(replica_chirp);
 
-    vector<complex<float>> chirp(num_samples);
+    CF_VEC_1D chirp(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -58,11 +56,11 @@ vector<complex<float>> pulse_compression(
 }
 
 
-vector<complex<float>> conjugate(const vector<complex<float>>& complex_samples)
+CF_VEC_1D conjugate(const CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
 
-    vector<complex<float>> complex_conj(num_samples);
+    CF_VEC_1D complex_conj(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -72,9 +70,9 @@ vector<complex<float>> conjugate(const vector<complex<float>>& complex_samples)
 }   
 
 
-vector<float> hanning_window(const int& num_samples)
+F_VEC_1D hanning_window(const int& num_samples)
 {
-    vector<float> window(num_samples);
+    F_VEC_1D window(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -85,12 +83,12 @@ vector<float> hanning_window(const int& num_samples)
 }
 
 
-vector<complex<float>> apply_hanning_window(const vector<complex<float>>& complex_samples)
+CF_VEC_1D apply_hanning_window(const CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
 
-    vector<float> window = hanning_window(num_samples);
-    vector<complex<float>> filtered_samples(num_samples);
+    F_VEC_1D  window = hanning_window(num_samples);
+    CF_VEC_1D filtered_samples(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -100,11 +98,11 @@ vector<complex<float>> apply_hanning_window(const vector<complex<float>>& comple
 }
 
 
-void apply_hanning_window_in_place(vector<complex<float>>& complex_samples)
+void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
 
-    vector<float> window = hanning_window(num_samples);
+    F_VEC_1D window = hanning_window(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -114,8 +112,8 @@ void apply_hanning_window_in_place(vector<complex<float>>& complex_samples)
 
 
 
-vector<vector<float>> norm_2d(
-    const vector<vector<complex<float>>>& complex_values,
+F_VEC_2D norm_2d(
+    const CF_VEC_2D& complex_values,
     const bool& log_scale = false
 ) {
     float max_value = 0.0;    
@@ -123,7 +121,7 @@ vector<vector<float>> norm_2d(
     int rows = complex_values.size();
     int cols = complex_values[0].size();
 
-    vector<vector<float>> norm(rows, vector<float>(cols));
+    F_VEC_2D norm(rows, F_VEC_1D(cols));
 
     for (int i = 0; i < rows; i++)
     {
@@ -152,15 +150,15 @@ vector<vector<float>> norm_2d(
 }
 
 
-vector<float> norm_1d(
-    const vector<complex<float>>& complex_values,
+F_VEC_1D norm_1d(
+    const CF_VEC_1D& complex_values,
     const bool& log_scale = false
 ) {
     int num_samples = complex_values.size();
 
     float max_value = 0;
 
-    vector<float> norm(num_samples);
+    F_VEC_1D norm(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -183,11 +181,11 @@ vector<float> norm_1d(
 }
 
 
-vector<float> magnitude_1d(const vector<complex<float>>& complex_values)
+F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
 {
     int num_samples = complex_values.size();
 
-    vector<float> magnitude(num_samples);
+    F_VEC_1D magnitude(num_samples);
 
     #pragma omp parallel for
     for (int i = 0; i < num_samples; i++)
@@ -204,14 +202,14 @@ vector<float> magnitude_1d(const vector<complex<float>>& complex_values)
 }
 
 
-vector<vector<float>> magnitude_2d(const vector<vector<complex<float>>>& complex_values)
+F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
 {
     float max_value = 0;    
 
     int rows = complex_values.size();
     int cols = complex_values[0].size();
 
-    vector<vector<float>> magnitude(rows, vector<float>(cols));
+    F_VEC_2D magnitude(rows, F_VEC_1D(cols));
 
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
@@ -231,12 +229,12 @@ vector<vector<float>> magnitude_2d(const vector<vector<complex<float>>>& complex
 }
 
 
-vector<vector<complex<float>>> transpose(const vector<vector<complex<float>>>& arr)
+CF_VEC_2D transpose(const CF_VEC_2D& arr)
 {
     int rows = arr.size();
     int cols = arr[0].size();
 
-    vector<vector<complex<float>>> arr_t(cols, vector<complex<float>>(rows));
+    CF_VEC_2D arr_t(cols, CF_VEC_1D(rows));
 
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < cols; i++)
@@ -250,14 +248,14 @@ vector<vector<complex<float>>> transpose(const vector<vector<complex<float>>>& a
 }
 
 
-vector<complex<float>> compute_1d_dft(
-    const vector<complex<float>>& signal,
+CF_VEC_1D compute_1d_dft(
+    const CF_VEC_1D& signal,
           int   fft_size = 0,
     const bool& inverse  = false
 ) {
     if (fft_size <= 0) fft_size = signal.size();
 
-    vector<complex<float>> fft_vector = signal;
+    CF_VEC_1D fft_vector = signal;
 
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
@@ -285,16 +283,15 @@ vector<complex<float>> compute_1d_dft(
 }
 
 
-// TODO: Find matrix math library to do this with efficiency.
-vector<vector<complex<float>>> compute_axis_dft(
-    const vector<vector<complex<float>>>& signals,
+CF_VEC_2D compute_axis_dft(
+    const CF_VEC_2D& signals,
           int   fft_size = 0,
     const int&  axis     = 0,
     const bool& inverse  = false
 ) {
     if (axis != 0 and axis != 1) 
     {
-        throw invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
+        throw std::invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
     }
     if (fft_size == 0)
     {
@@ -302,7 +299,7 @@ vector<vector<complex<float>>> compute_axis_dft(
     }
     if (not axis)
     {
-        cout << "Tranposing Vector for Row-Axis 1D FFT" << endl;;
+        std::cout << "Tranposing Vector for Row-Axis 1D FFT" << std::endl;;
 
         return transpose(_compute_axis_dft(transpose(signals), fft_size, inverse));
     }
@@ -310,8 +307,8 @@ vector<vector<complex<float>>> compute_axis_dft(
 }
 
 
-vector<vector<complex<float>>> _compute_axis_dft(
-    const vector<vector<complex<float>>>& signals,
+CF_VEC_2D _compute_axis_dft(
+    const CF_VEC_2D& signals,
           int   fft_size,
     const bool& inverse
 ) {
@@ -320,13 +317,13 @@ vector<vector<complex<float>>> _compute_axis_dft(
     int min_fft_size  = 8;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    cout << "Initializing Complex Arrays" << endl;
+    std::cout << "Initializing Complex Arrays" << std::endl;
 
-    vector<vector<complex<float>>> fft_array_in = signals;
-    vector<vector<complex<float>>> fft_array_out(signal_rows, vector<complex<float>>(fft_size));
-    vector<fftwf_plan> plans(signal_rows);
+    CF_VEC_2D fft_array_in = signals;
+    CF_VEC_2D fft_array_out(signal_rows, CF_VEC_1D(fft_size));
+    std::vector<fftwf_plan> plans(signal_rows);
 
-    cout << "Initializing Plans, Excecuting FFTs" << endl;
+    std::cout << "Initializing Plans, Excecuting FFTs" << std::endl;
 
     for (int row = 0; row < signal_rows; row++)
     {
@@ -341,7 +338,7 @@ vector<vector<complex<float>>> _compute_axis_dft(
         fftwf_destroy_plan(plan);
     }
 
-    cout << "Setting FFT Output Data" << endl;
+    std::cout << "Setting FFT Output Data" << std::endl;
 
     float norm_factor = inverse ? 1.0f / (fft_size) : 1.0f;
 
@@ -360,13 +357,13 @@ vector<vector<complex<float>>> _compute_axis_dft(
 }
 
 
-vector<vector<complex<float>>> compute_2d_dft(
-    const vector<vector<complex<float>>>& signal,
+CF_VEC_2D compute_2d_dft(
+    const CF_VEC_2D& signal,
     const bool& inverse = false,
     int fft_rows = 0,
     int fft_cols = 0
 ) {
-    cout << "Initializing 1D Complex Vector for FFTW" << endl;
+    std::cout << "Initializing 1D Complex Vector for FFTW" << std::endl;
 
     if (fft_rows == 0) fft_rows = signal.size();
     if (fft_cols == 0) fft_cols = signal[0].size();
@@ -376,10 +373,10 @@ vector<vector<complex<float>>> compute_2d_dft(
 
     if (rows_out_of_lims or cols_out_of_lims)
     {
-        throw invalid_argument("Invalid FFT size for signal.");
+        throw std::invalid_argument("Invalid FFT size for signal.");
     }
 
-    vector<complex<float>> signal_fftw(fft_rows * fft_cols);
+    CF_VEC_1D signal_fftw(fft_rows * fft_cols);
 
     for (int i = 0; i < fft_rows; i++)
     {
@@ -391,8 +388,8 @@ vector<vector<complex<float>>> compute_2d_dft(
 
     fftwf_plan plan;
 
-    if (inverse) cout << "Executing 2D IFFT Plan" << endl;
-    else cout << "Executing 2D FFT Plan"  << endl;
+    if (inverse) std::cout << "Executing 2D IFFT Plan" << std::endl;
+    else         std::cout << "Executing 2D FFT Plan"  << std::endl;
 
     float norm_factor = inverse ? 1.0f / (fft_rows * fft_cols) : 1.0f;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
@@ -406,13 +403,13 @@ vector<vector<complex<float>>> compute_2d_dft(
 
     fftwf_execute(plan);
 
-    cout << "Destroying DFT Plan" << endl;
+    std::cout << "Destroying DFT Plan" << std::endl;
 
     fftwf_destroy_plan(plan);
 
-    cout << "Copying Complex Data into 2D Vector" << endl;
+    std::cout << "Copying Complex Data into 2D Vector" << std::endl;
 
-    vector<vector<complex<float>>> signal_fft(fft_rows, vector<complex<float>>(fft_cols));
+    CF_VEC_2D signal_fft(fft_rows, CF_VEC_1D(fft_cols));
 
     for (int i = 0; i < fft_rows; i++)
     {

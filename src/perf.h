@@ -12,16 +12,16 @@ Description: Functions for evaluating the performance of packet decoding.
 
 #include <thread>
 
-#include "packet.hpp"
-
+#include "packet.h"
+#include "misc_types.h"
 
 double time_packet_generation(
-    const string& filename,
-    const int&    num_packets,
-    const bool&   log,
-    const int&    log_interval
+    const std::string& filename,
+    const int&  num_packets,
+    const bool& log,
+    const int&  log_interval
 );
 
-void omp_test(const string& filename);
+void omp_test(const std::string& filename);
 
-void thread_test(const string& filename);
+void thread_test(const std::string& filename);
