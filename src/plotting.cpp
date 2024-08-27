@@ -225,7 +225,7 @@ void burst_command(char *argv[], unordered_map<string, bool>& options)
 void swath_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "filepath"};
-    vector<string> types = {"string", "int", "path"};
+    vector<string> types = {"string", "path"};
     validate_args("swath", args, types, argv);
 
     string filepath = string(argv[3]);
