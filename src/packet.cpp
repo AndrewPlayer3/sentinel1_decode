@@ -781,7 +781,7 @@ L0Packet L0Packet::get_next_packet(std::ifstream& data)
 
 
 /* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-std::vector<L0Packet> L0Packet::get_packets(const std::string& filename, const int& num_packets)
+PACKET_VEC_1D L0Packet::get_packets(const std::string& filename, const int& num_packets)
 {
     std::ifstream data = open_file(filename);
     return get_packets(data);
@@ -789,7 +789,7 @@ std::vector<L0Packet> L0Packet::get_packets(const std::string& filename, const i
 
 
 /* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-std::vector<L0Packet> L0Packet::get_packets(std::ifstream& data, const int& num_packets)
+PACKET_VEC_1D L0Packet::get_packets(std::ifstream& data, const int& num_packets)
 {
     PACKET_VEC_1D packets;
 
@@ -819,7 +819,7 @@ std::vector<L0Packet> L0Packet::get_packets(std::ifstream& data, const int& num_
 
 
 /* Returns all packets that are inside of the provided swath */
-std::vector<L0Packet> L0Packet::get_packets_in_swath(const std::string& filename, const std::string& swath)
+PACKET_VEC_1D L0Packet::get_packets_in_swath(const std::string& filename, const std::string& swath)
 {
     std::ifstream data = open_file(filename);
     return get_packets_in_swath(data, swath);
@@ -827,9 +827,9 @@ std::vector<L0Packet> L0Packet::get_packets_in_swath(const std::string& filename
 
 
 /* Returns all packets that are inside of the provided swath */
-std::vector<L0Packet> L0Packet::get_packets_in_swath(std::ifstream& data, const std::string& swath)
+PACKET_VEC_1D L0Packet::get_packets_in_swath(std::ifstream& data, const std::string& swath)
 {
-    std::vector<L0Packet> packets;
+    PACKET_VEC_1D packets;
 
     int index = 0;
 
@@ -861,7 +861,7 @@ std::vector<L0Packet> L0Packet::get_packets_in_swath(std::ifstream& data, const 
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-std::vector<std::vector<L0Packet>> L0Packet::get_packets_in_bursts(const std::string& filename, const std::string& swath)
+PACKET_VEC_2D L0Packet::get_packets_in_bursts(const std::string& filename, const std::string& swath)
 {
     std::ifstream data = open_file(filename);
     return get_packets_in_bursts(data, swath);
@@ -869,13 +869,13 @@ std::vector<std::vector<L0Packet>> L0Packet::get_packets_in_bursts(const std::st
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-std::vector<std::vector<L0Packet>> L0Packet::get_packets_in_bursts(std::ifstream& data, const std::string& swath)
+PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::string& swath)
 {
-    std::vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
+    PACKET_VEC_1D packets = L0Packet::get_packets_in_swath(data, swath);
     int num_packets = packets.size();
 
-    std::vector<std::vector<L0Packet>> bursts; 
-    std::vector<L0Packet> burst_packets;
+    PACKET_VEC_2D bursts; 
+    PACKET_VEC_1D burst_packets;
     std::set<int> burst_nums;
     int previous_az = 0;
     int num_bursts = 0;
@@ -906,11 +906,11 @@ std::vector<std::vector<L0Packet>> L0Packet::get_packets_in_bursts(std::ifstream
 }
 
 
-std::vector<L0Packet> L0Packet::decode_packets(const std::vector<L0Packet>& packets)
+PACKET_VEC_1D L0Packet::decode_packets(const PACKET_VEC_1D& packets)
 {
     int num_packets = packets.size();
 
-    std::vector<L0Packet> packets_out(num_packets);
+    PACKET_VEC_1D packets_out(num_packets);
 
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
@@ -924,7 +924,7 @@ std::vector<L0Packet> L0Packet::decode_packets(const std::vector<L0Packet>& pack
 }
 
 
-void L0Packet::decode_packets_in_place(std::vector<L0Packet>& packets)
+void L0Packet::decode_packets_in_place(PACKET_VEC_1D& packets)
 {
     int num_packets = packets.size();
     

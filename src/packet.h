@@ -206,17 +206,20 @@ public:
     CF_VEC_1D get_signal();
     CF_VEC_1D get_replica_chirp();
 
+    typedef struct std::vector<L0Packet>              PACKET_VEC_1D;
+    typedef struct std::vector<std::vector<L0Packet>> PACKET_VEC_2D;
+
     static L0Packet get_next_packet(std::ifstream& data);
-    static std::vector<L0Packet> get_packets(std::ifstream& data, const int& num_packets = 0);
-    static std::vector<L0Packet> get_packets(const std::string& filename, const int& num_packets = 0);
-    static std::vector<L0Packet> get_packets_in_swath(const std::string& filename, const std::string& swath);
-    static std::vector<L0Packet> get_packets_in_swath(std::ifstream& data, const std::string& swath);
-    static std::vector<std::vector<L0Packet>> get_packets_in_bursts(const std::string& filename, const std::string& swath);
-    static std::vector<std::vector<L0Packet>> get_packets_in_bursts(std::ifstream& data, const std::string& swath);
-    static std::vector<L0Packet> decode_packets(const std::vector<L0Packet>& packets);
-    static void decode_packets_in_place(std::vector<L0Packet>& packets);
+    static PACKET_VEC_1D get_packets(std::ifstream& data, const int& num_packets = 0);
+    static PACKET_VEC_1D get_packets(const std::string& filename, const int& num_packets = 0);
+    static PACKET_VEC_1D get_packets_in_swath(const std::string& filename, const std::string& swath);
+    static PACKET_VEC_1D get_packets_in_swath(std::ifstream& data, const std::string& swath);
+    static PACKET_VEC_2D get_packets_in_bursts(const std::string& filename, const std::string& swath);
+    static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath);
+    static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
+    static void decode_packets_in_place(PACKET_VEC_1D& packets);
 };
 
 
-typedef struct std::vector<L0Packet>              PACKET_VEC_1D;
-typedef struct std::vector<std::vector<L0Packet>> PACKET_VEC_2D;
+typedef L0Packet::PACKET_VEC_1D PACKET_VEC_1D;
+typedef L0Packet::PACKET_VEC_2D PACKET_VEC_2D;
