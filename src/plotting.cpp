@@ -221,17 +221,17 @@ void swath_command(char *argv[], unordered_map<string, bool>& options)
 }
 
 
-void complex_samples_command(char *argv[], unordered_map<string, bool>& options)
+void signal_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"packet_index", "filepath"};
 
-    validate_args("complex_samples", args, argv);
+    validate_args("signal", args, argv);
 
     string filename     = string(argv[3]);
     int    packet_index = stoi(argv[2]); 
     string scaling      = parse_scaling_mode(options);
 
-    plot_complex_samples(filename, packet_index, scaling);
+    plot_signal(filename, packet_index, scaling);
 }
 
 
@@ -247,7 +247,7 @@ void print_help(vector<string> help_strings)
 int main(int argc, char* argv[]) 
 {
     vector<string> help_strings = {
-        "complex_samples [packet_index] [mode] [path]",
+        "signal [packet_index] [mode] [path]",
         "swath [swath] [path]",
         "burst [swath] [burst_num] [path]",
         "fft [packet_index] [fft_size] [path] [--inverse]",
@@ -281,7 +281,7 @@ int main(int argc, char* argv[])
     };
     options = parse_options(options, argv, 2);
 
-    if      (command == "complex_samples")        complex_samples_command(&(argv[0]), options);
+    if      (command == "signal")                 signal_command(&(argv[0]), options);
     else if (command == "swath")                  swath_command(&(argv[0]), options);
     else if (command == "burst")                  burst_command(&(argv[0]), options);
     else if (command == "fft")                    fft_command(&(argv[0]), options); 
