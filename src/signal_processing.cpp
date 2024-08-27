@@ -111,6 +111,45 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
 }
 
 
+F_VEC_1D flatten(const F_VEC_2D& values)
+{
+    int rows = values.size();
+    int cols = values[0].size();
+
+    F_VEC_1D flat(rows * cols);
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            flat[i * cols + j] = values[i][j];
+        }
+    }
+
+    return flat;
+}
+
+
+CF_VEC_1D flatten(const CF_VEC_2D& values)
+{
+    int rows = values.size();
+    int cols = values[0].size();
+
+    CF_VEC_1D flat(rows * cols);
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            flat[i * cols + j] = values[i][j];
+        }
+    }
+
+    return flat;
+}
+
 
 F_VEC_2D norm_2d(
     const CF_VEC_2D& complex_values,

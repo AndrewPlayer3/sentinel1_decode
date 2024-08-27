@@ -10,6 +10,10 @@
 #include "fftw3.h"
 
 
+F_VEC_1D flatten(const F_VEC_2D& values);
+
+CF_VEC_1D flatten(const CF_VEC_2D& values);
+
 CF_VEC_1D pulse_compression(
     const CF_VEC_1D& signal,
     const CF_VEC_1D& replica_chirp
@@ -76,23 +80,3 @@ CF_VEC_2D compute_2d_dft(
     int fft_rows,
     int fft_cols
 );
-
-template <typename T>
-std::vector<T> flatten(const std::vector<std::vector<T>>& values)
-{
-    int rows = values.size();
-    int cols = values[0].size();
-
-    std::vector<T> flat(rows * cols);
-
-    #pragma omp parallel for collapse(2)
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            flat[i * cols + j] = values[i][j];
-        }
-    }
-
-    return flat;
-}
