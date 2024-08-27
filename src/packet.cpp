@@ -11,133 +11,6 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 #include "packet.hpp"
 
 
-/* Returns the header dictionary with the values cast to integers with no calculations */
-unordered_map<string, int> L0Packet::_parse_header(
-    const vector<u_int8_t>&  bytes,
-    const vector<int>&       bit_lengths,
-    const vector<string>&    field_names
-) {
-    int num_fields = field_names.size();
-    int bit_index = 0;
-
-    unordered_map<string, int> header;
-
-    for (int i = 0; i < num_fields; i++) 
-    {
-        header[field_names[i]] = read_n_bits(bytes, bit_index, bit_lengths[i]);
-
-        bit_index += bit_lengths[i];
-    }
-    return header;
-}
-
-
-/* Decode the next packet within the data stream */
-L0Packet L0Packet::get_next_packet(ifstream& data)
-{
-    vector<u_int8_t> primary_bytes = read_bytes(data, 6);
-    unordered_map<string, int> primary_header = _parse_header(
-        primary_bytes,
-        PRIMARY_HEADER,
-        PRIMARY_HEADER_FIELDS
-    );
-    if (data.eof()) return L0Packet();
-
-    vector<u_int8_t> secondary_bytes = read_bytes(data, 62);
-    unordered_map<string, int> secondary_header = _parse_header(
-        secondary_bytes,
-        SECONDARY_HEADER,
-        SECONDARY_HEADER_FIELDS
-    );
-
-    u_int32_t packet_length    = primary_header["packet_data_length"];
-    u_int32_t user_data_length = packet_length + 1 - SECONDARY_HEADER_SIZE;
-
-    vector<u_int8_t> user_data = read_bytes(data, user_data_length);
-
-    L0Packet packet = L0Packet(
-        primary_header,
-        secondary_header,
-        user_data
-    );
-    return packet;
-}
-
-
-/* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-vector<L0Packet> L0Packet::get_packets(const string& filename)
-{
-    ifstream data = open_file(filename);
-    return get_packets(data);
-}
-
-
-/* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
-{
-    vector<L0Packet> packets;
-
-    int index = 0;
-
-    bool get_all_packets = num_packets == 0;
-
-    while (!data.eof() and (index < num_packets or get_all_packets))
-    {
-        try
-        {
-            L0Packet packet = L0Packet::get_next_packet(data);
-
-            if (!packet.is_empty()) packets.push_back(packet);
-            else break;
-            index += 1;
-        }
-        catch(runtime_error)
-        {
-            cout << "Caught a runtime error while decoding packet #"
-                 << index << ". Skipping..." << endl;
-            continue;
-        }
-    }
-    return packets;
-}
-
-
-/* Returns all packets that are inside of the provided swath */
-vector<L0Packet> L0Packet::get_packets_in_swath(const string& filename, const string& swath)
-{
-    ifstream data = open_file(filename);
-    return get_packets_in_swath(data, swath);
-}
-
-
-/* Returns all packets that are inside of the provided swath */
-vector<L0Packet> L0Packet::get_packets_in_swath(ifstream& data, const string& swath)
-{
-    vector<L0Packet> packets;
-
-    int index = 0;
-
-    while (!data.eof())
-    {
-        try
-        {
-            L0Packet packet = L0Packet::get_next_packet(data);
-
-            if (packet.is_empty()) break;
-            if (packet.get_swath() == swath) packets.push_back(packet);
-            index += 1;
-        }
-        catch(runtime_error)
-        {
-            cout << "Caught a runtime error while decoding packet #" 
-                 << index << ". Skipping..." << endl;
-            continue;
-        }
-    }
-    return packets;
-}
-
-
 /* Returns the length of the baq blocks in bytes */
 int L0Packet::get_baq_block_length()
 {   
@@ -373,9 +246,9 @@ void L0Packet::_set_data_format()
 
 vector<complex<float>> L0Packet::get_replica_chirp()
 {
-    if (!_complex_samples_set_flag)
+    if (!_signal_set_flag)
     {
-        _set_complex_samples();
+        _set_signal();
     }
 
     float txpsf = get_start_frequency();
@@ -419,13 +292,13 @@ vector<complex<float>> L0Packet::get_replica_chirp()
 
 
 /* Returns the decoded complex sample data - only does the calculations the first time.  */
-vector<complex<float>> L0Packet::get_complex_samples()
+vector<complex<float>> L0Packet::get_signal()
 {
-    if (!_complex_samples_set_flag)
+    if (!_signal_set_flag)
     {
-        _set_complex_samples();
+        _set_signal();
     }
-    return _complex_samples;
+    return _signal;
 }
 
 
@@ -446,7 +319,7 @@ void L0Packet::_decode()
         _set_quad_types_a_and_b(QE, bit_index);
         _set_quad_types_a_and_b(QO, bit_index);
 
-        _complex_samples = _get_complex_samples_types_a_and_b(IE, IO, QE, QO);
+        _signal = _get_signal_types_a_and_b(IE, IO, QE, QO);
 
         return;
     }
@@ -465,7 +338,7 @@ void L0Packet::_decode()
         _set_quad_type_c(QE, bit_index);
         _set_quad_type_c(QO, bit_index);
 
-        _complex_samples = _get_complex_samples_type_c(IE, IO, QE, QO);
+        _signal = _get_signal_type_c(IE, IO, QE, QO);
     }
     else if (_data_format == 'D')
     {
@@ -476,17 +349,17 @@ void L0Packet::_decode()
         _set_quad_type_d(QE, bit_index);
         _set_quad_type_d(QO, bit_index);
 
-        _complex_samples = _get_complex_samples_type_d(IE, IO, QE, QO);
+        _signal = _get_signal_type_d(IE, IO, QE, QO);
     }
 }
 
 
 /* Setter for _complex_samples - destroys _raw_user_data to free space */
-void L0Packet::_set_complex_samples()
+void L0Packet::_set_signal()
 {
-    _complex_samples.reserve(_num_quads*4);
+    _signal.reserve(_num_quads*4);
     _decode();
-    _complex_samples_set_flag = true;
+    _signal_set_flag = true;
 
     vector<u_int8_t>().swap(_raw_user_data);
 }
@@ -510,7 +383,7 @@ int L0Packet::_get_next_word_boundary(const int& bit_index)
 /***********************************************************************/
 
 
-vector<complex<float>> L0Packet::_get_complex_samples_types_a_and_b(
+vector<complex<float>> L0Packet::_get_signal_types_a_and_b(
     H_CODE& IE,
     H_CODE& IO,
     H_CODE& QE,
@@ -593,7 +466,7 @@ double L0Packet::_get_s_values_type_c(
 }
 
 
-vector<complex<float>> L0Packet::_get_complex_samples_type_c(
+vector<complex<float>> L0Packet::_get_signal_type_c(
     QUAD& IE,
     QUAD& IO,
     QUAD& QE,
@@ -724,7 +597,7 @@ double L0Packet::_get_s_values_type_d(
 }
 
 
-vector<complex<float>> L0Packet::_get_complex_samples_type_d(
+vector<complex<float>> L0Packet::_get_signal_type_d(
     QUAD& IE,
     QUAD& IO,
     QUAD& QE,
@@ -846,4 +719,220 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
         component.blocks.push_back(_get_h_code_type_d(brc, bit_index, is_last_block));
     }
     bit_index = _get_next_word_boundary(bit_index);
+}
+
+
+/***********************************************************************/
+/*                                                                     */
+/* STATIC DECODING METHODS                                             */
+/*                                                                     */
+/***********************************************************************/
+
+
+/* Returns the header dictionary with the values cast to integers with no calculations */
+unordered_map<string, int> L0Packet::_parse_header(
+    const vector<u_int8_t>&  bytes,
+    const vector<int>&       bit_lengths,
+    const vector<string>&    field_names
+) {
+    int num_fields = field_names.size();
+    int bit_index = 0;
+
+    unordered_map<string, int> header;
+
+    for (int i = 0; i < num_fields; i++) 
+    {
+        header[field_names[i]] = read_n_bits(bytes, bit_index, bit_lengths[i]);
+
+        bit_index += bit_lengths[i];
+    }
+    return header;
+}
+
+
+/* Decode the next packet within the data stream */
+L0Packet L0Packet::get_next_packet(ifstream& data)
+{
+    vector<u_int8_t> primary_bytes = read_bytes(data, 6);
+    unordered_map<string, int> primary_header = _parse_header(
+        primary_bytes,
+        PRIMARY_HEADER,
+        PRIMARY_HEADER_FIELDS
+    );
+    if (data.eof()) return L0Packet();
+
+    vector<u_int8_t> secondary_bytes = read_bytes(data, 62);
+    unordered_map<string, int> secondary_header = _parse_header(
+        secondary_bytes,
+        SECONDARY_HEADER,
+        SECONDARY_HEADER_FIELDS
+    );
+
+    u_int32_t packet_length    = primary_header["packet_data_length"];
+    u_int32_t user_data_length = packet_length + 1 - SECONDARY_HEADER_SIZE;
+
+    vector<u_int8_t> user_data = read_bytes(data, user_data_length);
+
+    L0Packet packet = L0Packet(
+        primary_header,
+        secondary_header,
+        user_data
+    );
+    return packet;
+}
+
+
+/* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
+vector<L0Packet> L0Packet::get_packets(const string& filename, const int& num_packets)
+{
+    ifstream data = open_file(filename);
+    return get_packets(data);
+}
+
+
+/* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
+vector<L0Packet> L0Packet::get_packets(ifstream& data, const int& num_packets)
+{
+    vector<L0Packet> packets;
+
+    int index = 0;
+
+    bool get_all_packets = num_packets == 0;
+
+    while (!data.eof() and (index < num_packets or get_all_packets))
+    {
+        try
+        {
+            L0Packet packet = L0Packet::get_next_packet(data);
+
+            if (!packet.is_empty()) packets.push_back(packet);
+            else break;
+            index += 1;
+        }
+        catch(runtime_error)
+        {
+            cout << "Caught a runtime error while decoding packet #"
+                 << index << ". Skipping..." << endl;
+            continue;
+        }
+    }
+    return packets;
+}
+
+
+/* Returns all packets that are inside of the provided swath */
+vector<L0Packet> L0Packet::get_packets_in_swath(const string& filename, const string& swath)
+{
+    ifstream data = open_file(filename);
+    return get_packets_in_swath(data, swath);
+}
+
+
+/* Returns all packets that are inside of the provided swath */
+vector<L0Packet> L0Packet::get_packets_in_swath(ifstream& data, const string& swath)
+{
+    vector<L0Packet> packets;
+
+    int index = 0;
+
+    while (!data.eof())
+    {
+        try
+        {
+            L0Packet packet = L0Packet::get_next_packet(data);
+
+            if (packet.is_empty()) break;
+            if (packet.get_swath() == swath) packets.push_back(packet);
+            index += 1;
+        }
+        catch(runtime_error)
+        {
+            cout << "Caught a runtime error while decoding packet #" 
+                 << index << ". Skipping..." << endl;
+            continue;
+        }
+    }
+
+    if (packets.size() == 0)
+    {
+        throw runtime_error("No packets found for swath: " + swath);
+    }
+
+    return packets;
+}
+
+
+/* Returns all packets in the provided swath, with each burst in its own vector. */
+vector<vector<L0Packet>> L0Packet::get_packets_in_bursts(const string& filename, const string& swath)
+{
+    ifstream data = open_file(filename);
+    return get_packets_in_bursts(data, swath);
+}
+
+
+/* Returns all packets in the provided swath, with each burst in its own vector. */
+vector<vector<L0Packet>> L0Packet::get_packets_in_bursts(ifstream& data, const string& swath)
+{
+    vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
+    int num_packets = packets.size();
+
+    vector<vector<L0Packet>> bursts; 
+    vector<L0Packet> burst_packets;
+    set<int> burst_nums;
+    int previous_az = 0;
+    int num_bursts = 0;
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = packets[i];
+        if (packet.get_data_format() == 'D')
+        {
+            int az = packet.secondary_header("azimuth_beam_address");
+
+            if (i == 0) previous_az = az;
+
+            if (az != previous_az and az != previous_az + 1)
+            {
+                bursts.push_back(burst_packets);
+                burst_packets = vector<L0Packet>();
+                burst_nums.emplace(num_bursts++);
+            }
+            burst_packets.push_back(packet);
+
+            previous_az = az;
+        }
+        if (i == num_packets - 1) bursts.push_back(burst_packets);
+    }
+
+    return bursts;
+}
+
+
+vector<L0Packet> L0Packet::decode_packets(const vector<L0Packet>& packets)
+{
+    int num_packets = packets.size();
+
+    vector<L0Packet> packets_out(num_packets);
+
+    #pragma omp parallel for
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = packets[i];
+        packet.get_signal();
+        packets_out[i] = packet;
+    }
+
+    return packets_out;
+}
+
+
+void L0Packet::decode_packets_in_place(vector<L0Packet>& packets)
+{
+    int num_packets = packets.size();
+    
+    #pragma omp parallel for
+    for (int i = 0; i < num_packets; i++)
+    {
+        packets[i].get_signal();
+    }
 }
