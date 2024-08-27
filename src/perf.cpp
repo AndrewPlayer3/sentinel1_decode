@@ -19,18 +19,13 @@ double time_packet_generation(
     const int&    log_interval
 ) {
     ifstream data = open_file(filename);
-
     double total_runtime = 0.0;
     for (int i = 0; i < num_packets; i++)
     {
         try
         {
             auto start = chrono::high_resolution_clock::now();
-
-            L0Packet packet = L0Packet::get_next_packet(data);
-
-            vector<complex<float>> complex_samples = packet.get_complex_samples();
-
+            L0Packet::get_next_packet(data).get_signal();
             auto end   = chrono::high_resolution_clock::now();
 
             chrono::duration<double> difference = end - start;
@@ -40,7 +35,6 @@ double time_packet_generation(
             {
                 cout << "Decoded " << i << " packets in " << total_runtime << "s." << endl;
             }
-
             if (data.eof())
             {
                 if (log) cout << "EOF reached after decoding " << i << " packets." << endl;
@@ -64,32 +58,28 @@ void omp_test(const string& filename)
 {
     vector<L0Packet> packets = L0Packet::get_packets(filename);
 
-    const int num_packets = packets.size();
-
     chrono::time_point start = chrono::high_resolution_clock::now();
 
-    vector<vector<complex<float>>> complex_samples(num_packets);
-
     #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
+    for (int i = 0; i < packets.size(); i++)
     {
-        complex_samples[i] = packets[i].get_complex_samples();
+        packets[i].get_signal();
     }
+
     chrono::duration<double> difference = chrono::high_resolution_clock::now() - start;
 
-    cout << "Decoded " << num_packets << " packets in " << difference.count() << "s." << endl;
+    cout << "Decoded " << packets.size() << " packets in " << difference.count() << "s." << endl;
 }
 
 
 void thread_runner(
-    vector<vector<complex<float>>>& complex_samples,
     vector<L0Packet>& packets,
     const int start_index,
     const int end_index
 ) {
     for (int i = start_index; i < end_index; i++)
     {
-        complex_samples[i] = packets[i].get_complex_samples();
+        packets[i].get_signal();
     }
 }
 
@@ -105,8 +95,6 @@ void thread_test(const string& filename)
 
     chrono::time_point start = chrono::high_resolution_clock::now();
 
-    vector<vector<complex<float>>> complex_samples(num_packets);
-
     for (int i = 0; i < num_threads; i++)
     {
         int start_index =  i * chunk_size;
@@ -114,7 +102,6 @@ void thread_test(const string& filename)
 
         threads.emplace_back(
             thread_runner,
-            ref(complex_samples),
             ref(packets),
             start_index,
             end_index
