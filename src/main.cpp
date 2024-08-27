@@ -27,24 +27,25 @@ void validate_args(
     int end_index = command_args.size() + start_index;
     for (int i = start_index; i < end_index; i++)
     {
+        int index = i - start_index;
         if (args[i] == __null)
         {
-            string error_string = "Error! " + command + " is missing the following argument: ";
-            throw runtime_error(error_string + command_args[i]);
+            cout << command  << " is missing the following argument: "
+                 << command_args[index] << endl;
+            exit(1);
         }
-        int index = i - start_index;
         try
         {
             if      (arg_types[index] == "string") string(args[i]);
             else if (arg_types[index] == "char")   char(args[i][0]);
             else if (arg_types[index] == "int")    stoi(args[i]);
             else if (arg_types[index] == "float")  stof(args[i]);
+            else if (arg_types[index] == "path")   open_file(string(args[i]));
         }
-        catch(std::invalid_argument& e)
+        catch(...)
         {
-            cout << args[i] << " is not valid for argument " << command_args[index] 
-                 << " of type " << arg_types[index] << "." << endl;
-            throw(e);
+            cout << args[i] << " is not a valid " << command_args[index] << "." << endl;
+            exit(1);
         }
     }
 }
@@ -144,7 +145,7 @@ int main(int argc, char* argv[])
     else if (command == "print")
     {
         vector<string> args = {"packet_index", "path"};
-        vector<string> arg_types = {"int", "string"};
+        vector<string> arg_types = {"int", "path"};
         validate_args(command, args, arg_types, &(argv[0]));
         print_packet_at_index(string(argv[3]), stoi(argv[2]), true, true, true);
     }
@@ -152,7 +153,7 @@ int main(int argc, char* argv[])
     else if (command == "print_headers")
     {
         vector<string> args = {"packet_index", "path"};
-        vector<string> arg_types = {"int", "string"};
+        vector<string> arg_types = {"int", "path"};
         validate_args(command, args, arg_types, &(argv[0]));
         print_packet_at_index(string(argv[3]), stoi(argv[2]));
     }
@@ -160,7 +161,7 @@ int main(int argc, char* argv[])
     else if (command == "print_pulse_info")
     {
         vector<string> args = {"packet_index", "path"};
-        vector<string> arg_types = {"int", "string"};
+        vector<string> arg_types = {"int", "path"};
         validate_args(command, args, arg_types, &(argv[0]));
         print_packet_at_index(string(argv[3]), stoi(argv[2]), false, true);
     }
@@ -168,7 +169,7 @@ int main(int argc, char* argv[])
     else if (command == "print_modes")
     {
         vector<string> args = {"packet_index", "path"};
-        vector<string> arg_types = {"int", "string"};
+        vector<string> arg_types = {"int", "path"};
         validate_args(command, args, arg_types, &(argv[0]));
         print_packet_at_index(string(argv[3]), stoi(argv[2]), false, false, true);
     }
@@ -176,7 +177,7 @@ int main(int argc, char* argv[])
     else if (command == "print_index_records")
     {
         vector<string> args = {"path"};
-        vector<string> arg_types = {"string"};
+        vector<string> arg_types = {"path"};
         validate_args(command, args, arg_types, &(argv[0]));
         print_index_records(string(argv[2]));
     }
@@ -184,7 +185,7 @@ int main(int argc, char* argv[])
     else if (command == "print_annotation_record")
     {
         vector<string> args = {"record_index", "path"};
-        vector<string> arg_types = {"int", "string"};
+        vector<string> arg_types = {"int", "path"};
         validate_args(command, args, arg_types, &(argv[0]));
         print_annotation_record(string(argv[3]), stoi(argv[2]));
     }
@@ -192,7 +193,7 @@ int main(int argc, char* argv[])
     else if (command == "print_complex_samples")
     {
         vector<string> args = {"packet_index", "path"};
-        vector<string> arg_types = {"int", "string"};
+        vector<string> arg_types = {"int", "path"};
         validate_args(command, args, arg_types, &(argv[0]));
 
         ifstream data = open_file(string(argv[3]));
@@ -209,7 +210,7 @@ int main(int argc, char* argv[])
     else if (command == "find_packets_of_type")
     {
         vector<string> args = {"packet_type", "path"};
-        vector<string> types = {"char", "string"};
+        vector<string> types = {"char", "path"};
         validate_args(command, args, types, &(argv[0]));
 
         char type = char(argv[2][0]);
@@ -223,7 +224,8 @@ int main(int argc, char* argv[])
             int  sequence_count = packet.primary_header("packet_sequence_count");
             if (data_format == type)
             {
-                cout << "Packet #" << sequence_count << " at index " << i << " is type " << data_format << endl;
+                cout << "Packet #" << sequence_count << " at index "
+                     << i << " is type " << data_format << endl;
             }
         }
     }
@@ -231,7 +233,7 @@ int main(int argc, char* argv[])
     else if (command == "print_swaths")
     {
         vector<string> args = {"path"};
-        vector<string> types = {"string"};
+        vector<string> types = {"path"};
         validate_args(command, args, types, &(argv[0]));
 
         vector<L0Packet> packets = L0Packet::get_packets(string(argv[2]));
@@ -251,7 +253,7 @@ int main(int argc, char* argv[])
     else if (command == "time")
     {
         vector<string> args = {"packet_count", "path"};
-        vector<string> types = {"int", "string"};
+        vector<string> types = {"int", "path"};
         validate_args(command, args, types, &(argv[0]));
 
         double runtime = time_packet_generation(string(argv[3]), stoi(argv[2]), false, 0);
@@ -262,7 +264,7 @@ int main(int argc, char* argv[])
     else if (command == "thread_test")
     {
         vector<string> args = {"path"};
-        vector<string> types = {"string"};
+        vector<string> types = {"path"};
         validate_args(command, args, types, &(argv[0]));
 
         thread_test(string(argv[2]));
@@ -271,7 +273,7 @@ int main(int argc, char* argv[])
     else if (command == "omp_test")
     {
         vector<string> args = {"path"};
-        vector<string> types = {"string"};
+        vector<string> types = {"path"};
         validate_args(command, args, types, &(argv[0]));
 
         omp_test(string(argv[2]));

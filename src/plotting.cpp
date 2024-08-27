@@ -36,18 +36,33 @@ unordered_map<string, bool> parse_options(
 void validate_args(
     const string& command,
     const vector<string>& command_args,
+    const vector<string>& arg_types,
           char*   args[],
     const int&    start_index = 2,
     const string& help = ""
 ) {
-    string error_string = "Error! " + command + " is missing the following argument: ";
-
     int end_index = command_args.size() + start_index;
     for (int i = start_index; i < end_index; i++)
     {
+        int index = i - start_index;
         if (args[i] == __null)
         {
-            throw runtime_error(error_string + command_args[i]);
+            cout << command  << " is missing the following argument: "
+                 << command_args[index] << endl;
+            exit(1);
+        }
+        try
+        {
+            if      (arg_types[index] == "string") string(args[i]);
+            else if (arg_types[index] == "char")   char(args[i][0]);
+            else if (arg_types[index] == "int")    stoi(args[i]);
+            else if (arg_types[index] == "float")  stof(args[i]);
+            else if (arg_types[index] == "path")   open_file(string(args[i]));
+        }
+        catch(...)
+        {
+            cout << args[i] << " is not a valid " << command_args[index] << "." << endl;
+            exit(1);
         }
     }
 }
@@ -69,9 +84,9 @@ string parse_scaling_mode(unordered_map<string, bool> options)
 
 void pulse_command(char* argv[], unordered_map<string, bool>& options)
 {
-    vector<string> args = {"packet_index", "filepath"};
-
-    validate_args("pulse", args, argv);
+    vector<string> args  = {"packet_index", "filepath"};
+    vector<string> types = {"int", "path"};
+    validate_args("pulse", args, types, argv);
 
     int packet_index = stoi(argv[2]);
     string filename  = string(argv[3]);
@@ -84,8 +99,8 @@ void pulse_command(char* argv[], unordered_map<string, bool>& options)
 void pulse_compression_command(char* argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"packet_index", "filepath"};
-
-    validate_args("pulse_compression", args, argv);
+    vector<string> types = {"int", "path"};
+    validate_args("pulse_compression", args, types, argv);
 
     int packet_index = stoi(argv[2]);
     string filename  = string(argv[3]);
@@ -99,8 +114,8 @@ void pulse_compression_command(char* argv[], unordered_map<string, bool>& option
 void pulse_image_command(char* argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "burst_num", "filepath"};
-
-    validate_args("pulse_image", args, argv);
+    vector<string> types = {"string", "int", "path"};
+    validate_args("pulse_img", args, types, argv);
 
     string swath     = string(argv[2]);
     int    burst_num = stoi(argv[3]);
@@ -114,8 +129,8 @@ void pulse_image_command(char* argv[], unordered_map<string, bool>& options)
 void range_compressed_burst_command(char* argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "burst_num", "filepath"};
-
-    validate_args("range_compressed_burst", args, argv);
+    vector<string> types = {"string", "int", "path"};
+    validate_args("range_compressed_burst", args, types, argv);
 
     string swath     = string(argv[2]);
     int    burst_num = stoi(argv[3]);
@@ -129,8 +144,8 @@ void range_compressed_burst_command(char* argv[], unordered_map<string, bool>& o
 void range_compressed_swath_command(char* argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "filepath"};
-
-    validate_args("range_compressed_swath", args, argv);
+    vector<string> types = {"string", "path"};
+    validate_args("range_compressed_swath", args, types, argv);
 
     string swath     = string(argv[2]);
     string filename  = string(argv[3]);
@@ -143,8 +158,8 @@ void range_compressed_swath_command(char* argv[], unordered_map<string, bool>& o
 void fft_axis_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "burst_num", "axis", "fft_size", "filepath"};
-
-    validate_args("fft_axis", args, argv);
+    vector<string> types = {"string", "int", "int", "int", "path"};
+    validate_args("fft_axis", args, types, argv);
 
     string swath    = string(argv[2]);
     int    burst_num = stoi(argv[3]);
@@ -161,8 +176,8 @@ void fft_axis_command(char *argv[], unordered_map<string, bool>& options)
 void fft2_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "burst_num", "fft_rows", "fft_cols", "filepath"};
-
-    validate_args("fft2", args, argv);
+    vector<string> types = {"string", "int", "int", "int", "path"};
+    validate_args("fft2", args, types, argv);
 
     string swath    = string(argv[2]);
     int    burst_num = stoi(argv[3]);
@@ -179,8 +194,8 @@ void fft2_command(char *argv[], unordered_map<string, bool>& options)
 void fft_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"packet_index", "fft_size", "filepath"};
-
-    validate_args("fft", args, argv);
+    vector<string> types = {"int", "int", "path"};
+    validate_args("fft", args, types, argv);
 
     string filename     = string(argv[4]);
     int    packet_index = stoi(argv[2]);
@@ -195,8 +210,8 @@ void fft_command(char *argv[], unordered_map<string, bool>& options)
 void burst_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "burst_num", "filepath"};
-
-    validate_args("burst", args, argv, 2);
+    vector<string> types = {"string", "int", "path"};
+    validate_args("burst", args, types, argv);
 
     string filepath  = string(argv[4]);
     string swath     = string(argv[2]);
@@ -210,8 +225,8 @@ void burst_command(char *argv[], unordered_map<string, bool>& options)
 void swath_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"swath", "filepath"};
-
-    validate_args("swath", args, argv, 2);
+    vector<string> types = {"string", "int", "path"};
+    validate_args("swath", args, types, argv);
 
     string filepath = string(argv[3]);
     string swath    = string(argv[2]);
@@ -224,8 +239,8 @@ void swath_command(char *argv[], unordered_map<string, bool>& options)
 void signal_command(char *argv[], unordered_map<string, bool>& options)
 {
     vector<string> args = {"packet_index", "filepath"};
-
-    validate_args("signal", args, argv);
+    vector<string> types = {"int", "path"};
+    validate_args("signal", args, types, argv);
 
     string filename     = string(argv[3]);
     int    packet_index = stoi(argv[2]); 
@@ -292,7 +307,6 @@ int main(int argc, char* argv[])
     else if (command == "burst_pulses")           pulse_image_command(&(argv[0]), options);
     else if (command == "range_compressed_burst") range_compressed_burst_command(&(argv[0]), options);
     else if (command == "range_compressed_swath") range_compressed_swath_command(&(argv[0]), options);
-
 
     else if (command == "help" or command == "--help" or command == "-h")
     {
