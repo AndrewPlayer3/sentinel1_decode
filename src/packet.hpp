@@ -13,6 +13,7 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 #include <complex>
 
 #include "decoding_utils.hpp"
@@ -93,11 +94,11 @@ private:
 
     vector<int> _brc = {};
     vector<int> _thresholds = {};
-    vector<complex<float>> _complex_samples;
+    vector<complex<float>> _signal;
 
-    bool _complex_samples_set_flag = false;
+    bool _signal_set_flag = false;
 
-    void _set_complex_samples();
+    void _set_signal();
     void _decode();
     int  _get_next_word_boundary(const int& bit_index);
 
@@ -126,15 +127,15 @@ private:
     void _set_quad_type_c(QUAD& component, int& bit_index);
     void _set_quad_types_a_and_b(H_CODE& component, int& bit_index);
 
-    vector<complex<float>> _get_complex_samples_type_d(
+    vector<complex<float>> _get_signal_type_d(
         QUAD& IE, QUAD& IO, 
         QUAD& QE, QUAD& QO
     );
-    vector<complex<float>> _get_complex_samples_type_c(
+    vector<complex<float>> _get_signal_type_c(
         QUAD& IE, QUAD& IO,
         QUAD& QE, QUAD& QO
     );
-    vector<complex<float>> _get_complex_samples_types_a_and_b(
+    vector<complex<float>> _get_signal_types_a_and_b(
         H_CODE& IE, H_CODE& IO,
         H_CODE& QE, H_CODE& QO
     );
@@ -204,12 +205,16 @@ public:
     void print_modes();
     void print_pulse_info();
 
-    vector<complex<float>> get_complex_samples();
+    vector<complex<float>> get_signal();
     vector<complex<float>> get_replica_chirp();
 
     static L0Packet get_next_packet(ifstream& data);
     static vector<L0Packet> get_packets(ifstream& data, const int& num_packets = 0);
-    static vector<L0Packet> get_packets(const string& filename);
+    static vector<L0Packet> get_packets(const string& filename, const int& num_packets = 0);
     static vector<L0Packet> get_packets_in_swath(const string& filename, const string& swath);
     static vector<L0Packet> get_packets_in_swath(ifstream& data, const string& swath);
+    static vector<vector<L0Packet>> get_packets_in_bursts(const string& filename, const string& swath);
+    static vector<vector<L0Packet>> get_packets_in_bursts(ifstream& data, const string& swath);
+    static vector<L0Packet> decode_packets(const vector<L0Packet>& packets);
+    static void decode_packets_in_place(vector<L0Packet>& packets);
 };

@@ -1,17 +1,15 @@
 #include <set>
 
 #include "packet.hpp"
+#include "aux_decoding.hpp"
+#include "burst.hpp"
+#include "swath.hpp"
 #include "signal_processing.hpp"
 
 #include "../include/matplotlibcpp.h"
 
 using namespace std;
 
-
-vector<vector<complex<float>>> decode_swath(
-    const string& filename,
-    const string& swath
-);
 
 void plot_pulse(
     const string& filename,
@@ -68,7 +66,7 @@ void plot_fft(
 );
 
 void plot_complex_image(
-    const vector<vector<complex<float>>>& complex_samples,
+    const vector<vector<complex<float>>>& signals,
     const string& scaling_mode
 );
 
@@ -92,12 +90,12 @@ void plot_fft_axis(
     const string& scaling_mode
 );
 
-void plot_complex_samples(
-    const vector<complex<float>>& complex_samples,
+void plot_signal(
+    const vector<complex<float>>& signal,
     const string& scaling_mode
 );
 
-void plot_complex_samples(
+void plot_signal(
     const string& filename,
     const int&    packet_index,
     const string& scaling_mode

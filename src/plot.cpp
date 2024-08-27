@@ -2,121 +2,20 @@
 
 using namespace std;
 
-
-
-pair<vector<vector<complex<float>>>, vector<L0Packet>> decode_bursts(const string& filename, const string& swath, const int& burst_num)
+vector<float> scale(const vector<complex<float>>& signal, const string& scaling_mode)
 {
-    cout << "Parsing Packets" << endl;
-    
-    ifstream data = open_file(filename);
-    vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
-    int num_packets = packets.size();
+    vector<float> samples(signal.size());
 
-    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
-
-    vector<vector<L0Packet>> bursts; 
-    vector<L0Packet> burst_packets;
-    set<int> burst_nums;
-    int previous_az = 0;
-    int num_bursts = 0;
-
-    for (int i = 0; i < num_packets; i++)
-    {
-        L0Packet packet = packets[i];
-        if (packet.get_data_format() == 'D')
-        {
-            int az = packet.secondary_header("azimuth_beam_address");
-            if (i == 0) previous_az = az;
-            if (az != previous_az and az != previous_az + 1)
-            {
-                bursts.push_back(burst_packets);
-                burst_packets = vector<L0Packet>();
-                burst_nums.emplace(num_bursts++);
-            }
-            burst_packets.push_back(packet);
-            previous_az = az;
-        }
-        if (i == num_packets - 1) 
-        {
-            bursts.push_back(burst_packets);
-        }
-    }
-
-    vector<L0Packet> burst = bursts[burst_num];
-
-    num_packets = burst.size();
-    if (num_packets == 0)
-    {
-        cout << "No packets found for burst #" << burst_num << endl;
-        cout << "Available burst numbers are: " << endl;
-        for (int num : burst_nums) cout << num << endl;
-        exit(0);
-    }
-    cout << "Decoding " << num_packets << " Complex Samples for Burst #" << burst_num << endl;
-
-    vector<vector<complex<float>>> complex_samples(num_packets);
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        L0Packet packet = burst[i];
-        complex_samples[i] = packet.get_complex_samples();
-    }
-    if (complex_samples.size() < 1)
-    {
-        throw runtime_error("No samples found for swath " + swath);
-    }
-    return pair(complex_samples, burst);
-}
-
-
-
-vector<vector<complex<float>>> decode_swath(const string& filename, const string& swath)
-{
-    cout << "Parsing Packets" << endl;
-    
-    ifstream data = open_file(filename);
-
-    vector<L0Packet> packets = L0Packet::get_packets_in_swath(data, swath);
-
-    int num_packets = packets.size();
-
-    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
-
-    vector<vector<complex<float>>> complex_samples(num_packets);
-
-    cout << "Decoding Complex Samples" << endl;
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        L0Packet packet = packets[i];
-        complex_samples[i] = packet.get_complex_samples();
-    }
-
-    if (complex_samples.size() < 1)
-    {
-        throw runtime_error("No samples found for swath " + swath);
-    }
-
-    return complex_samples;
-}
-
-
-vector<float> scale(const vector<complex<float>>& complex_samples, const string& scaling_mode)
-{
-    vector<float> samples(complex_samples.size());
-
-    if      (scaling_mode == "norm_log") samples = norm_1d(complex_samples, true);
-    else if (scaling_mode == "norm"    ) samples = norm_1d(complex_samples, false);
-    else if (scaling_mode == "mag"     ) samples = magnitude_1d(complex_samples);      
+    if      (scaling_mode == "norm_log") samples = norm_1d(signal, true);
+    else if (scaling_mode == "norm"    ) samples = norm_1d(signal, false);
+    else if (scaling_mode == "mag"     ) samples = magnitude_1d(signal);      
     else if (scaling_mode == "real" or scaling_mode == "imag")
     {
         bool real = scaling_mode == "real";
         
-        for (int i = 0; i < complex_samples.size(); i++)
+        for (int i = 0; i < signal.size(); i++)
         {
-            samples[i] = real ? complex_samples[i].real() : complex_samples[i].imag();
+            samples[i] = real ? signal[i].real() : signal[i].imag();
         }
     }
     else
@@ -127,26 +26,26 @@ vector<float> scale(const vector<complex<float>>& complex_samples, const string&
 }
 
 
-vector<float> scale(const vector<vector<complex<float>>>& complex_samples, const string& scaling_mode)
+vector<float> scale(const vector<vector<complex<float>>>& signal, const string& scaling_mode)
 {
-    int rows = complex_samples.size();
-    int cols = complex_samples[0].size();
+    int rows = signal.size();
+    int cols = signal[0].size();
     
     vector<float> samples(rows*cols);
 
-    if      (scaling_mode == "norm_log") samples = flatten(norm_2d(complex_samples, true));
-    else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(complex_samples, false));
-    else if (scaling_mode == "mag"     ) samples = flatten(magnitude_2d(complex_samples));    
+    if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
+    else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));
+    else if (scaling_mode == "mag"     ) samples = flatten(magnitude_2d(signal));    
     else if (scaling_mode == "real" or scaling_mode == "imag")
     {
         bool real = scaling_mode == "real";
-        int  size = complex_samples.size() * complex_samples[0].size();
+        int  size = signal.size() * signal[0].size();
         
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
             {
-                samples[i*cols+j] = real ? complex_samples[i][j].real() : complex_samples[i][j].imag();
+                samples[i*cols+j] = real ? signal[i][j].real() : signal[i][j].imag();
             }
         }
     }
@@ -155,6 +54,26 @@ vector<float> scale(const vector<vector<complex<float>>>& complex_samples, const
         throw invalid_argument(scaling_mode + " is not a valid scaling mode.");
     }
     return samples;
+}
+
+
+struct SIGNAL_PAIR {
+    vector<vector<complex<float>>> signals;
+    vector<vector<complex<float>>> replica_chirps;
+};
+
+
+SIGNAL_PAIR get_signal_pairs_from_swath(
+    const string& filename,
+    const string& swath_name
+) {
+    Swath swath(filename, swath_name);
+
+    SIGNAL_PAIR signal_pair;
+    signal_pair.signals = std::move(swath.get_all_signals());
+    signal_pair.replica_chirps = std::move(swath.get_all_replica_chirps());
+
+    return signal_pair;
 }
 
 
@@ -166,62 +85,10 @@ void plot_pulse(
     ifstream data   = open_file(filename);
     L0Packet packet = L0Packet::get_packets(data, packet_index + 1)[packet_index];
 
-    vector<complex<float>> complex_samples = packet.get_complex_samples();
-    vector<complex<float>> replica_chirp   = packet.get_replica_chirp();
+    vector<complex<float>> signal        = packet.get_signal();
+    vector<complex<float>> replica_chirp = packet.get_replica_chirp();
 
-    plot_complex_samples(replica_chirp, scaling_mode);
-}
-
-
-vector<complex<float>> process_replica(const vector<complex<float>>& replica_chirp)
-{
-    int num_samples = replica_chirp.size();
-    vector<complex<float>> replica_chirp_conj = conjugate(replica_chirp);
-    vector<complex<float>> weighted_chirp = apply_hanning_window(replica_chirp_conj);
-    vector<float> norm = magnitude_1d(weighted_chirp);
-    float energy = 0.0;
-    for (int i = 0; i < num_samples; i++)
-    {
-        energy += (norm[i] * norm[i]);
-    }
-    energy /= norm.size();
-    vector<complex<float>> replica_out(num_samples);
-    for (int i = 0; i < num_samples; i++)
-    {
-        replica_out[i] = weighted_chirp[i] / energy;
-    }
-    return replica_out;
-}
-
-
-vector<complex<float>> pulse_compression(
-    const vector<complex<float>>& complex_samples,
-    const vector<complex<float>>& replica_chirp
-) {
-    int num_samples     = complex_samples.size();
-    int replica_samples = replica_chirp.size();
-
-    vector<complex<float>> pulse_compressed(num_samples);
-
-    vector<complex<float>> complex_samples_fft = compute_1d_dft(complex_samples,  0, false);
-    vector<complex<float>> reference = process_replica(replica_chirp);
-
-    vector<complex<float>> chirp(num_samples);
-
-    for (int i = 0; i < num_samples; i++)
-    {
-        if (i < replica_samples) chirp[i] = reference[i];
-        else                     chirp[i] = 0.0;
-    }
-
-    chirp = compute_1d_dft(chirp,  0, false);
-
-    for (int i = 0; i < num_samples; i++)
-    {
-        pulse_compressed[i] = complex_samples_fft[i] * chirp[i];
-    }    
-
-    return compute_1d_dft(pulse_compressed, num_samples, true);
+    plot_signal(replica_chirp, scaling_mode);
 }
 
 
@@ -234,28 +101,24 @@ void plot_pulse_compression(
     ifstream data   = open_file(filename);
     L0Packet packet = L0Packet::get_packets(data, packet_index + 1)[packet_index];
 
-    vector<complex<float>> complex_samples = packet.get_complex_samples();
-    vector<complex<float>> replica_chirp   = packet.get_replica_chirp();
+    vector<complex<float>> signal        = packet.get_signal();
+    vector<complex<float>> replica_chirp = packet.get_replica_chirp();
 
-    vector<complex<float>> pulse_compressed(complex_samples.size());
+    vector<complex<float>> pulse_compressed(signal.size());
 
-    int num_samples = complex_samples.size();
+    int num_samples = signal.size();
 
     if (do_fft)
     {
-        vector<complex<float>> pulse_compressed = pulse_compression(complex_samples, replica_chirp);
-
-        plot_complex_samples(pulse_compressed, scaling_mode);
-
+        vector<complex<float>> pulse_compressed = pulse_compression(signal, replica_chirp);
+        plot_signal(pulse_compressed, scaling_mode);
         return;
     }
-
     for (int i = 0; i < num_samples; i++)
     {
-        pulse_compressed[i] = complex_samples[i] * replica_chirp[i];
+        pulse_compressed[i] = signal[i] * replica_chirp[i];
     }
-
-    plot_complex_samples(pulse_compressed, scaling_mode);
+    plot_signal(pulse_compressed, scaling_mode);
 }
 
 
@@ -265,43 +128,15 @@ void plot_pulse_image(
     const int&    burst_num,
     const string& scaling_mode
 ) {
+    cout << "Decoding Burst" << endl;
 
-    auto samples_packets = decode_bursts(filename, swath, burst_num);
+    Burst burst(filename, swath, burst_num);
 
-    vector<vector<complex<float>>> complex_samples = samples_packets.first;
-    vector<L0Packet> packets = samples_packets.second;
+    cout << "Decoded " << burst.get_num_packets() 
+         << " signals and replica chirps." << endl;
 
-    int num_packets = packets.size();
-
-    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
-
-    vector<vector<complex<float>>> replica_chirps(num_packets);
-
-    cout << "Decoding Complex Samples and Replica Chirps" << endl;
-
-    auto decoding_start = chrono::high_resolution_clock::now();
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        L0Packet packet = packets[i];
-        replica_chirps[i]  = packet.get_replica_chirp();
-    }
-
-    if (replica_chirps.size() < 1)
-    {
-        throw runtime_error("No samples found for swath " + swath);
-    }
-
-    auto decoding_end = chrono::high_resolution_clock::now();
-
-    chrono::duration<float> decode_time = decoding_end - decoding_start;
-
-    cout << "Decoded " << replica_chirps.size() << " replica chirps in " << decode_time.count() << "s" << endl;
-
-    plot_complex_image(replica_chirps, scaling_mode);
+    plot_complex_image(burst.get_replica_chirps(), scaling_mode);
 }
-
 
 
 void plot_range_compressed_burst(
@@ -310,55 +145,21 @@ void plot_range_compressed_burst(
     const int&    burst_num,
     const string& scaling_mode
 ) {
+    cout << "Decoding Burst" << endl;
 
-    auto samples_packets = decode_bursts(filename, swath, burst_num);
+    Burst burst(filename, swath, burst_num);
 
-    vector<vector<complex<float>>> complex_samples = samples_packets.first;
-    vector<L0Packet> packets = samples_packets.second;
+    int num_packets = burst.get_num_packets();
 
-    int num_packets = packets.size();
-
-    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
-
-    vector<vector<complex<float>>> replica_chirps(num_packets);
-
-    cout << "Decoding Complex Samples and Replica Chirps" << endl;
-
-    auto decoding_start = chrono::high_resolution_clock::now();
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        L0Packet packet = packets[i];
-        replica_chirps[i]  = packet.get_replica_chirp();
-    }
-
-    if (complex_samples.size() < 1)
-    {
-        throw runtime_error("No samples found for swath " + swath);
-    }
-
-    auto decoding_end = chrono::high_resolution_clock::now();
-
-    chrono::duration<float> decode_time = decoding_end - decoding_start;
-
-    cout << "Decoded " << complex_samples.size() << " complex sample vectors, and " 
-         << replica_chirps.size() << " replica chirps, in " << decode_time.count() << "s" << endl;
+    cout << "Decoded " << num_packets << " signals and replica chirps." << endl;
 
     vector<vector<complex<float>>> pulse_compressed(num_packets);
 
-    auto compression_start = chrono::high_resolution_clock::now();
-
     for (int i = 0; i < num_packets; i++)
     {
-        pulse_compressed[i] = pulse_compression(complex_samples[i], replica_chirps[i]);
+        pulse_compressed[i] = pulse_compression(burst.get_signal(i), burst.get_replica_chirp(i));
     }
-
-    auto compression_end = chrono::high_resolution_clock::now();
-
-    chrono::duration<float> compression_time = compression_end - compression_start;
-
-    cout << "Pulse compression completed in " << compression_time.count() << endl;
+    cout << "Pulse compression completed." << endl;
 
     plot_complex_image(pulse_compressed, scaling_mode);
 }
@@ -366,67 +167,44 @@ void plot_range_compressed_burst(
 
 void plot_range_compressed_swath(
     const string& filename,
-    const string& swath,
+    const string& swath_name,
     const string& scaling_mode
 ) {
-
-    vector<L0Packet> packets = L0Packet::get_packets_in_swath(filename, swath);
-
-    int num_packets = packets.size();
-
-    cout << "Found " << num_packets << " packets in " << swath << "." << endl;
-
-    vector<vector<complex<float>>> complex_samples(num_packets);
-    vector<vector<complex<float>>> replica_chirps(num_packets);
-
     cout << "Decoding Complex Samples and Replica Chirps" << endl;
 
-    auto decoding_start = chrono::high_resolution_clock::now();
+    SIGNAL_PAIR signal_pair = get_signal_pairs_from_swath(filename, swath_name);
 
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        L0Packet packet = packets[i];
-        complex_samples[i] = packet.get_complex_samples();
-        replica_chirps[i] = packet.get_replica_chirp();
-    }
-
-    auto decoding_end = chrono::high_resolution_clock::now();
-
-    chrono::duration<float> decode_time = decoding_end - decoding_start;
-
-    cout << "Decoded " << complex_samples.size() << " complex sample vectors, and " 
-         << replica_chirps.size() << " replica chirps, in " << decode_time.count() << "s" << endl;
-
-    vector<vector<complex<float>>> pulse_compressed(num_packets);
+    int num_signals = signal_pair.signals.size();
 
     auto compression_start = chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < num_packets; i++)
+    vector<vector<complex<float>>> pulse_compressed(num_signals);
+
+    for (int i = 0; i < num_signals; i++)
     {
-        pulse_compressed[i] = pulse_compression(complex_samples[i], replica_chirps[i]);
+        pulse_compressed[i] = pulse_compression(signal_pair.signals[i], signal_pair.replica_chirps[i]);
     }
 
     auto compression_end = chrono::high_resolution_clock::now();
 
     chrono::duration<float> compression_time = compression_end - compression_start;
 
-    cout << "Pulse compression completed in " << compression_time.count() << endl;
+    cout << "Pulse compression completed in " << compression_time.count() << "s." << endl;
 
     plot_complex_image(pulse_compressed, scaling_mode);
 }
 
 
 void plot_complex_image(
-    const vector<vector<complex<float>>>& complex_samples,
+    const vector<vector<complex<float>>>& signal,
     const string& scaling_mode
 ) {
     cout << "Flattening Vector for Plotting" << endl;
 
-    int rows = complex_samples.size();
-    int cols = complex_samples[0].size();
+    int rows = signal.size();
+    int cols = signal[0].size();
 
-    vector<float> samples = scale(complex_samples, scaling_mode);
+    vector<float> samples = scale(signal, scaling_mode);
 
     cout << "Calling Plot" << endl;
 
@@ -449,10 +227,10 @@ void plot_fft(
 
     vector<L0Packet> packets = L0Packet::get_packets(data, packet_index + 1);
 
-    vector<complex<float>> complex_samples     = packets[packet_index].get_complex_samples();
-    vector<complex<float>> complex_samples_fft = compute_1d_dft(complex_samples, fft_size, inverse);
+    vector<complex<float>> signal     = packets[packet_index].get_signal();
+    vector<complex<float>> signal_fft = compute_1d_dft(signal, fft_size, inverse);
 
-    plot_complex_samples(complex_samples_fft, scaling_mode);
+    plot_signal(signal_fft, scaling_mode);
 }
 
 
@@ -465,22 +243,21 @@ void plot_fft2d(
     const bool&   inverse,
     const string& scaling_mode
 ) {
-    auto samples_packets = decode_bursts(filename, swath, burst_num);
+    Burst burst = Burst(filename, swath, burst_num);
 
-    vector<vector<complex<float>>> complex_samples = samples_packets.first;
-    vector<L0Packet> packets = samples_packets.second;
+    vector<vector<complex<float>>> signals = burst.get_signals();
 
-    if (not fft_rows) fft_rows = complex_samples.size();
-    if (not fft_cols) fft_cols = complex_samples[0].size();
+    if (not fft_rows) fft_rows = signals.size();
+    if (not fft_cols) fft_cols = signals[0].size();
 
-    vector<vector<complex<float>>> complex_samples_fft = compute_2d_dft(
-        complex_samples,
+    vector<vector<complex<float>>> signals_fft = compute_2d_dft(
+        signals,
         inverse,
         fft_rows,
         fft_cols
     );
 
-    plot_complex_image(complex_samples_fft, scaling_mode);
+    plot_complex_image(signals_fft, scaling_mode);
 }
 
 
@@ -493,28 +270,25 @@ void plot_fft_axis(
     const bool&   inverse,
     const string& scaling_mode
 ) {
-    auto samples_packets = decode_bursts(filename, swath, burst_num);
+    Burst burst(filename, swath, burst_num);
 
-    vector<vector<complex<float>>> complex_samples = samples_packets.first;
-    vector<L0Packet> packets = samples_packets.second;
+    int fft_rows = burst.get_num_packets();
+    int fft_cols = burst.get_signal(0).size();
 
-    int fft_rows = complex_samples.size();
-    int fft_cols = complex_samples[0].size();
-
-    vector<vector<complex<float>>> complex_samples_fft = compute_axis_dft(
-        complex_samples,
+    vector<vector<complex<float>>> signals_fft = compute_axis_dft(
+        burst.get_signals(),
         fft_size,
         axis,
         inverse
     );
 
-    int out_rows = complex_samples_fft.size();
-    int out_cols = complex_samples_fft[0].size();
+    int out_rows = signals_fft.size();
+    int out_cols = signals_fft[0].size();
 
     cout << "Input Rows: "  << fft_rows  << " Input Cols: "  << fft_cols << endl;
     cout << "Output Rows: " << out_rows  << " Output Cols: " << out_cols << endl;
 
-    plot_complex_image(complex_samples_fft, scaling_mode);
+    plot_complex_image(signals_fft, scaling_mode);
 }
 
 
@@ -524,52 +298,44 @@ void plot_burst(
     const int&    burst_num,
     const string& scaling_mode
 ) {
-    auto samples_packets = decode_bursts(filename, swath, burst_num);
-
-    vector<vector<complex<float>>> complex_samples = samples_packets.first;
-
-    plot_complex_image(complex_samples, scaling_mode);
+    Burst burst(filename, swath, burst_num);
+    plot_complex_image(burst.get_signals(), scaling_mode);
 }
 
 
 void plot_swath(
     const string& filename,
-    const string& swath,
+    const string& swath_name,
     const string& scaling_mode
 ) {
-    vector<vector<complex<float>>> complex_samples = decode_swath(filename, swath);
-
-    plot_complex_image(complex_samples, scaling_mode);
+    Swath swath(filename, swath_name);
+    plot_complex_image(swath.get_all_signals(), scaling_mode);
 }
 
 
-void plot_complex_samples(
-    const vector<complex<float>>& complex_samples,
+void plot_signal(
+    const vector<complex<float>>& signal,
     const string& scaling_mode
 ) {
 
     cout << "Creating Real-Valued Vector for Plotting" << endl;
 
-    vector<float> samples = scale(complex_samples, scaling_mode);
+    vector<float> scaled_signal = scale(signal, scaling_mode);
 
     cout << "Plotting" << endl;
 
     matplotlibcpp::figure();
-    matplotlibcpp::plot(samples);
+    matplotlibcpp::plot(scaled_signal);
     matplotlibcpp::show();
 }
 
 
-void plot_complex_samples(
+void plot_signal(
     const string& filename,
     const int&    packet_index,
     const string& scaling_mode
 ) {
-    ifstream data = open_file(filename);
-
-    vector<L0Packet> packets = L0Packet::get_packets(data, packet_index + 1);
-
-    vector<complex<float>> complex_samples = packets[packet_index].get_complex_samples();
-
-    plot_complex_samples(complex_samples, scaling_mode);
+    vector<L0Packet> packets = L0Packet::get_packets(filename, packet_index + 1);
+    plot_signal(packets[packet_index].get_signal(), scaling_mode);
 }
+
