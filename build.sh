@@ -7,7 +7,12 @@ echo "Compiling image to bin/image"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 	g++ -fopenmp -std=c++20 -O3 -L/usr/lib/x86_64-linux-gnu/  src/image.cpp src/packet.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/signal_processing.cpp -lfftw3f_omp -lfftw3f -lm -ltiff -o bin/image
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-	/opt/homebrew/opt/llvm/bin/clang++ -fopenmp -std=c++20 -O3 src/image.cpp src/packet.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/signal_processing.cpp -lfftw3f_omp -lfftw3f -lm -ltiff -o bin/image
+	export PYTHON_INCLUDE="$HOME/miniforge3/envs/signal_processing/include/python3.12"
+	export NUMPY_INCLUDE="$HOME/miniforge3/envs/signal_processing/lib/python3.12/site-packages/numpy/_core/include"
+	export HOMEBREW_INCLUDE="/opt/homebrew/include"
+	export HOMEBREW_LIB="/opt/homebrew/lib"
+	export HOMEBREW_PYTHON_INCLUDE="/opt/homebrew/Frameworks/Python.framework/Versions/3.12/lib"
+	/opt/homebrew/opt/llvm/bin/clang++ -fopenmp -std=c++20 -O3 -w src/image.cpp src/packet.cpp src/decoding_utils.cpp src/signal_processing.cpp -I$HOMEBREW_INCLUDE -I$PYTHON_INCLUDE -I$NUMPY_INCLUDE -L$HOMEBREW_LIB -L$HOMEBREW_PYTHON_INCLUDE -ltiff -lfftw3f_omp -lfftw3f -lm -lpython3.12 -o bin/image
 else
 	echo "$OSTYPE is not supported by this script, see the commands for what needs to be compiled."
 fi
