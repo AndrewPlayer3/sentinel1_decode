@@ -11,7 +11,18 @@
 using namespace std;
 
 
-vector<complex<float>> conjugate(const vector<complex<float>>& complex_samples);
+vector<complex<float>> pulse_compression(
+    const vector<complex<float>>& signal,
+    const vector<complex<float>>& replica_chirp
+);
+
+vector<complex<float>> get_reference_function(
+    const vector<complex<float>>& replica_chirp
+);
+
+vector<complex<float>> conjugate(
+    const vector<complex<float>>& complex_samples
+);
 
 vector<float> hanning_window(const int& num_samples);
 
@@ -66,7 +77,6 @@ vector<vector<complex<float>>> compute_2d_dft(
     int fft_rows,
     int fft_cols
 );
-
 
 template <typename T>
 vector<T> flatten(const vector<vector<T>>& values)

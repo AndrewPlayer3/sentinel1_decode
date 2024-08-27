@@ -3,6 +3,61 @@
 using namespace std;
 
 
+vector<complex<float>> get_reference_function(const vector<complex<float>>& replica_chirp)
+{
+    int num_samples = replica_chirp.size();
+
+    vector<complex<float>> replica_chirp_conj = conjugate(replica_chirp);
+    vector<complex<float>> weighted_chirp     = apply_hanning_window(replica_chirp_conj);
+    vector<float> norm = magnitude_1d(weighted_chirp);
+
+    float energy = 0.0;
+    for (int i = 0; i < num_samples; i++)
+    {
+        energy += (norm[i] * norm[i]);
+    }
+    energy /= norm.size();
+
+    vector<complex<float>> reference(num_samples);
+    for (int i = 0; i < num_samples; i++)
+    {
+        reference[i] = weighted_chirp[i] / energy;
+    }
+    return reference;
+}
+
+
+vector<complex<float>> pulse_compression(
+    const vector<complex<float>>& signal,
+    const vector<complex<float>>& replica_chirp
+) {
+    int num_samples     = signal.size();
+    int replica_samples = replica_chirp.size();
+
+    vector<complex<float>> pulse_compressed(num_samples);
+
+    vector<complex<float>> signal_fft = compute_1d_dft(signal,  0, false);
+    vector<complex<float>> reference  = get_reference_function(replica_chirp);
+
+    vector<complex<float>> chirp(num_samples);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        if (i < replica_samples) chirp[i] = reference[i];
+        else                     chirp[i] = 0.0;
+    }
+
+    chirp = compute_1d_dft(chirp,  0, false);
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        pulse_compressed[i] = signal_fft[i] * chirp[i];
+    }    
+
+    return compute_1d_dft(pulse_compressed, num_samples, true);
+}
+
+
 vector<complex<float>> conjugate(const vector<complex<float>>& complex_samples)
 {
     int num_samples = complex_samples.size();
