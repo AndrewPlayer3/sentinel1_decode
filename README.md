@@ -8,48 +8,105 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
 
 ## Current Results
 
-Ships outside of Shanghai (S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW): 
+Ships outside of Shanghai in S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW: 
 ![shanghai_ships](imgs/shanghai.png)
-Range Compression via `bin/plot range_compressed_burst IW2 ... --norm_log`:
+Range Compression via `bin/write range_compressed_swath IW2 ... --norm_log`:
 ![shanghai_range_compression](imgs/shanghai_range_compression.png)
 
-## Usage
+## Compiling
+At the moment, compiling is done via *build.sh*. You may have to edit include paths to match your system. To run it, run the following commands:
+```bash
+$ chmod +x build.sh
+$ ./build.sh
+```
+Currently, there are three basic CLI utilities.
+ * **bin/main** for printing packet, index, and annotation info, and for performance timing.
+ * **bin/write** for writing *tiff* images from raw and processed data.
+ * **bin/plot** for plotting raw and processed data.
 
-### Compiling
+## Dependencies
 
-Currently, there are two basic CLI utilities that can be built using `build.sh`.
- * bin/main provides cli commands for testing and evaulating the packet decoding.
- * bin/plot provides cli commands for plotting complex samples.
+My goal is to not involve too many external dependancies; however, some are necessary. For image writing and plotting, *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*. The plotting functionality also uses *[matplotlib-cpp](https://github.com/lava/matplotlib-cpp)*, which is included in the *include* directory. It is dependant on being linked to Python and Numpy. For me, they are located in my conda (miniforge3) environment. The *build.sh* file handles this for me on my MacOS and Linux setups, but may need to be modified to match your installs. 
 
-Both of these CLI's currently exist for my testing purposes and functionality will be changing regularly. You may need to edit this with your include paths and/or preferred compiler.
-
-
-### Commands
-
-The sample data is the VV file from this product: S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41
+## Commands
+### bin/write
+```bash
+$ bin/write help
+burst [swath] [burst_num] [in_path] [out_path]
+swath [swath] [in_path] [out_path]
+burst_replica_chirps [swath] [burst_num] [in_path] [out_path]
+swath_replica_chirps [swath] [in_path] [out_path]
+range_compressed_burst [swath] [burst_num] [in_path] [out_path]
+range_compressed_swath [swath] [in_path] [out_path]
+Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
+```
+#### Examples
+The sample image *data/points/point.dat* is the VV data from [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW). The colors were added via *Singleband psuedocolor* with *Cumulative cut count* in QGIS.
+```bash
+$ bin/write swath IW2 data/points/point.dat IW2.tif --norm
+```
+![swath_write_example](imgs/swath_write_example.png)
+```bash
+$ bin/write range_compressed_swath IW2 data/points/point.dat point_targets.tif --norm
+```
+![swath_rc_write_example](imgs/swath_rc_write_examples.png)
+```bash
+$ bin/write burst_replica_chirps IW2 5 data/points/point.dat burst_replica_chirps.tif
+```
+![burst_replica_chirps_example](imgs/burst_replica_chirp_example.png)
+### bin/plot
+```bash
+$ bin/plot help
+signal [packet_index] [mode] [path]
+swath [swath] [path]
+burst [swath] [burst_num] [path]
+fft [packet_index] [fft_size] [path] [--inverse]
+fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]
+fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]
+range_compressed_burst [swath] [burst_num] [path]
+range_compressed_swath [swath] [path]
+Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
+```
+#### Examples
+The sample image *data/sample/sample.dat* is the VV data from [S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41-RAW)
+```
+$ bin/plot signal 0 sample_data/sample.dat
+```
+![plot_command_example](imgs/complex_sample_plot_example.png)
+```bash
+$ bin/plot swath IW3 data/sample/sample.dat --norm
+```
+![plot_swath_example](imgs/iw3_swath.png)
+```bash
+$ bin/plot range_compressed_burst IW1 2 data/sample/sample.dat --norm
+```
+![range_compression_example](imgs/range_compressed.png)
+```bash
+$ bin/plot range_compressed_swath IW1 data/sample/sample.dat --norm
+```
+![range_compression_example](imgs/range_compressed_swath.png)
 
 #### bin/main
-
 ```bash
 $ bin/main help
+print_packet_info [packet_index] [path]
 print_headers [packet_index] [path]
 print_modes [packet_index] [path]
 print_pulse_info [packet_index] [path]
 print_complex_samples [packet_index] [path]
 print_index_records [path]
 print_annotation_record [record_index] [path]
+print_swath_names [path]
+find_packets_of_type [packet_type] [path]
 time [num_packets] [path]
 thread_test [path]
 omp_test [path]
-find_packets_of_type [packet_type] [path]
 ```
-
+#### Examples
+The sample image *data/sample/sample.dat* is the VV data from [S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41-RAW)
 ```bash
-# Print the primary and secondary headers
-$ bin/main print_headers [packet_index] [path/to/data.dat]
-```
-```bash
-$ bin/main print_headers 0 sample_data/sample.dat
+$ bin/main print_packet_info 0 data/sample/sample.dat
+Primary Header:
 packet_version_number: 0
 packet_type: 0
 secondary_header_flag: 1
@@ -58,6 +115,8 @@ process_category: 12
 sequence_flags: 3
 packet_sequence_count: 11157
 packet_data_length: 18621
+
+Secondary Header:
 coarse_time: 1406987562
 fine_time: 7757
 sync_marker: 892270675
@@ -95,14 +154,8 @@ signal_type: 0
 swap: 1
 swath_number: 10
 num_quadratures: 11938
-```
 
-```bash
-# Print the operating mode information
-$ bin/main print_modes [packet_index] [path/to/data.dat]
-```
-```bash
-$ bin/main print_modes 0 sample_data/sample.dat
+Operating Mode Info:
 Data Format: D
 BAQ Mode: fdbaq_mode_0
 BAQ Block Length: 256
@@ -110,14 +163,9 @@ Test Mode: measurement_mode
 Sensor Mode: interferomatric_wide_swath
 Signal Type: echo
 Error Status: nominal
-```
 
-```bash
-# Print the pulse descriptors
-$ bin/main print_pulse_info [packet_index] [path/to/data.dat]
-```
-```bash
-$ bin/main print_pulse_info 0 sample_data/sample.dat
+Pulse Info:
+Swath: IW1
 RX Polarization: V
 TX Polarization: V
 Pulse Length: 52.4048
@@ -129,14 +177,10 @@ SWST: 98.0692
 RX Gain: -4
 Range Decimation: 8
 TX Pulse Number: 6
+```
 
-```
 ```bash
-# Print the complex samples
-$ bin/main print_complex_samples [packet_index] [path/to/data.dat]
-```
-```bash
-$ bin/main print_complex_samples 0 sample_data/sample.dat
+$ bin/main print_complex_samples 0 data/sample/sample.dat
 # 50,000 lines later...
 ...
 (-11.201,1.59988)
@@ -155,59 +199,3 @@ $ bin/main print_complex_samples 0 sample_data/sample.dat
 (1.59988,11.201)
 (1.59988,-4.80058)
 ```
-```bash
-# Performance test for decoding the complex data for all the packets
-$ bin/main omp_test [path/to/sample.dat]
-```
-```bash
-$ bin/main omp_test sample_data/sample.dat
-Decoded 51937 packets in 32.0043s.
-```
-#### bin/plot
-```bash
-$ bin/plot help
-complex_samples [packet_index] [mode] [path]
-swath [swath] [path]
-fft [packet_index] [fft_size] [path] [--inverse]
-fft2 [swath] [path] [fft_rows] [fft_cols] [--inverse]
-fft_axis [swath] [axis] [fft_size] [path] [--inverse]
-Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
-```
-```bash
-# Plot the real part of a packet's complex samples
-$ bin/plot complex_samples [packet_index] [path/to/sample.dat]
-```
-```
-$ bin/plot complex_samples 0 sample_data/sample.dat
-```
-![plot_command_example](imgs/complex_sample_plot_example.png)
-```bash
-$ bin/plot swath [swath] [path] [--norm_log|--norm|--mag|--real|--imag]
-```
-```bash
-$ bin/plot swath IW3 data/sample/sample.dat --norm
-```
-![plot_swath_example](imgs/iw3_swath.png)
-```bash
-$ bin/plot range_compressed_burst [swath] [burst_number] [path] [--norm_log|--norm|--mag|--real|--imag]
-```
-```bash
-$ bin/plot range_compressed_burst IW1 2 data/sample/sample.dat --norm
-```
-![range_compression_example](imgs/range_compressed.png)
-```bash
-$ bin/plot range_compressed_swath [swath] [path] [--norm_log|--norm|--mag|--real|--imag]
-```
-```bash
-$ bin/plot range_compressed_swath IW1 data/sample/sample.dat --norm
-```
-![range_compression_example](imgs/range_compressed_swath.png)
-*just a nice looking image*
-![range_compression_example](imgs/range_compression_zoomed.png)
-## Requirements
-
-The library code does not have any external requirements.
-
-For the plotting CLI, matplotlib-cpp is required; it is included in the include directory. It does also require an installation of Python and NumPy. You can edit the build.sh file to set the include directories that point to Python and NumPY's include paths. In my case, they are in my miniforge3 environment.
-
-For the main CLI, OpenMP is currently used but only for testing purposes.
