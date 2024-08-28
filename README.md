@@ -186,7 +186,7 @@ $ bin/main print_complex_samples 0 data/sample/sample.dat
 Currently, basic range compression is the maximum level of processing that I have implemented. Although, I am working on implementing much of the [Level-1 Algorithm](https://sentinel.esa.int/documents/247904/1877131/Sentinel-1-Level-1-Detailed-Algorithm-Definition). Here is an example of range compression using some ships, outside of Shanghai, as point targets:
 ![shanghai_ships](imgs/shanghai_ships_v2.png)
 ```bash
-$ bin/write range_compressed_swath IW2 data/points/point.dat --norm_log
+$ bin/write range_compressed_swath IW2 data/points/point.dat point_targets.tif --norm
 ```
 ![shanghai_range_compression](imgs/shanghai_range_compression_v2.png)
 The data is from the VV portion of this product: [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW).
