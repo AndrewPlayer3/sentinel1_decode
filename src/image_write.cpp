@@ -7,6 +7,7 @@ void write_tif(
     const std::string out_filename
 ) {
     TIFF* tif = TIFFOpen(out_filename.c_str(), "w");
+    TIFFIsBigTIFF(tif);
     TIFFSetField(tif, TIFFTAG_IMAGELENGTH, rows);
     TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, cols);
     TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
@@ -15,7 +16,7 @@ void write_tif(
     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
     TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
     TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-    
+
     int img_row = 0; 
     for (int data_row = rows-1; data_row >= 0; data_row--)
     {
