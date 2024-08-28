@@ -11,7 +11,7 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
 Ships outside of Shanghai in S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW: 
 ![shanghai_ships](imgs/shanghai.png)
 Range Compression via `bin/write range_compressed_swath IW2 ... --norm_log`:
-![shanghai_range_compression](imgs/shanghai_range_compression.png)
+![shanghai_range_compression](imgs/shanghai_range_compression_v2.png)
 
 ## Compiling
 At the moment, compiling is done via *build.sh*. You may have to edit include paths to match your system. To run it, run the following commands:
