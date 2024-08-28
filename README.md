@@ -1,37 +1,21 @@
-# sentinel1_decode (W.I.P.)
-
-This is a C++ program/library for decoding Level-0 Raw data from the Sentinel-1 satellite. Currently, with OpenMP, sentinel1_decode can decode the complex samples for all packets in a data file in approximately 30 seconds on my Ryzen 5800.
-
+# sentinel1_decode
 For additional information on Level-0 product decoding, see the [SAR Space Packet Protocol Data Unit Specification](https://sentinels.copernicus.eu/documents/247904/2142675/Sentinel-1-SAR-Space-Packet-Protocol-Data-Unit.pdf) and the [Sentinel-1 Level-0 Data Decoding Package](https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17).
 
-*This code has been moved from my previous repo [sar_processing](https://github.com/andrewplayer3/sar_processing). That repo also contains a Python implementation of level-0 decoding that can be interacted with in Jupyter; although, it is much slower than this version.*
-
-## Current Results
-
-Ships outside of Shanghai: [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW)
-![shanghai_ships](imgs/shanghai_ships_v2.png)
-```bash
-$ bin/write range_compressed_swath IW2 data/points/point.dat --norm_log
-```
-![shanghai_range_compression](imgs/shanghai_range_compression_v2.png)
-
-## Compiling
-At the moment, compiling is done via *build.sh*. You may have to edit include paths to match your system. To run it, run the following commands:
-```bash
-$ chmod +x build.sh
-$ ./build.sh
-```
-Currently, there are three basic CLI utilities.
- * **bin/main** for printing packet, index, and annotation info, and for performance timing.
- * **bin/write** for writing *tiff* images from raw and processed data.
- * **bin/plot** for plotting raw and processed data.
-
-## Dependencies
-
-My goal is to not involve too many external dependancies; however, some are necessary. For image writing and plotting, *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*. The plotting functionality also uses *[matplotlib-cpp](https://github.com/lava/matplotlib-cpp)*, which is included in the *include* directory. It is dependant on being linked to Python and Numpy. For me, they are located in my conda (miniforge3) environment. The *build.sh* file handles this for me on my MacOS and Linux setups, but may need to be modified to match your installs. 
+## Table of Contents
+* [Introduction](#introduction)
+* [Commands and Examples](#commands)
+  * [Image Writing](#writing-images)
+  * [Plotting](#plotting)
+  * [Packet Information and Performance Testing](#packet-information-and-performance-testing)
+* [Results with Point Targets](#results-with-point-targets)
+* [Compiling](#compiling)
+   * [Build Script](#build-script)
+   * [Dependencies](#dependencies)
+## Introduction
+**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite. I am also working on implementing most of the [Level-1 Algorithm](#results-with-point-targets). I am creating this as an education experience for myself, and because there isn't a public fast, simple, and robust program for decoding this data. Currently, I can decode the complex samples for all packets in a data file in approximately 30 seconds (on a Ryzen 5800). 
 
 ## Commands
-### bin/write
+### Writing Images
 ```bash
 $ bin/write --help
 burst [swath] [burst_num] [in_path] [out_path]
@@ -56,7 +40,7 @@ $ bin/write range_compressed_swath IW2 data/points/point.dat point_targets.tif -
 $ bin/write burst_replica_chirps IW2 5 data/points/point.dat burst_replica_chirps.tif
 ```
 ![burst_replica_chirps_example](imgs/burst_replica_chirp_example.png)
-### bin/plot
+### Plotting
 ```bash
 $ bin/plot --help
 signal [packet_index] [mode] [path]
@@ -88,7 +72,7 @@ $ bin/plot range_compressed_swath IW1 data/sample/sample.dat --norm
 ```
 ![range_compression_example](imgs/range_compressed_swath.png)
 
-#### bin/main
+#### Packet Information and Performance Testing
 ```bash
 $ bin/main --help
 print_packet_info [packet_index] [path]
@@ -197,3 +181,28 @@ $ bin/main print_complex_samples 0 data/sample/sample.dat
 (1.59988,11.201)
 (1.59988,-4.80058)
 ```
+
+## Results with Point Targets
+Currently, basic range compression is the maximum level of processing that I have implemented. Although, I am working on implementing much of the [Level-1 Algorithm](https://sentinel.esa.int/documents/247904/1877131/Sentinel-1-Level-1-Detailed-Algorithm-Definition). Here is an example of range compression using some ships, outside of Shanghai, as point targets:
+![shanghai_ships](imgs/shanghai_ships_v2.png)
+```bash
+$ bin/write range_compressed_swath IW2 data/points/point.dat --norm_log
+```
+![shanghai_range_compression](imgs/shanghai_range_compression_v2.png)
+The data is from the VV portion of this product: [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW).
+
+## Compiling
+### Build Script
+At the moment, compiling is done via *build.sh*. You may have to edit include paths to match your system. To run it, run the following commands:
+```bash
+$ chmod +x build.sh
+$ ./build.sh
+```
+Currently, there are three basic CLI utilities that get compiled:
+ * **bin/main** for printing packet, index, and annotation info, and for performance timing.
+ * **bin/write** for writing *tiff* images from raw and processed data.
+ * **bin/plot** for plotting raw and processed data.
+
+### Dependencies
+
+My goal is to not involve too many external dependancies; however, some are necessary. For image writing and plotting, *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*. The plotting functionality also uses *[matplotlib-cpp](https://github.com/lava/matplotlib-cpp)*, which is included in the *include* directory. It is dependant on being linked to Python and Numpy. For me, they are located in my conda (miniforge3) environment. The *build.sh* file handles this for me on my MacOS and Linux setups, but may need to be modified to match your installs. 
