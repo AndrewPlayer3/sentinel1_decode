@@ -22,6 +22,10 @@ double time_packet_generation(
     const int&  log_interval
 );
 
-void omp_test(const std::string& filename);
+void omp_test(
+    const std::string& filename
+);
 
-void thread_test(const std::string& filename);
+void thread_test(
+    const std::string& filename
+);

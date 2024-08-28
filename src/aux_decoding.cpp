@@ -11,7 +11,46 @@ Description: Funtions for reading packets, index info, and annotation info from 
 #include "aux_decoding.h"
 
 
-std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(const std::string& filename)
+void print_annotation_record(
+    const std::string& filename,
+    const int&         index
+) {
+    std::unordered_map<std::string, u_int64_t> record = annotation_decoder(filename)[index];
+
+    std::cout << "Days Uplink: "           << record["days_ul"]         << std::endl;
+    std::cout << "Milliseconds Uplink: "   << record["milliseconds_ul"] << std::endl;
+    std::cout << "Microseconds Uplink: "   << record["microseconds_ul"] << std::endl;
+    std::cout << "Days Downlink: "         << record["days_dl"]         << std::endl;
+    std::cout << "Milliseconds Downlink: " << record["milliseconds_dl"] << std::endl;
+    std::cout << "Microseconds Downlink: " << record["microseconds_dl"] << std::endl;
+    std::cout << "Packet Length: "         << record["packet_length"]   << std::endl;
+    std::cout << "Error Flag: "            << record["error_flag"]      << std::endl;
+}
+
+
+void print_index_records(const std::string& filename)
+{
+    VEC_UNSORTEDMAP records = index_decoder(filename);
+
+    int index = 0;
+    for (std::unordered_map<std::string, u_int64_t> record : records)
+    {
+        std::cout << "Index Record #"  << index << ":"            << std::endl;
+        std::cout << "Date/Time: "     << record["date_time"]     << std::endl;
+        std::cout << "Time Delta: "    << record["time_delta"]    << std::endl;
+        std::cout << "Data Size: "     << record["data_size"]     << std::endl;
+        std::cout << "Unit Offset: "   << record["unit_offset"]   << std::endl;
+        std::cout << "Byte Offset: "   << record["byte_offset"]   << std::endl;
+        std::cout << "Variable Flag: " << record["variable_flag"] << std::endl;
+        std::cout << "Spare Data: "    << record["spare_data"]    << std::endl;
+        std::cout << "---"                                        << std::endl;
+
+        index += 1;
+    }
+}
+
+
+VEC_UNSORTEDMAP index_decoder(const std::string& filename)
 {
     std::ifstream data = open_file(filename);
     return index_decoder(data);
@@ -19,11 +58,11 @@ std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(const std:
 
 
 /* Returns a vector of maps containing the index records */
-std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(std::ifstream& data)
+VEC_UNSORTEDMAP index_decoder(std::ifstream& data)
 {
     int record_size = 36;
 
-    std::vector<std::unordered_map<std::string, u_int64_t>> index_records;
+    VEC_UNSORTEDMAP index_records;
 
     while (!data.eof())
     {
@@ -43,7 +82,7 @@ std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(std::ifstr
 }
 
 
-std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(const std::string& filename)
+VEC_UNSORTEDMAP annotation_decoder(const std::string& filename)
 {
     std::ifstream data = open_file(filename);
     return annotation_decoder(data);
@@ -51,11 +90,11 @@ std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(const
 
 
 /* Returns a vector of maps containing the annotation records */
-std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(std::ifstream& data)
+VEC_UNSORTEDMAP annotation_decoder(std::ifstream& data)
 {
     int record_size = 26;
 
-    std::vector<std::unordered_map<std::string, u_int64_t>> annotation_records;
+    VEC_UNSORTEDMAP annotation_records;
 
     while (!data.eof())
     {
@@ -79,3 +118,5 @@ std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(std::
     }
     return annotation_records;
 }
+
+

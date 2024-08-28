@@ -1,61 +1,6 @@
 #include "signal_processing.h"
 
 
-CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
-{
-    int num_samples = replica_chirp.size();
-
-    CF_VEC_1D replica_chirp_conj = conjugate(replica_chirp);
-    CF_VEC_1D weighted_chirp     = apply_hanning_window(replica_chirp_conj);
-    F_VEC_1D norm = magnitude_1d(weighted_chirp);
-
-    float energy = 0.0;
-    for (int i = 0; i < num_samples; i++)
-    {
-        energy += (norm[i] * norm[i]);
-    }
-    energy /= norm.size();
-
-    CF_VEC_1D reference(num_samples);
-    for (int i = 0; i < num_samples; i++)
-    {
-        reference[i] = weighted_chirp[i] / energy;
-    }
-    return reference;
-}
-
-
-CF_VEC_1D pulse_compression(
-    const CF_VEC_1D& signal,
-    const CF_VEC_1D& replica_chirp
-) {
-    int num_samples     = signal.size();
-    int replica_samples = replica_chirp.size();
-
-    CF_VEC_1D pulse_compressed(num_samples);
-
-    CF_VEC_1D signal_fft = compute_1d_dft(signal,  0, false);
-    CF_VEC_1D reference  = get_reference_function(replica_chirp);
-
-    CF_VEC_1D chirp(num_samples);
-
-    for (int i = 0; i < num_samples; i++)
-    {
-        if (i < replica_samples) chirp[i] = reference[i];
-        else                     chirp[i] = 0.0;
-    }
-
-    chirp = compute_1d_dft(chirp,  0, false);
-
-    for (int i = 0; i < num_samples; i++)
-    {
-        pulse_compressed[i] = signal_fft[i] * chirp[i];
-    }    
-
-    return compute_1d_dft(pulse_compressed, num_samples, true);
-}
-
-
 CF_VEC_1D conjugate(const CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
@@ -110,6 +55,45 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
     }
 }
 
+
+F_VEC_1D flatten(const F_VEC_2D& values)
+{
+    int rows = values.size();
+    int cols = values[0].size();
+
+    F_VEC_1D flat(rows * cols);
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            flat[i * cols + j] = values[i][j];
+        }
+    }
+
+    return flat;
+}
+
+
+CF_VEC_1D flatten(const CF_VEC_2D& values)
+{
+    int rows = values.size();
+    int cols = values[0].size();
+
+    CF_VEC_1D flat(rows * cols);
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            flat[i * cols + j] = values[i][j];
+        }
+    }
+
+    return flat;
+}
 
 
 F_VEC_2D norm_2d(
@@ -420,4 +404,59 @@ CF_VEC_2D compute_2d_dft(
     }
 
     return signal_fft;
+}
+
+
+F_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
+{
+    F_VEC_1D samples(signal.size());
+
+    if      (scaling_mode == "norm_log") samples = norm_1d(signal, true);
+    else if (scaling_mode == "norm"    ) samples = norm_1d(signal, false);
+    else if (scaling_mode == "mag"     ) samples = magnitude_1d(signal);      
+    else if (scaling_mode == "real" or scaling_mode == "imag")
+    {
+        bool real = scaling_mode == "real";
+        
+        for (int i = 0; i < signal.size(); i++)
+        {
+            samples[i] = real ? signal[i].real() : signal[i].imag();
+        }
+    }
+    else
+    {
+        throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
+    }
+    return samples;
+}
+
+
+F_VEC_1D scale(const CF_VEC_2D& signal, const std::string& scaling_mode)
+{
+    int rows = signal.size();
+    int cols = signal[0].size();
+    
+    F_VEC_1D samples(rows*cols);
+
+    if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
+    else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));
+    else if (scaling_mode == "mag"     ) samples = flatten(magnitude_2d(signal));    
+    else if (scaling_mode == "real" or scaling_mode == "imag")
+    {
+        bool real = scaling_mode == "real";
+        int  size = signal.size() * signal[0].size();
+        
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                samples[i*cols+j] = real ? signal[i][j].real() : signal[i][j].imag();
+            }
+        }
+    }
+    else
+    {
+        throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
+    }
+    return samples;
 }
