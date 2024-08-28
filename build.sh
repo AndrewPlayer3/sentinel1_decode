@@ -38,8 +38,8 @@ echo "Compiling image writing to bin/write"
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 	g++ -L/usr/lib/x86_64-linux-gnu/ $WRITE_OPTIONS $WRITE_SRC  $WRITE_LIBS -o $WRITE_PATH
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-	/opt/homebrew/opt/llvm/bin/clang++ $WRITE_OPTIONS -w $WRITE_SRC -I$HOMEBREW_INCLUDE -I$PYTHON_INCLUDE \\
-	                                  -I$NUMPY_INCLUDE -L$HOMEBREW_LIB -L$HOMEBREW_PYTHON_INCLUDE $WRITE_LIBS \\
+	/opt/homebrew/opt/llvm/bin/clang++ $WRITE_OPTIONS -w $WRITE_SRC -I$HOMEBREW_INCLUDE -I$PYTHON_INCLUDE \
+	                                  -I$NUMPY_INCLUDE -L$HOMEBREW_LIB -L$HOMEBREW_PYTHON_INCLUDE $WRITE_LIBS \
 									  -lpython3.12 -o $WRITE_PATH
 else
 	echo "$OSTYPE is not supported by this script, see the commands for what needs to be compiled."
@@ -52,8 +52,8 @@ echo "Compiling plotting to bin/plot."
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 	g++ $PLOT_OPTIONS -w $PLOT_SRC -I$PYTHON_INCLUDE -I$NUMPY_INCLUDE $PLOT_LIBS -o $PLOT_PATH
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-	/opt/homebrew/opt/llvm/bin/clang++ $PLOT_OPTIONS -w $PLOT_SRC -I$HOMEBREW_INCLUDE -I$PYTHON_INCLUDE \\
-	                                   -I$NUMPY_INCLUDE -L$HOMEBREW_LIB -L$HOMEBREW_PYTHON_INCLUDE $PLOT_LIBS \\
+	/opt/homebrew/opt/llvm/bin/clang++ $PLOT_OPTIONS -w $PLOT_SRC -I$HOMEBREW_INCLUDE -I$PYTHON_INCLUDE \
+	                                   -I$NUMPY_INCLUDE -L$HOMEBREW_LIB -L$HOMEBREW_PYTHON_INCLUDE $PLOT_LIBS \
 									   -o $PLOT_PATH
 else
 	echo "$OSTYPE is not supported by this script, see the commands for what needs to be compiled."
