@@ -56,7 +56,7 @@ void burst_replica_chirps_command(char *argv[], std::unordered_map<std::string, 
 }
 
 
-void swath_replica_chirps(char *argv[], std::unordered_map<std::string, bool>& options)
+void swath_replica_chirps_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
     STRING_VEC_1D args  = {"swath", "in_path", "out_path"};
     STRING_VEC_1D types = {"string", "path", "string"};
@@ -137,10 +137,10 @@ int main(int argc, char* argv[])
     };
     options = parse_options(options, argv, 2);
 
-    if      (command == "burst")                  range_compressed_burst_command(&(argv[0]), options);
-    else if (command == "swath")                  range_compressed_swath_command(&(argv[0]), options);
-    else if (command == "burst_replica_chirps")   range_compressed_burst_command(&(argv[0]), options);
-    else if (command == "swath_replica_chirps")   range_compressed_swath_command(&(argv[0]), options);
+    if      (command == "burst")                  burst_command(&(argv[0]), options);
+    else if (command == "swath")                  swath_command(&(argv[0]), options);
+    else if (command == "burst_replica_chirps")   burst_replica_chirps_command(&(argv[0]), options);
+    else if (command == "swath_replica_chirps")   swath_replica_chirps_command(&(argv[0]), options);
     else if (command == "range_compressed_burst") range_compressed_burst_command(&(argv[0]), options);
     else if (command == "range_compressed_swath") range_compressed_swath_command(&(argv[0]), options);
     else if (command == "help" or command == "--help" or command == "-h")

@@ -186,8 +186,8 @@ int main(int argc, char* argv[])
         "fft [packet_index] [fft_size] [path] [--inverse]",
         "fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]",
         "fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]",
-        "range_compressed_burst [swath] [burst_num] [path]"
-        "range_compressed_swath [swath] [path]"
+        "range_compressed_burst [swath] [burst_num] [path]",
+        "range_compressed_swath [swath] [path]",
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 

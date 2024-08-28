@@ -31,11 +31,11 @@ void print_packet_at_index(
 
     std::cout << "Primary Header:" << std::endl;
     packet.print_primary_header();
-    std::cout << "Secondary Header: " << std::endl;
+    std::cout << "\nSecondary Header: " << std::endl;
     packet.print_secondary_header();
-    std::cout << "Operating Modes Info:" << std::endl;
+    std::cout << "\nOperating Mode Info:" << std::endl;
     packet.print_modes();
-    std::cout << "Pulse Info" << std::endl;
+    std::cout << "\nPulse Info:" << std::endl;
     packet.print_pulse_info();
 }
 
