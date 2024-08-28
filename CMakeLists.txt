@@ -28,27 +28,26 @@ endif()
 
 include_directories(${PYTHON_INCLUDE} ${NUMPY_INCLUDE} ${HOMEBREW_INCLUDE})
 
-link_directories(${HOMEBREW_LIB} ${HOMEBREW_PYTHON_INCLUDE})
+link_directories(${PYTHON_LIBS} ${HOMEBREW_LIB} ${HOMEBREW_PYTHON_INCLUDE})
 
 # Executable: main
 add_executable(s1_print src/main.cpp src/cli.cpp src/packet.cpp src/perf.cpp src/decoding_utils.cpp src/aux_decoding.cpp)
-set_target_properties(s1_print PROPERTIES OUTPUT_NAME "bin/s1_print.exe")
+set_target_properties(s1_print PROPERTIES OUTPUT_NAME "../bin/s1_print.exe")
 set_target_properties(s1_print PROPERTIES CXX_COMPILER "${CLANG_COMPILER}")
 
 # Executable: write
 add_executable(s1_write_tiff src/write_main.cpp src/cli.cpp src/image_write.cpp src/image_formation.cpp src/packet.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/signal_processing.cpp)
-set_target_properties(s1_write_tiff PROPERTIES OUTPUT_NAME "bin/s1_write_tiff.exe")
+set_target_properties(s1_write_tiff PROPERTIES OUTPUT_NAME "../bin/s1_write_tiff.exe")
 target_link_libraries(s1_write_tiff PRIVATE fftw3f_omp fftw3f m tiff)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_link_libraries(s1_write_tiff PRIVATE python3.12)
-    link_directories(${HOMEBREW_LIB} ${HOMEBREW_PYTHON_INCLUDE})
+    link_directories(${HOMEBREW_LIB})
 endif()
 
 # Executable: plot
 add_executable(s1_plot src/plot_main.cpp src/cli.cpp src/plot.cpp src/image_formation.cpp src/packet.cpp src/decoding_utils.cpp src/signal_processing.cpp)
-set_target_properties(s1_plot PROPERTIES OUTPUT_NAME "bin/s1_plot.exe")
+set_target_properties(s1_plot PROPERTIES OUTPUT_NAME "../bin/s1_plot.exe")
+target_link_libraries(s1_plot PRIVATE python3.12)
 target_link_libraries(s1_plot PRIVATE fftw3f_omp fftw3f m)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_link_libraries(s1_plot PRIVATE python3.12)
     link_directories(${HOMEBREW_LIB} ${HOMEBREW_PYTHON_INCLUDE})
 endif()
