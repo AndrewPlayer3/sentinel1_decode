@@ -42,4 +42,6 @@ u_int64_t read_n_bits(
     const int& n
 );
 
-std::ifstream open_file(const std::string& filename);
+std::ifstream open_file(
+    const std::string& filename
+);

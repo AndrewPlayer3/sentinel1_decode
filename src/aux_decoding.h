@@ -13,7 +13,31 @@ Description: Funtions for reading packets, index info, and annotation info from 
 #include "packet.h"
 #include "misc_types.h"
 
-std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(const std::string& filename);
-std::vector<std::unordered_map<std::string, u_int64_t>> annotation_decoder(std::ifstream& data);
-std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(const std::string& filename);
-std::vector<std::unordered_map<std::string, u_int64_t>> index_decoder(std::ifstream& data);
+
+#define VEC_UNSORTEDMAP std::vector<std::unordered_map<std::string, u_int64_t>>
+
+
+void print_annotation_record(
+    const std::string& filename,
+    const int& index
+);
+
+void print_index_records(
+    const std::string& filename
+);
+
+VEC_UNSORTEDMAP annotation_decoder(
+    const std::string& filename
+);
+
+VEC_UNSORTEDMAP annotation_decoder(
+    std::ifstream& data
+);
+
+VEC_UNSORTEDMAP index_decoder(
+    const std::string& filename
+);
+
+VEC_UNSORTEDMAP index_decoder(
+    std::ifstream& data
+);

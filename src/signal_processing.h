@@ -10,24 +10,21 @@
 #include "fftw3.h"
 
 
-F_VEC_1D flatten(const F_VEC_2D& values);
-
-CF_VEC_1D flatten(const CF_VEC_2D& values);
-
-CF_VEC_1D pulse_compression(
-    const CF_VEC_1D& signal,
-    const CF_VEC_1D& replica_chirp
+F_VEC_1D flatten(
+    const F_VEC_2D& values
 );
 
-CF_VEC_1D get_reference_function(
-    const CF_VEC_1D& replica_chirp
+CF_VEC_1D flatten(
+    const CF_VEC_2D& values
 );
 
 CF_VEC_1D conjugate(
     const CF_VEC_1D& complex_samples
 );
 
-F_VEC_1D hanning_window(const int& num_samples);
+F_VEC_1D hanning_window(
+    const int& num_samples
+);
 
 void apply_hanning_window_in_place(
     CF_VEC_1D& complex_samples
@@ -79,4 +76,14 @@ CF_VEC_2D compute_2d_dft(
     const bool& inverse,
     int fft_rows,
     int fft_cols
+);
+
+F_VEC_1D scale(
+    const CF_VEC_1D& signal,
+    const std::string& scaling_mode
+);
+
+F_VEC_1D scale(
+    const CF_VEC_2D& signal,
+    const std::string& scaling_mode
 );

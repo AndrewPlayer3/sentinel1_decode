@@ -6,6 +6,8 @@
 #include "swath.h"
 #include "misc_types.h"
 #include "signal_processing.h"
+#include "image_formation.h"
+#include "cli.h"
 
 #include "../include/matplotlibcpp.h"
 
@@ -19,7 +21,6 @@ void plot_pulse(
 void plot_pulse_compression(
     const std::string& filename,
     const int&         packet_index,
-    const bool&        do_fft,
     const std::string& scaling_mode
 );
 
