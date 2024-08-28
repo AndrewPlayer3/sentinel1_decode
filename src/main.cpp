@@ -44,14 +44,10 @@ int main(int argc, char* argv[])
 {
     STRING_VEC_1D help_strings = {
         "print_packet_info [packet_index] [path]",
-        "print_headers [packet_index] [path]",
-        "print_modes [packet_index] [path]",
-        "print_pulse_info [packet_index] [path]",
         "print_complex_samples [packet_index] [path]",
+        "print_swath_names [path]",
         "print_index_records [path]",
         "print_annotation_record [record_index] [path]",
-        "print_swath_names [path]",
-        "find_packets_of_type [packet_type] [path]",
         "time [num_packets] [path]",
         "thread_test [path]",
         "omp_test [path]"

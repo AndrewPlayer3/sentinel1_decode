@@ -31,7 +31,7 @@ My goal is to not involve too many external dependancies; however, some are nece
 ## Commands
 ### bin/write
 ```bash
-$ bin/write help
+$ bin/write --help
 burst [swath] [burst_num] [in_path] [out_path]
 swath [swath] [in_path] [out_path]
 burst_replica_chirps [swath] [burst_num] [in_path] [out_path]
@@ -56,7 +56,7 @@ $ bin/write burst_replica_chirps IW2 5 data/points/point.dat burst_replica_chirp
 ![burst_replica_chirps_example](imgs/burst_replica_chirp_example.png)
 ### bin/plot
 ```bash
-$ bin/plot help
+$ bin/plot --help
 signal [packet_index] [mode] [path]
 swath [swath] [path]
 burst [swath] [burst_num] [path]
@@ -88,16 +88,12 @@ $ bin/plot range_compressed_swath IW1 data/sample/sample.dat --norm
 
 #### bin/main
 ```bash
-$ bin/main help
+$ bin/main --help
 print_packet_info [packet_index] [path]
-print_headers [packet_index] [path]
-print_modes [packet_index] [path]
-print_pulse_info [packet_index] [path]
 print_complex_samples [packet_index] [path]
+print_swath_names [path]
 print_index_records [path]
 print_annotation_record [record_index] [path]
-print_swath_names [path]
-find_packets_of_type [packet_type] [path]
 time [num_packets] [path]
 thread_test [path]
 omp_test [path]
