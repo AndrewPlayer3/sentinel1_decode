@@ -15,9 +15,12 @@ void write_tif(
     TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
     TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
     TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-    for (int i = 0; i < rows; i++)
+    
+    int img_row = 0; 
+    for (int data_row = rows-1; data_row >= 0; data_row--)
     {
-        TIFFWriteScanline(tif, &(img_data[i * cols]), i, 0);
+        TIFFWriteScanline(tif, &(img_data[data_row * cols]), img_row, 0);
+        img_row++;
     }
     TIFFClose(tif);
 }
