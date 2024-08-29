@@ -58,16 +58,16 @@ CF_VEC_1D compute_1d_dft(
     const bool& inverse
 );
 
-CF_VEC_2D compute_axis_dft(
-    const CF_VEC_2D& signals,
-          int   fft_size,
-    const int&  axis,
+CF_VEC_2D _compute_axis_dft(
+    CF_VEC_2D&  signals,
+          int&  fft_size,
     const bool& inverse
 );
 
-CF_VEC_2D _compute_axis_dft(
-    const CF_VEC_2D& signals,
+CF_VEC_2D compute_axis_dft(
+    CF_VEC_2D&  signals,
           int   fft_size,
+    const int&  axis,
     const bool& inverse
 );
 

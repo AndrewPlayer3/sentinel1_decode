@@ -5,8 +5,7 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
 {
     int num_samples = replica_chirp.size();
 
-    CF_VEC_1D replica_chirp_conj = conjugate(replica_chirp);
-    CF_VEC_1D weighted_chirp     = apply_hanning_window(replica_chirp_conj);
+    CF_VEC_1D weighted_chirp = apply_hanning_window(conjugate(replica_chirp));
     F_VEC_1D norm = magnitude_1d(weighted_chirp);
 
     float energy = 0.0;
@@ -19,9 +18,9 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
     CF_VEC_1D reference(num_samples);
     for (int i = 0; i < num_samples; i++)
     {
-        reference[i] = weighted_chirp[i] / energy;
+        weighted_chirp[i] /= energy;
     }
-    return reference;
+    return weighted_chirp;
 }
 
 
@@ -32,26 +31,23 @@ CF_VEC_1D pulse_compression(
     int num_samples     = signal.size();
     int replica_samples = replica_chirp.size();
 
-    CF_VEC_1D pulse_compressed(num_samples);
-
     CF_VEC_1D signal_fft = compute_1d_dft(signal,  0, false);
     CF_VEC_1D reference  = get_reference_function(replica_chirp);
 
-    CF_VEC_1D chirp(num_samples);
+    reference.resize(num_samples);
 
-    for (int i = 0; i < num_samples; i++)
+    for (int i = replica_samples; i < num_samples; i++)
     {
-        if (i < replica_samples) chirp[i] = reference[i];
-        else                     chirp[i] = 0.0;
+        reference[i] = 0.0;
     }
 
-    chirp = compute_1d_dft(chirp,  0, false);
+    reference = compute_1d_dft(reference,  0, false);
 
     for (int i = 0; i < num_samples; i++)
     {
-        pulse_compressed[i] = signal_fft[i] * chirp[i];
+        signal_fft[i] *= reference[i];
     }    
-    return compute_1d_dft(pulse_compressed, num_samples, true);
+    return compute_1d_dft(signal_fft, num_samples, true);
 }
 
 

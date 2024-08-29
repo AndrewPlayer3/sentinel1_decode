@@ -149,7 +149,7 @@ F_VEC_1D norm_1d(
         float real = complex_values[i].real();
         float imag = complex_values[i].imag();
 
-        float mag = sqrt(pow(real, 2) + pow(imag, 2));
+        float mag = sqrt(real*real + imag*imag);
 
         norm[i] = mag;
 
@@ -177,7 +177,7 @@ F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
         float real = complex_values[i].real();
         float imag = complex_values[i].imag();
 
-        float mag = sqrt(pow(real, 2) + pow(imag, 2));
+        float mag = sqrt(real*real + imag*imag);
 
         magnitude[i] = mag;    
     }
@@ -203,9 +203,7 @@ F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
             float real = complex_values[i][j].real();
             float imag = complex_values[i][j].imag();
 
-            float norm_value = sqrt(pow(real, 2) + pow(imag, 2));
-
-            magnitude[i][j] = norm_value;
+            magnitude[i][j] = sqrt(real*real + imag*imag);
         }
     }
 
@@ -220,7 +218,6 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 
     CF_VEC_2D arr_t(cols, CF_VEC_1D(rows));
 
-    #pragma omp parallel for collapse(2)
     for (int i = 0; i < cols; i++)
     {
         for (int j = 0; j < rows; j++)
@@ -268,7 +265,7 @@ CF_VEC_1D compute_1d_dft(
 
 
 CF_VEC_2D compute_axis_dft(
-    const CF_VEC_2D& signals,
+    CF_VEC_2D&  signals,
           int   fft_size = 0,
     const int&  axis     = 0,
     const bool& inverse  = false
@@ -285,15 +282,17 @@ CF_VEC_2D compute_axis_dft(
     {
         std::cout << "Tranposing Vector for Row-Axis 1D FFT" << std::endl;;
 
-        return transpose(_compute_axis_dft(transpose(signals), fft_size, inverse));
+        CF_VEC_2D signals_out = transpose(signals);
+        signals_out = _compute_axis_dft(signals_out, fft_size, inverse);
+        return transpose(signals_out);
     }
     return _compute_axis_dft(signals, fft_size, inverse);
 }
 
 
 CF_VEC_2D _compute_axis_dft(
-    const CF_VEC_2D& signals,
-          int   fft_size,
+    CF_VEC_2D&  signals,
+          int&  fft_size,
     const bool& inverse
 ) {
     int signal_rows   = signals.size();
@@ -303,9 +302,7 @@ CF_VEC_2D _compute_axis_dft(
 
     std::cout << "Initializing Complex Arrays" << std::endl;
 
-    CF_VEC_2D fft_array_in = signals;
     CF_VEC_2D fft_array_out(signal_rows, CF_VEC_1D(fft_size));
-    std::vector<fftwf_plan> plans(signal_rows);
 
     std::cout << "Initializing Plans, Excecuting FFTs" << std::endl;
 
@@ -313,7 +310,7 @@ CF_VEC_2D _compute_axis_dft(
     {
         fftwf_plan plan = fftwf_plan_dft_1d(
             fft_size,
-            reinterpret_cast<fftwf_complex*>(fft_array_in[row].data()),
+            reinterpret_cast<fftwf_complex*>(signals[row].data()),
             reinterpret_cast<fftwf_complex*>(fft_array_out[row].data()),
             fft_direction,
             FFTW_ESTIMATE

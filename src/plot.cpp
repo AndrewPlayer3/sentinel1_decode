@@ -152,8 +152,10 @@ void plot_fft_axis(
     int fft_rows = burst.get_num_packets();
     int fft_cols = burst.get_signal(0).size();
 
+    CF_VEC_2D signals = burst.get_signals();
+
     CF_VEC_2D signals_fft = compute_axis_dft(
-        burst.get_signals(),
+        signals,
         fft_size,
         axis,
         inverse

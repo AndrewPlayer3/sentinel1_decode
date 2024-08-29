@@ -61,7 +61,7 @@ public:
 
         for (Burst& burst : _bursts)
         {
-            for (CF_VEC_1D signal : burst.get_signals())
+            for (CF_VEC_1D& signal : burst.get_signals())
             {
                 signals.push_back(signal);
             }
@@ -76,7 +76,7 @@ public:
 
         for (Burst& burst : _bursts)
         {
-            for (CF_VEC_1D replica_chirp : burst.get_replica_chirps())
+            for (CF_VEC_1D& replica_chirp : burst.get_replica_chirps())
             {
                 replica_chirps.push_back(replica_chirp);
             }
