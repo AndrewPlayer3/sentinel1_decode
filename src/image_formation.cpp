@@ -51,7 +51,6 @@ CF_VEC_1D pulse_compression(
     {
         pulse_compressed[i] = signal_fft[i] * chirp[i];
     }    
-
     return compute_1d_dft(pulse_compressed, num_samples, true);
 }
 
@@ -79,6 +78,7 @@ SIGNAL_PAIR get_signal_pairs_from_swath(
 }
 
 
+// TODO: These functions have quite a bit of duplication now.
 CF_VEC_2D range_compress_swath(
     const std::string& filename,
     const std::string& swath_name
@@ -102,7 +102,6 @@ CF_VEC_2D range_compress_swath(
     {
         pulse_compressed[i] = pulse_compression(signal_pair.signals[i], signal_pair.replica_chirps[i]);
     }
-
     return pulse_compressed;
 }
 
@@ -132,6 +131,43 @@ CF_VEC_2D range_compress_burst(
     {
         pulse_compressed[i] = pulse_compression(burst.get_signal(i), burst.get_replica_chirp(i));
     }
-
     return pulse_compressed;
+}
+
+
+CF_VEC_2D range_doppler_swath(
+    const std::string& filename,
+    const std::string& swath_name
+) {
+    std::ifstream data = open_file(filename);
+    return range_doppler_swath(data, swath_name);
+}
+
+
+CF_VEC_2D range_doppler_swath(
+    std::ifstream&     data,
+    const std::string& swath_name
+) {
+    CF_VEC_2D range_compressed = range_compress_swath(data, swath_name);
+    return compute_axis_dft(range_compressed, 0, 0, false);
+}
+
+
+CF_VEC_2D range_doppler_burst(
+    const std::string& filename,
+    const std::string& swath_name,
+    const int&         burst_num
+) {
+    std::ifstream data = open_file(filename);
+    return range_doppler_burst(data, swath_name, burst_num);
+}
+
+
+CF_VEC_2D range_doppler_burst(
+    std::ifstream&     data,
+    const std::string& swath_name,
+    const int&         burst_num
+) {
+    CF_VEC_2D range_compressed = range_compress_burst(data, swath_name, burst_num);
+    return compute_axis_dft(range_compressed, 0, 0, false);
 }

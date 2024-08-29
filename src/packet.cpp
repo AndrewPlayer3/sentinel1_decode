@@ -876,9 +876,7 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::st
 
     PACKET_VEC_2D bursts; 
     PACKET_VEC_1D burst_packets;
-    std::set<int> burst_nums;
     int previous_az = 0;
-    int num_bursts = 0;
 
     for (int i = 0; i < num_packets; i++)
     {
@@ -893,7 +891,6 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::st
             {
                 bursts.push_back(burst_packets);
                 burst_packets = PACKET_VEC_1D();
-                burst_nums.emplace(num_bursts++);
             }
             burst_packets.push_back(packet);
 
