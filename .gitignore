@@ -36,7 +36,7 @@ bin/*
 data/
 sample_data/
 
-#vscode
+# VSCode
 .vscode/
 
 #cmake
@@ -51,3 +51,10 @@ sample_data/
 **/CMakeScripts
 **/compile_commands.json
 build/**/*
+
+# MacOS
+.DS_Store
+
+# Processed Data
+*.tif
+*.tiff
