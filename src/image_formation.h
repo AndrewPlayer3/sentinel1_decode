@@ -45,3 +45,29 @@ CF_VEC_2D range_compress_burst(
     const std::string& swath,
     const int&         burst_num
 );
+
+
+CF_VEC_2D range_doppler_swath(
+    const std::string& filename,
+    const std::string& swath_name
+);
+
+
+CF_VEC_2D range_doppler_swath(
+    std::ifstream&     data,
+    const std::string& swath_name
+);
+
+
+CF_VEC_2D range_doppler_burst(
+    const std::string& filename,
+    const std::string& swath_name,
+    const int&         burst_num
+);
+
+
+CF_VEC_2D range_doppler_burst(
+    std::ifstream&     data,
+    const std::string& swath_name,
+    const int&         burst_num
+);

@@ -1,13 +1,12 @@
 #include "image_write.h"
 
-void write_tif(
+void _write_tif(
     std::vector<float>& img_data,
     const int& rows,
     const int& cols,
     const std::string out_filename
 ) {
-    TIFF* tif = TIFFOpen(out_filename.c_str(), "w");
-    TIFFIsBigTIFF(tif);
+    TIFF* tif = TIFFOpen(out_filename.c_str(), "w8");
     TIFFSetField(tif, TIFFTAG_IMAGELENGTH, rows);
     TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, cols);
     TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
@@ -27,6 +26,20 @@ void write_tif(
 }
 
 
+void write_tif(
+    CF_VEC_2D& img_data,
+    const std::string& out_filename,
+    const std::string& scaling_mode
+) {
+    int rows = img_data.size();
+    int cols = img_data[0].size();
+
+    F_VEC_1D scaled = scale(img_data, scaling_mode);
+
+    _write_tif(scaled, rows, cols, out_filename);
+}
+
+
 void write_burst(
     const std::string& in_filename,
     const std::string& out_filename,
@@ -35,15 +48,8 @@ void write_burst(
     const std::string& scaling_mode
 ) {
     Burst burst(in_filename, swath_name, burst_num);
-
     CF_VEC_2D signals = burst.get_signals();
-
-    int rows = signals.size();
-    int cols = signals[0].size();
-
-    F_VEC_1D scaled = scale(signals, scaling_mode);
-
-    write_tif(scaled, rows, cols, out_filename);
+    write_tif(signals, out_filename, scaling_mode);
 }
 
 
@@ -54,15 +60,8 @@ void write_swath(
     const std::string& scaling_mode
 ) {
     Swath swath(in_filename, swath_name);
-
     CF_VEC_2D signals = swath.get_all_signals();
-
-    int rows = signals.size();
-    int cols = signals[0].size();
-
-    F_VEC_1D scaled = scale(signals, scaling_mode);
-
-    write_tif(scaled, rows, cols, out_filename);
+    write_tif(signals, out_filename, scaling_mode);
 }
 
 
@@ -74,15 +73,8 @@ void write_burst_replica_chirps(
     const std::string& scaling_mode
 ) {
     Burst burst(in_filename, swath_name, burst_num);
-
     CF_VEC_2D chirps = burst.get_replica_chirps();
-
-    int rows = chirps.size();
-    int cols = chirps[0].size();
-
-    F_VEC_1D scaled = scale(chirps, scaling_mode);
-
-    write_tif(scaled, rows, cols, out_filename);
+    write_tif(chirps, out_filename, scaling_mode);
 }
 
 
@@ -93,15 +85,8 @@ void write_swath_replica_chirps(
     const std::string& scaling_mode
 ) {
     Swath swath(in_filename, swath_name);
-
     CF_VEC_2D chirps = swath.get_all_replica_chirps();
-
-    int rows = chirps.size();
-    int cols = chirps[0].size();
-
-    F_VEC_1D scaled = scale(chirps, scaling_mode);
-
-    write_tif(scaled, rows, cols, out_filename);
+    write_tif(chirps, out_filename, scaling_mode);
 }
 
 
@@ -111,15 +96,8 @@ void write_range_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    
     CF_VEC_2D compressed_swath = range_compress_swath(in_filename, swath_name);
-
-    int rows = compressed_swath.size();
-    int cols = compressed_swath[0].size();
-
-    F_VEC_1D scaled = scale(compressed_swath, scaling_mode);
-
-    write_tif(scaled, rows, cols, out_filename);
+    write_tif(compressed_swath, out_filename, scaling_mode);
 }
 
 
@@ -131,11 +109,29 @@ void write_range_compressed_burst(
     const std::string& scaling_mode
 ) {
     CF_VEC_2D compressed_burst = range_compress_burst(in_filename, swath_name, burst_num);
+    write_tif(compressed_burst, out_filename, scaling_mode);
+}
 
-    int rows = compressed_burst.size();
-    int cols = compressed_burst[0].size();
 
-    F_VEC_1D scaled = scale(compressed_burst, scaling_mode);
+void write_range_doppler_swath(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const std::string& scaling_mode
+) {
+    CF_VEC_2D range_doppler = range_doppler_swath(in_filename, swath_name);
+    write_tif(range_doppler, out_filename, scaling_mode);
+}
 
-    write_tif(scaled, rows, cols, out_filename);
+
+void write_range_doppler_burst(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const std::string& scaling_mode
+) {
+    
+    CF_VEC_2D range_doppler = range_doppler_burst(in_filename, swath_name, burst_num);
+    write_tif(range_doppler, out_filename, scaling_mode);
 }
