@@ -280,8 +280,6 @@ CF_VEC_2D compute_axis_dft(
     }
     if (not axis)
     {
-        std::cout << "Tranposing Vector for Row-Axis 1D FFT" << std::endl;;
-
         CF_VEC_2D signals_out = transpose(signals);
         signals_out = _compute_axis_dft(signals_out, fft_size, inverse);
         return transpose(signals_out);

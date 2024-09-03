@@ -52,6 +52,8 @@ F_VEC_2D magnitude_2d(
     const CF_VEC_2D& complex_values
 );
 
+CF_VEC_2D transpose(const CF_VEC_2D& arr);
+
 CF_VEC_1D compute_1d_dft(
     const CF_VEC_1D& complex_signal,
           int   fft_size,

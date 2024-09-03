@@ -120,3 +120,81 @@ VEC_UNSORTEDMAP annotation_decoder(std::ifstream& data)
 }
 
 
+std::vector<std::unordered_map<std::string, std::string>> build_data_word_dicts(const std::vector<L0Packet>& packets)
+{
+    int num_packets = packets.size();
+    std::vector<std::unordered_map<std::string, std::string>> data_word_dicts;
+    std::unordered_map<std::string, std::string> sub_comm_dict = SUB_COMM_KEY_VAL;
+    int initial_data_word_index = 0;
+    int sc_data_word_index = 0;
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = packets[i];
+        sc_data_word_index = packet.secondary_header("sc_data_word_index");
+        if (i == 0)
+        {
+            initial_data_word_index = sc_data_word_index;
+        }
+        else
+        {
+            if (sc_data_word_index == initial_data_word_index)
+            {
+                data_word_dicts.push_back(sub_comm_dict);
+                sub_comm_dict = SUB_COMM_KEY_VAL;
+            }
+        }
+        int data_word = packet.secondary_header("sc_data_word");
+        std::string key = SUB_COMM_KEY_POS[sc_data_word_index].first;
+        int val = SUB_COMM_KEY_POS[sc_data_word_index].second;
+        
+    }
+}
+
+
+// def build_data_word_dict(packets):
+//     data_word_dicts = []
+//     sub_comm_dict = SUB_COMM_KEY_VAL.copy()
+    
+//     initial_data_word_index = 0
+//     sc_data_word_index = 0
+
+//     for i in range(len(packets)):
+//         packet = packets[i]
+        
+//         secondary_header = packet.get_secondary_header()
+        
+//         sc_data_word_index = secondary_header['sc_data_word_index']
+
+//         if i == 0:
+//             initial_data_word_index = sc_data_word_index
+//         else:
+//             if sc_data_word_index == initial_data_word_index:
+//                 data_word_dicts.append(sub_comm_dict)
+//                 sub_comm_dict = SUB_COMM_KEY_VAL.copy()
+
+//         data_word =  secondary_header['sc_data_word']
+
+//         key, pos = SUB_COMM_KEY_POS[sc_data_word_index]
+//         pos = pos * WORD_SIZE
+//         sub_comm_dict[key] = sub_comm_dict[key][0:pos] + data_word + sub_comm_dict[key][pos+WORD_SIZE:]
+    
+//     if sc_data_word_index != initial_data_word_index:
+//         data_word_dicts.append(sub_comm_dict)
+
+//     for i in range(len(data_word_dicts)):
+//         data_word_dicts[i]['x_axis_position'] = to_float64(data_word_dicts[i]['x_axis_position'])
+//         data_word_dicts[i]['y_axis_position'] = to_float64(data_word_dicts[i]['y_axis_position'])
+//         data_word_dicts[i]['z_axis_position'] = to_float64(data_word_dicts[i]['z_axis_position'])
+//         data_word_dicts[i]['x_axis_velocity'] = to_float32(data_word_dicts[i]['x_axis_velocity'])
+//         data_word_dicts[i]['y_axis_velocity'] = to_float32(data_word_dicts[i]['y_axis_velocity'])
+//         data_word_dicts[i]['z_axis_velocity'] = to_float32(data_word_dicts[i]['z_axis_velocity'])
+//         data_word_dicts[i]['q0_quaternion']   = to_float32(data_word_dicts[i]['q0_quaternion'])
+//         data_word_dicts[i]['q1_quaternion']   = to_float32(data_word_dicts[i]['q1_quaternion'])
+//         data_word_dicts[i]['q2_quaternion']   = to_float32(data_word_dicts[i]['q2_quaternion'])
+//         data_word_dicts[i]['q3_quaternion']   = to_float32(data_word_dicts[i]['q3_quaternion'])
+//         data_word_dicts[i]['omega_x']         = to_float32(data_word_dicts[i]['omega_x'])
+//         data_word_dicts[i]['omega_y']         = to_float32(data_word_dicts[i]['omega_y'])
+//         data_word_dicts[i]['omega_z']         = to_float32(data_word_dicts[i]['omega_z'])
+
+//     return data_word_dicts

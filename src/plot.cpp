@@ -72,6 +72,28 @@ void plot_range_compressed_swath(
 }
 
 
+void plot_azimuth_compressed_burst(
+    const std::string& filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const std::string& scaling_mode
+) {
+    std::cout << "Decoding Burst" << std::endl;
+    Burst burst(filename, swath_name, burst_num);
+
+    std::cout << "Range Compressing Burst" << std::endl;
+    CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
+
+    PACKET_VEC_1D packets = burst.get_packets();
+
+    std::cout << "Azimuth Compressing Burst" << std::endl;
+    CF_VEC_2D azimuth_compressed_burst = azimuth_compress(packets, range_compressed_burst);
+
+    std::cout << "Plotting" << std::endl;
+    plot_complex_image(azimuth_compressed_burst, scaling_mode);
+}
+
+
 void plot_complex_image(
     const CF_VEC_2D&   signal,
     const std::string& scaling_mode

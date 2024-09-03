@@ -1,5 +1,8 @@
 #pragma once
 
+#include <math.h>
+#include <numeric>
+
 #include "signal_processing.h"
 #include "packet.h"
 #include "burst.h"
@@ -46,25 +49,30 @@ CF_VEC_2D range_compress_burst(
     const int&         burst_num
 );
 
+CF_VEC_2D range_compress_burst(
+    Burst& burst
+);
 
 CF_VEC_2D range_doppler_swath(
     const std::string& filename,
     const std::string& swath_name
 );
-
 
 CF_VEC_2D range_doppler_swath(
     std::ifstream&     data,
     const std::string& swath_name
 );
 
+CF_VEC_2D azimuth_compress(
+    PACKET_VEC_1D& packets,
+    CF_VEC_2D& signals
+);
 
 CF_VEC_2D range_doppler_burst(
     const std::string& filename,
     const std::string& swath_name,
     const int&         burst_num
 );
-
 
 CF_VEC_2D range_doppler_burst(
     std::ifstream&     data,

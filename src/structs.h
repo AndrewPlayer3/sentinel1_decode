@@ -23,10 +23,14 @@ const float PI             = 3.14159235;
 const float SPEED_OF_LIGHT = 299792458.0;
 
 const double F_REF = 37.53472224;
+const float DELTA_T_SUPPRESSED = (320 / (8 * F_REF)) * 1e-6;
+
 
 const u_int8_t PRIMARY_HEADER_SIZE   = 6;
 const u_int8_t SECONDARY_HEADER_SIZE = 62;
 const u_int8_t WORD_SIZE             = 16;
+
+
 
 
 // Table 2.4-1 from Page 13
@@ -483,4 +487,206 @@ const F_VEC_1D RANGE_DECIMATION = {
     46.91840280,
     17.32371796,
     54.59595962
+};
+
+
+// Tables 3.2-5 -> 3.2-10 from Pages 23 -> 27
+const INT_VEC_1D SUB_COMMUTATIVE_DATA_SERVICE = {
+    16,      // Dummy Data
+    64,      // X-Axis ECEF Position
+    64,      // Y-Axis ECEF Position
+    64,      // Z-Axis ECEF Position
+    32,      // X-velocity ECEF
+    32,      // Y-velocity ECEF
+    32,      // Z-velocity ECEF
+    16,      // POD Data Stamp 1
+    16,      // Pod Data Stamp 2
+    16,      // Pod Data Stamp 3
+    16,      // Pod Data Stamp 4
+    32,      // Q0 Attitude Quaternion
+    32,      // Q1 Attitude Quaternion
+    32,      // Q2 Attitude Quaternion
+    32,      // Q3 Attitude Quaternion
+    32,      // OmegaX Angular Rate
+    32,      // OmegaY Angular Rate
+    32,      // OmegaZ Angular Rate
+    16,      // Data Time Stamp 1
+    16,      // Data Time Stamp 2
+    16,      // Data Time Stamp 3
+    16,      // Data Time Stamp 4
+    16,      // Pointing Status
+    16,      // Temperature Update Status
+    8, 8, 8, // Tile 1 EFE H, V Temperature and Activate TA Temperature
+    8, 8, 8, // Tile 2
+    8, 8, 8, // Tile 3
+    8, 8, 8, // Tile 4
+    8, 8, 8, // Tile 5
+    8, 8, 8, // Tile 6
+    8, 8, 8, // Tile 7
+    8, 8, 8, // Tile 8
+    8, 8, 8, // Tile 9
+    8, 8, 8, // Tile 10
+    8, 8, 8, // Tile 11
+    8, 8, 8, // Tile 12
+    8, 8, 8, // Tile 13
+    8, 8, 8, // Tile 14
+    9,       // N/A
+    7        // TGU Temperature
+};
+
+
+const std::vector<std::pair<std::string, int>> SUB_COMM_KEY_POS = {
+    {"dummy_data",      0},
+    {"x_axis_position", 0},
+    {"x_axis_position", 1},
+    {"x_axis_position", 2},
+    {"x_axis_position", 3},
+    {"y_axis_position", 0},
+    {"y_axis_position", 1},
+    {"y_axis_position", 2},
+    {"y_axis_position", 3},
+    {"z_axis_position", 0},
+    {"z_axis_position", 1},
+    {"z_axis_position", 2},
+    {"z_axis_position", 3},
+    {"x_axis_velocity", 0},
+    {"x_axis_velocity", 1},
+    {"y_axis_velocity", 0},
+    {"y_axis_velocity", 1},
+    {"z_axis_velocity", 0},
+    {"z_axis_velocity", 1},
+    {"pod_data_stamp",  0},
+    {"pod_data_stamp",  1},
+    {"pod_data_stamp",  2},
+    {"pod_data_stamp",  3},
+    {"q0_quaternion",   0},
+    {"q0_quaternion",   1},
+    {"q1_quaternion",   0},
+    {"q1_quaternion",   1},
+    {"q2_quaternion",   0},
+    {"q2_quaternion",   1},
+    {"q3_quaternion",   0},
+    {"q3_quaternion",   1},
+    {"omega_x",         0},
+    {"omega_x",         1},
+    {"omega_y",         0},
+    {"omega_y",         1},
+    {"omega_z",         0},
+    {"omega_z",         1},
+    {"data_time_stamp", 0},
+    {"data_time_stamp", 1},
+    {"data_time_stamp", 2},
+    {"data_time_stamp", 3},
+    {"pointing_status", 0},
+    {"temp_status",     0},
+    {"tile_1_1",        0},
+    {"tile_1_2",        0},
+    {"tile_2_2",        0},
+    {"tile_3_3",        0},
+    {"tile_3_4",        0},
+    {"tile_4_4",        0},
+    {"tile_5_5",        0},
+    {"tile_5_6",        0},
+    {"tile_6_6",        0},
+    {"tile_7_7",        0},
+    {"tile_7_8",        0},
+    {"tile_8_8",        0},
+    {"tile_9_9",        0},
+    {"tile_9_10",       0},
+    {"tile_10_10",      0},
+    {"tile_11_11",      0},
+    {"tile_11_12",      0},
+    {"tile_12_12",      0},
+    {"tile_13_13",      0},
+    {"tile_13_14",      0},
+    {"tile_14_14",      0},
+    {"na_tgu_temp",     0}
+};
+
+
+const std::unordered_map<std::string, std::string> SUB_COMM_KEY_VAL = {
+    {"dummy_data",      "0000000000000000"},
+    {"x_axis_position", "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"y_axis_position", "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"z_axis_position", "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"x_axis_velocity", "00000000000000000000000000000000"},
+    {"y_axis_velocity", "00000000000000000000000000000000"},
+    {"z_axis_velocity", "00000000000000000000000000000000"},
+    {"pod_data_stamp",  "00000000000000000000000000000000"},
+    {"q0_quaternion",   "00000000000000000000000000000000"},
+    {"q1_quaternion",   "00000000000000000000000000000000"},
+    {"q2_quaternion",   "00000000000000000000000000000000"},
+    {"q3_quaternion",   "00000000000000000000000000000000"},
+    {"omega_x",         "00000000000000000000000000000000"},
+    {"omega_y",         "00000000000000000000000000000000"},
+    {"omega_z",         "00000000000000000000000000000000"},
+    {"data_time_stamp", "0000000000000000000000000000000000000000000000000000000000000000",},
+    {"pointing_status", "0000000000000000"},
+    {"temp_status",     "0000000000000000"},
+    {"tile_1_1",        "0000000000000000"},
+    {"tile_1_2",        "0000000000000000"},
+    {"tile_2_2",        "0000000000000000"},
+    {"tile_3_3",        "0000000000000000"},
+    {"tile_3_4",        "0000000000000000"},
+    {"tile_4_4",        "0000000000000000"},
+    {"tile_5_5",        "0000000000000000"},
+    {"tile_5_6",        "0000000000000000"},
+    {"tile_6_6",        "0000000000000000"},
+    {"tile_7_7",        "0000000000000000"},
+    {"tile_7_8",        "0000000000000000"},
+    {"tile_8_8",        "0000000000000000"},
+    {"tile_9_9",        "0000000000000000"},
+    {"tile_9_10",       "0000000000000000"},
+    {"tile_10_10",      "0000000000000000"},
+    {"tile_11_11",      "0000000000000000"},
+    {"tile_11_12",      "0000000000000000"},
+    {"tile_12_12",      "0000000000000000"},
+    {"tile_13_13",      "0000000000000000"},
+    {"tile_13_14",      "0000000000000000"},
+    {"tile_14_14",      "0000000000000000"},
+    {"na_tgu_temp",     "0000000000000000"}
+};
+
+
+const std::unordered_map<std::string, float> SUB_COMM_KEY_VAL_F = {
+    {"dummy_data",      0.0},
+    {"x_axis_position", 0.0},
+    {"y_axis_position", 0.0},
+    {"z_axis_position", 0.0},
+    {"x_axis_velocity", 0.0},
+    {"y_axis_velocity", 0.0},
+    {"z_axis_velocity", 0.0},
+    {"pod_data_stamp",  0.0},
+    {"q0_quaternion",   0.0},
+    {"q1_quaternion",   0.0},
+    {"q2_quaternion",   0.0},
+    {"q3_quaternion",   0.0},
+    {"omega_x",         0.0},
+    {"omega_y",         0.0},
+    {"omega_z",         0.0},
+    {"data_time_stamp", 0.0},
+    {"pointing_status", 0.0},
+    {"temp_status",     0.0},
+    {"tile_1_1",        0.0},
+    {"tile_1_2",        0.0},
+    {"tile_2_2",        0.0},
+    {"tile_3_3",        0.0},
+    {"tile_3_4",        0.0},
+    {"tile_4_4",        0.0},
+    {"tile_5_5",        0.0},
+    {"tile_5_6",        0.0},
+    {"tile_6_6",        0.0},
+    {"tile_7_7",        0.0},
+    {"tile_7_8",        0.0},
+    {"tile_8_8",        0.0},
+    {"tile_9_9",        0.0},
+    {"tile_9_10",       0.0},
+    {"tile_10_10",      0.0},
+    {"tile_11_11",      0.0},
+    {"tile_11_12",      0.0},
+    {"tile_12_12",      0.0},
+    {"tile_13_13",      0.0},
+    {"tile_13_14",      0.0},
+    {"tile_14_14",      0.0},
+    {"na_tgu_temp",     0.0}
 };

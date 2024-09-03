@@ -44,6 +44,13 @@ void plot_range_compressed_swath(
     const std::string& scaling_mode
 );
 
+void plot_azimuth_compressed_burst(
+    const std::string& filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const std::string& scaling_mode
+);
+
 void plot_burst(
     const std::string& filename,
     const std::string& swath,
