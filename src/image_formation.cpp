@@ -1,12 +1,24 @@
 #include "image_formation.h"
 
 
-CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
+CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp, const int& range_samples)
 {
     int num_samples = replica_chirp.size();
 
-    CF_VEC_1D weighted_chirp = conjugate(replica_chirp); //apply_hanning_window(conjugate(replica_chirp));
-    F_VEC_1D norm = magnitude_1d(weighted_chirp);
+    CF_VEC_1D reference = replica_chirp;
+
+    reference.resize(range_samples);
+
+    std::for_each(
+        reference.begin() + num_samples, reference.end(),
+            [] (std::complex<float>& n) { n = 0.0; }
+    );
+
+    // CF_VEC_1D conj_rep = conjugate(reference);
+
+    CF_VEC_1D rep_fft = compute_1d_dft(conjugate(reference), 0, false);
+
+    F_VEC_1D norm = magnitude_1d(replica_chirp);
 
     float norm_size = norm.size();
     std::for_each(
@@ -15,13 +27,14 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
     );
     float energy = std::accumulate(norm.begin(), norm.end(), 0.0);
 
+    apply_hanning_window_in_place(rep_fft);
+
     std::for_each(
-        weighted_chirp.begin(), weighted_chirp.end(),
+        rep_fft.begin(), rep_fft.end(),
             [energy](std::complex<float> &n) { n /= energy; }
     );
-    apply_hanning_window_in_place(weighted_chirp);
 
-    return weighted_chirp;
+    return rep_fft;
 }
 
 
@@ -33,15 +46,7 @@ CF_VEC_1D pulse_compression(
     int replica_samples = replica_chirp.size();
 
     CF_VEC_1D signal_fft = compute_1d_dft(signal,  0, false);
-    CF_VEC_1D reference  = get_reference_function(replica_chirp);
-
-    reference.resize(num_samples);
-
-    std::for_each(
-        reference.begin() + replica_samples, reference.end(),
-            [] (std::complex<float>& n) { n = 0.0; }
-    );
-    reference = compute_1d_dft(reference,  0, false);
+    CF_VEC_1D reference  = get_reference_function(replica_chirp, num_samples);
 
     std::transform(
         reference.begin(), reference.end(),
@@ -231,6 +236,26 @@ double get_velocity(
     double v_z = dicts[dict_index].at("z_axis_velocity");
 
     return std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
+}
+
+
+std::vector<double> get_velocities(
+    PACKET_VEC_1D& packets
+) { 
+    std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
+
+    std::vector<double> velocities(dicts.size() - 1);
+
+    for (int i = 0; i < dicts.size() - 1; i++)
+    {
+        double v_x = dicts[i].at("x_axis_velocity");
+        double v_y = dicts[i].at("y_axis_velocity");
+        double v_z = dicts[i].at("z_axis_velocity");
+
+        velocities[i] = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
+    }
+
+    return velocities;
 }
 
 

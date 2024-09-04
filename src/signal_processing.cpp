@@ -7,12 +7,19 @@ CF_VEC_1D conjugate(const CF_VEC_1D& complex_samples)
 
     CF_VEC_1D complex_conj(num_samples);
 
-    for (int i = 0; i < num_samples; i++)
-    {
-        complex_conj[i] = complex_samples[i].real() - complex_samples[i].imag();
-    }
+    conjugate_in_place(complex_conj);
+
     return complex_conj;
 }   
+
+
+void conjugate_in_place(CF_VEC_1D& complex_samples)
+{
+    std::for_each(
+        complex_samples.begin(), complex_samples.end(),
+            [] (std::complex<float>& n) { n = std::conj(n); }
+    );
+}  
 
 
 F_VEC_1D hanning_window(const int& num_samples)

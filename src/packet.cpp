@@ -254,8 +254,12 @@ CF_VEC_1D L0Packet::get_replica_chirp()
     float txpsf = get_start_frequency();
     float txprr = get_tx_ramp_rate();
     float txpl  = get_pulse_length();
-    float phi_1 = txpsf - (txprr * (-0.5 * txpl));
-    float phi_2 = txprr / 2;
+
+    // float phi_1 = txpsf - (txprr * (-0.5 * txpl));
+    // float phi_2 = txprr / 2;
+
+    float phi_1 = txpsf;
+    float phi_2 = txprr * 0.5;
 
     int range_dec   = secondary_header("range_decimation");
     int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));

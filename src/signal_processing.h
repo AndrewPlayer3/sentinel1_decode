@@ -24,6 +24,10 @@ CF_VEC_1D conjugate(
     const CF_VEC_1D& complex_samples
 );
 
+void conjugate_in_place(
+    CF_VEC_1D& complex_samples
+);
+
 F_VEC_1D hanning_window(
     const int& num_samples
 );

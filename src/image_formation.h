@@ -16,7 +16,8 @@ CF_VEC_1D pulse_compression(
 );
 
 CF_VEC_1D get_reference_function(
-    const CF_VEC_1D& replica_chirp
+    const CF_VEC_1D& replica_chirp,
+    const int& range_samples
 );
 
 SIGNAL_PAIR get_signal_pairs_from_swath(
