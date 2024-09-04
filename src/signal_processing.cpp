@@ -5,7 +5,7 @@ CF_VEC_1D conjugate(const CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
 
-    CF_VEC_1D complex_conj(num_samples);
+    CF_VEC_1D complex_conj = complex_samples;
 
     conjugate_in_place(complex_conj);
 
