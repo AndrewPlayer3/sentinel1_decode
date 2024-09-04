@@ -44,7 +44,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 # Executable: plot
-add_executable(s1_plot src/plot_main.cpp src/cli.cpp src/plot.cpp src/image_formation.cpp src/packet.cpp src/decoding_utils.cpp src/signal_processing.cpp)
+add_executable(s1_plot src/plot_main.cpp src/cli.cpp src/plot.cpp src/image_formation.cpp src/aux_decoding.cpp src/packet.cpp src/decoding_utils.cpp src/signal_processing.cpp)
 set_target_properties(s1_plot PROPERTIES OUTPUT_NAME "../bin/s1_plot.exe")
 target_link_libraries(s1_plot PRIVATE python3.12)
 target_link_libraries(s1_plot PRIVATE fftw3f_omp fftw3f m)
