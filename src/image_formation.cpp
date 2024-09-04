@@ -14,9 +14,7 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp, const int& rang
             [] (std::complex<float>& n) { n = 0.0; }
     );
 
-    // CF_VEC_1D conj_rep = conjugate(reference);
-
-    CF_VEC_1D rep_fft = compute_1d_dft(conjugate(reference), 0, false);
+    CF_VEC_1D rep_fft = conjugate(reference); // compute_1d_dft(conjugate(reference), 0, false);
 
     F_VEC_1D norm = magnitude_1d(replica_chirp);
 
@@ -34,7 +32,7 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp, const int& rang
             [energy](std::complex<float> &n) { n /= energy; }
     );
 
-    return rep_fft;
+    return compute_1d_dft(rep_fft, 0, false);
 }
 
 
