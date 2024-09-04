@@ -5,21 +5,22 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
 {
     int num_samples = replica_chirp.size();
 
-    CF_VEC_1D weighted_chirp = apply_hanning_window(conjugate(replica_chirp));
+    CF_VEC_1D weighted_chirp = conjugate(replica_chirp); //apply_hanning_window(conjugate(replica_chirp));
     F_VEC_1D norm = magnitude_1d(weighted_chirp);
 
-    float energy = 0.0;
-    for (int i = 0; i < num_samples; i++)
-    {
-        energy += (norm[i] * norm[i]);
-    }
-    energy /= norm.size();
+    float norm_size = norm.size();
+    std::for_each(
+        norm.begin(), norm.end(),
+            [norm_size](std::complex<float> n) { n *= n / norm_size; }
+    );
+    float energy = std::accumulate(norm.begin(), norm.end(), 0.0);
 
-    CF_VEC_1D reference(num_samples);
-    for (int i = 0; i < num_samples; i++)
-    {
-        weighted_chirp[i] /= energy;
-    }
+    std::for_each(
+        weighted_chirp.begin(), weighted_chirp.end(),
+            [energy](std::complex<float> &n) { n /= energy; }
+    );
+    apply_hanning_window_in_place(weighted_chirp);
+
     return weighted_chirp;
 }
 
@@ -36,176 +37,18 @@ CF_VEC_1D pulse_compression(
 
     reference.resize(num_samples);
 
-    for (int i = replica_samples; i < num_samples; i++)
-    {
-        reference[i] = 0.0;
-    }
-
+    std::for_each(
+        reference.begin() + replica_samples, reference.end(),
+            [] (std::complex<float>& n) { n = 0.0; }
+    );
     reference = compute_1d_dft(reference,  0, false);
 
-    for (int i = 0; i < num_samples; i++)
-    {
-        signal_fft[i] *= reference[i];
-    }    
+    std::transform(
+        reference.begin(), reference.end(),
+            signal_fft.begin(), signal_fft.begin(),
+                [] (std::complex<float>& n, std::complex<float>& r) { return n * r;}
+    );
     return compute_1d_dft(signal_fft, num_samples, true);
-}
-
-
-std::vector<std::complex<double>> get_average_cross_correlation(
-    const CF_VEC_2D& signals
-) {
-    int rows = signals.size();
-    int cols = signals[0].size();
-    std::vector<std::complex<double>> out_row(cols);
-    for (int i = 0; i < cols; i++)
-    {
-        out_row[i] = std::complex<double>(0.0, 0.0);
-    }
-    for (int i = 0; i < rows - 1; i++)
-    {
-        std::vector<std::complex<float>> conj = conjugate(signals[i+1]);
-        for (int j = 0; j < cols; j++)
-        {
-            out_row[j] += std::complex<double>(signals[i][j]) * std::complex<double>(conj[j]);
-        }
-    }
-    return out_row;
-}
-
-
-float get_fine_dc_burst(const CF_VEC_2D& signals, const float& prf)
-{
-    std::vector<std::complex<double>> accc = get_average_cross_correlation(signals);
-    std::complex<double> average_accc = std::complex<double>(0.0, 0.0);
-    for (int i = 0; i < accc.size(); i++)
-    {
-        average_accc += accc[i];
-    }
-    std::cout << "Average ACCC: " << average_accc << std::endl;
-    average_accc /= accc.size();
-    std::cout << "Average ACCC: " << average_accc << std::endl;
-    double angle = std::tan(average_accc.imag() / average_accc.real());
-    float fine_dc = -1.0f * ( prf / (2.0f * PI) ) * angle;
-    return fine_dc;
-}
-
-
-CF_VEC_2D azimuth_compress(
-    PACKET_VEC_1D& packets,
-    CF_VEC_2D& signals
-) {
-
-    std::cout << "Getting Azimuth FM Descriptors from Header Information" << std::endl;
-    int num_packets = packets.size();
-
-    L0Packet initial_packet = packets[0];
-
-    int  rank = initial_packet.secondary_header("rank");
-    float pl  = initial_packet.get_pulse_length() * 0.000001;
-    float pri = initial_packet.get_pri() * 0.000001;
-    float prf = 1 / pri;
-    float swst = initial_packet.get_swst() * 0.000001;
-
-    std::cout << "Converting to Range Doppler Domain" << std::endl;
-    CF_VEC_2D signals_rd = compute_axis_dft(signals, 0, 0, false);
-
-    std::cout << "Computing Fine DC" << std::endl;
-    float fine_dc = get_fine_dc_burst(signals_rd, prf);
-
-    std::cout << "Converting back to Range Azimuth Domain" << std::endl;
-    CF_VEC_2D signals_ra = compute_axis_dft(signals_rd, 0, 0, true);
-
-    float slant_range_time_near = rank * pri + swst + DELTA_T_SUPPRESSED;
-    float slant_range_time_far  = slant_range_time_near + pl;
-    float slant_range_near = (slant_range_time_near * SPEED_OF_LIGHT) / 2;
-    float slant_range_far  = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
-    float slant_range = (slant_range_near + slant_range_far) / 2;
-
-    float abs_dc = std::abs(fine_dc);
-    float sample_range_start = fine_dc - (prf / 2);
-    float sample_range_end   = fine_dc + (prf / 2);
-
-    float delta = (sample_range_start + sample_range_end) / num_packets;
-
-    std::cout << "Rank: " << rank << std::endl;
-    std::cout << "Pulse Length: " << pl << std::endl;
-    std::cout << "PRI: " << pri << std::endl;
-    std::cout << "PRF: " << prf << std::endl;
-    std::cout << "SWST: " << swst << std::endl;
-
-    std::cout << "Fine DC: " << fine_dc << std::endl;
-    std::cout << "ABS Fine DC: " << abs_dc << std::endl;
-
-    std::cout << "Slant Range Near: " << slant_range_near << std::endl;
-    std::cout << "Slant Range Far: " << slant_range_far << std::endl;
-    std::cout << "Slant Range: " << slant_range << std::endl;
-
-    F_VEC_1D azimuth_sample_range(num_packets);
-    for (int i = 0; i < num_packets; i++)
-    {
-        if (i == 0) azimuth_sample_range[i] = sample_range_start;
-        else azimuth_sample_range[i] = azimuth_sample_range[i-1] + delta;
-    }
-    float V = 7594.502898410107;
-
-    std::cout << "Computing D(f, V)" << std::endl;
-    CF_VEC_1D D(num_packets);
-    for (int i = 0; i < num_packets; i++)
-    {
-        float value = 1.0f - (std::powf(SPEED_OF_LIGHT, 2) * std::powf(azimuth_sample_range[i], 2)) / (4.0f * std::powf(V, 2) * std::powf(abs_dc, 2));
-        D[i] = std::sqrt(std::complex<float>(value, 0.0f));
-    }
-
-    std::cout << "Computing the Azimuth Match Filters" << std::endl;
-    CF_VEC_1D azimuth_match_filters(num_packets);
-    for (int i = 0; i < num_packets; i++)
-    {
-        azimuth_match_filters[i] = std::exp((I * 4.0f * PI * slant_range * std::complex<float>(std::pow(D[i], 2)) * abs_dc) / SPEED_OF_LIGHT);
-    }
-
-    std::cout << "Transposing and Computing Range (Azimuth) DFT" << std::endl;
-    CF_VEC_2D range_azimuth_t = transpose(signals);
-    CF_VEC_2D range_azimuth = compute_axis_dft(range_azimuth_t, 0, 1, false);
-    CF_VEC_1D match_filter = compute_1d_dft(conjugate(azimuth_match_filters), 0, false);
-
-
-    std::cout << "Applying Match Filter" << std::endl;
-    int rows = range_azimuth.size();
-    int cols = range_azimuth[0].size();
-    CF_VEC_2D azimuth_compressed = CF_VEC_2D(rows, CF_VEC_1D(cols));
-    for (int row = 0; row < rows; row++)
-    {
-        CF_VEC_1D match_filtered(cols);
-
-        // std::cout << match_filtered.size() << std::endl;
-        // std::cout << match_filter.size() << std::endl;
-        // std::cout << azimuth_compressed.size() << std::endl;
-        // std::cout << range_azimuth.size() << std::endl;
-
-        for (int col = 0; col < cols; col++)
-        {
-            match_filtered[col] = range_azimuth[row][col] * match_filter[col];
-        }
-        CF_VEC_1D match_filtered_ifft =  compute_1d_dft(match_filtered, 0, true);
-
-        // std::cout << std::endl;
-        // std::cout << match_filtered.size() << std::endl;
-        // std::cout << std::endl;
-
-        for (int col = 0; col < cols; col++)
-        {
-           azimuth_compressed[row][col] = match_filtered_ifft[col];
-           // std::cout << azimuth_compressed[row][col] << " ";
-        }
-        // std::cout << std::endl;
-    }
-    std::cout << "Transposing after Azimuth Match Filtering" << std::endl;
-    CF_VEC_2D azimuth_compressed_trans = transpose(azimuth_compressed);
-
-    std::cout << "Final Inverse DFT for Azimuth Compression" << std::endl;
-    CF_VEC_2D output = compute_axis_dft(azimuth_compressed_trans, 0, 0, true);
-
-    return output;
 }
 
 
@@ -339,4 +182,191 @@ CF_VEC_2D range_doppler_burst(
 ) {
     CF_VEC_2D range_compressed = range_compress_burst(data, swath_name, burst_num);
     return compute_axis_dft(range_compressed, 0, 0, false);
+}
+
+
+std::vector<std::complex<double>> get_average_cross_correlation(
+    const CF_VEC_2D& signals
+) {
+    int rows = signals.size();
+    int cols = signals[0].size();
+
+    std::vector<std::complex<double>> out_row(cols);
+
+    for (int i = 0; i < rows - 1; i++)
+    {
+        CF_VEC_1D conj = conjugate(signals[i+1]);
+        CF_VEC_1D signal = signals[i];
+        for (int j = 0; j < cols; j++)
+        {
+            out_row[j] += signal[j] * conj[j];
+        }
+        
+    }
+    return out_row;
+}
+
+
+float get_fine_dc_burst(const CF_VEC_2D& signals, const float& prf)
+{
+    std::vector<std::complex<double>> accc = get_average_cross_correlation(signals);
+    std::complex<double> average_accc = std::complex<double>(0.0, 0.0);
+    average_accc = std::accumulate(accc.begin(), accc.end(), average_accc);
+    average_accc /= accc.size();
+    std::cout << "Average ACCC: " << average_accc << std::endl;
+    double angle = std::tan(average_accc.imag() / average_accc.real());
+    float fine_dc = -1.0f * ( prf / (2.0f * PI) ) * angle;
+    return fine_dc;
+}
+
+
+double get_velocity(
+    PACKET_VEC_1D& packets,
+    const int& dict_index = 0
+) {
+    std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
+
+    double v_x = dicts[dict_index].at("x_axis_velocity");
+    double v_y = dicts[dict_index].at("y_axis_velocity");
+    double v_z = dicts[dict_index].at("z_axis_velocity");
+
+    return std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
+}
+
+
+CF_VEC_2D azimuth_compress_swath(
+    Swath& swath
+) {
+    CF_VEC_2D azimuth_compressed_swath;
+    int num_bursts = swath.get_num_bursts();
+    for (int i = 0; i < num_bursts; i++)
+    {
+        Burst burst = swath.get_burst(i);
+        PACKET_VEC_1D packets = burst.get_packets();
+
+        std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
+        CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
+
+        std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
+        CF_VEC_2D azimuth_compressed_burst = azimuth_compress(packets, range_compressed_burst);
+
+        std::cout << "Adding Azimuth Compressed Burst " << i << " of " << num_bursts 
+                  << " to the Output Vector."<< std::endl;
+        for (int j = 0; j < azimuth_compressed_burst.size(); j++)
+        {
+            azimuth_compressed_swath.push_back(azimuth_compressed_burst[j]);
+        }
+    }
+    return azimuth_compressed_swath;
+}
+
+
+CF_VEC_2D azimuth_compress(
+    PACKET_VEC_1D& packets,
+    CF_VEC_2D& signals
+) {
+
+    std::cout << "Getting Azimuth FM Descriptors from Header Information" << std::endl;
+    int num_packets = packets.size();
+
+    L0Packet initial_packet = packets[0];
+
+    int   rank = initial_packet.secondary_header("rank");
+    float pl   = initial_packet.get_pulse_length() * 0.000001;
+    float pri  = initial_packet.get_pri() * 0.000001;
+    float prf  = 1 / pri;
+    float swst = initial_packet.get_swst() * 0.000001;
+
+    std::cout << "Converting to Range Doppler Domain" << std::endl;
+    CF_VEC_2D signals_rd = compute_axis_dft(signals, 0, 0, false);
+
+    std::cout << "Computing Fine DC" << std::endl;
+    float fine_dc = get_fine_dc_burst(signals_rd, prf);
+    float abs_dc  = std::abs(fine_dc);
+
+    std::cout << "Converting back to Range Azimuth Domain" << std::endl;
+    CF_VEC_2D signals_ra = compute_axis_dft(signals_rd, 0, 0, true);
+
+    float slant_range_time_near = rank * pri + swst + DELTA_T_SUPPRESSED;
+    float slant_range_time_far  = slant_range_time_near + pl;
+    float slant_range_near      = (slant_range_time_near * SPEED_OF_LIGHT) / 2;
+    float slant_range_far       = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
+    float slant_range           = (slant_range_near + slant_range_far) / 2;
+    float sample_range_start    = fine_dc - (prf / 2);
+    float sample_range_end      = fine_dc + (prf / 2);
+
+    float delta = (sample_range_start + sample_range_end) / num_packets;
+
+    std::cout << "Rank: "             << rank             << std::endl;
+    std::cout << "Pulse Length: "     << pl               << std::endl;
+    std::cout << "PRI: "              << pri              << std::endl;
+    std::cout << "PRF: "              << prf              << std::endl;
+    std::cout << "SWST: "             << swst             << std::endl;
+    std::cout << "Fine DC: "          << fine_dc          << std::endl;
+    std::cout << "ABS Fine DC: "      << abs_dc           << std::endl;
+    std::cout << "Slant Range Near: " << slant_range_near << std::endl;
+    std::cout << "Slant Range Far: "  << slant_range_far  << std::endl;
+    std::cout << "Slant Range: "      << slant_range      << std::endl;
+
+    F_VEC_1D azimuth_sample_range(num_packets);
+    for (int i = 0; i < num_packets; i++)
+    {
+        if (i == 0) azimuth_sample_range[i] = sample_range_start;
+        else azimuth_sample_range[i] = azimuth_sample_range[i-1] + delta;
+    }
+    double V = get_velocity(packets);
+
+    std::cout << "Computing D(f, V)" << std::endl;
+    CF_VEC_1D D(num_packets);
+    for (int i = 0; i < num_packets; i++)
+    {
+        float range_migration_factor = 1.0f - (
+            std::pow(SPEED_OF_LIGHT, 2) * std::pow(azimuth_sample_range[i], 2) / (4.0f * V * V * abs_dc * abs_dc)
+        );
+        D[i] = std::sqrt(std::complex<float>(range_migration_factor, 0.0f));
+    }
+
+    std::cout << "Computing the Azimuth Match Filters" << std::endl;
+    CF_VEC_1D azimuth_match_filters(num_packets);
+    for (int i = 0; i < num_packets; i++)
+    {
+        azimuth_match_filters[i] = std::exp(
+            (I * 4.0f * PI * slant_range * std::complex<float>(std::pow(D[i], 2)) * abs_dc) / SPEED_OF_LIGHT
+        );
+    }
+    azimuth_match_filters = conjugate(azimuth_match_filters);
+
+    std::cout << "Transposing and Computing Range (Azimuth) DFT" << std::endl;
+    CF_VEC_2D range_azimuth = transpose(signals);
+    CF_VEC_1D match_filter  = compute_1d_dft(azimuth_match_filters, 0, false);
+
+    std::cout << "Applying Match Filter" << std::endl;
+    int rows = range_azimuth.size();
+    int cols = range_azimuth[0].size();
+
+    CF_VEC_2D azimuth_compressed = CF_VEC_2D(rows, CF_VEC_1D(cols));
+    
+    for (int row = 0; row < rows; row++)
+    {
+        CF_VEC_1D match_filtered(cols);
+        CF_VEC_1D range_az = compute_1d_dft(range_azimuth[row], 0, false);
+
+        std::transform(
+            range_az.begin(), range_az.end(),
+                match_filter.begin(), match_filtered.begin(),
+                    [] (std::complex<float>& n, std::complex<float>& m) { return n * m;}
+        );    
+        match_filtered =  compute_1d_dft(match_filtered, 0, true);
+
+        std::transform(
+            match_filtered.begin(), match_filtered.end(),
+                azimuth_compressed[row].begin(),
+                    [] (std::complex<float>& n) {return n;}
+        );
+        azimuth_compressed[row] = compute_1d_dft(azimuth_compressed[row], 0, true);
+    }
+    std::cout << "Transposing after Azimuth Match Filtering" << std::endl;
+    CF_VEC_2D azimuth_compressed_trans = transpose(azimuth_compressed);
+
+    return azimuth_compressed_trans;
 }

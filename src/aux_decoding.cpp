@@ -120,11 +120,36 @@ VEC_UNSORTEDMAP annotation_decoder(std::ifstream& data)
 }
 
 
-std::vector<std::unordered_map<std::string, std::string>> build_data_word_dicts(const std::vector<L0Packet>& packets)
+
+double ConvertNumberToFloat(unsigned long number, int isDoublePrecision)
+{
+    int mantissaShift = isDoublePrecision ? 52 : 23;
+    unsigned long exponentMask = isDoublePrecision ? 0x7FF0000000000000 : 0x7f800000;
+    int bias = isDoublePrecision ? 1023 : 127;
+    int signShift = isDoublePrecision ? 63 : 31;
+
+    int sign = (number >> signShift) & 0x01;
+    int exponent = ((number & exponentMask) >> mantissaShift) - bias;
+
+    int power = -1;
+    double total = 0.0;
+    for ( int i = 0; i < mantissaShift; i++ )
+    {
+        int calc = (number >> (mantissaShift-i-1)) & 0x01;
+        total += calc * pow(2.0, power);
+        power--;
+    }
+    double value = (sign ? -1 : 1) * pow(2.0, exponent) * (total + 1.0);
+
+    return value;
+}
+
+
+std::vector<std::unordered_map<std::string, double>> build_data_word_dicts(PACKET_VEC_1D& packets)
 {
     int num_packets = packets.size();
-    std::vector<std::unordered_map<std::string, std::string>> data_word_dicts;
-    std::unordered_map<std::string, std::string> sub_comm_dict = SUB_COMM_KEY_VAL;
+    std::vector<std::unordered_map<std::string, u_int64_t>> data_word_dicts;
+    std::unordered_map<std::string, u_int64_t> sub_comm_dict = SUB_COMM_KEY_VAL_INT;
     int initial_data_word_index = 0;
     int sc_data_word_index = 0;
 
@@ -141,14 +166,40 @@ std::vector<std::unordered_map<std::string, std::string>> build_data_word_dicts(
             if (sc_data_word_index == initial_data_word_index)
             {
                 data_word_dicts.push_back(sub_comm_dict);
-                sub_comm_dict = SUB_COMM_KEY_VAL;
+                sub_comm_dict = SUB_COMM_KEY_VAL_INT;
             }
         }
-        int data_word = packet.secondary_header("sc_data_word");
+        u_int64_t data_word = packet.secondary_header("sc_data_word");
         std::string key = SUB_COMM_KEY_POS[sc_data_word_index].first;
         int val = SUB_COMM_KEY_POS[sc_data_word_index].second;
-        
+        sub_comm_dict[key] = (sub_comm_dict[key] << (val * 16)) | data_word;
     }
+
+    std::vector<std::unordered_map<std::string, double>> double_dicts;
+
+    for (int i = 0; i < data_word_dicts.size(); i++)
+    {
+        std::unordered_map<std::string, u_int64_t> dict = data_word_dicts[i];
+        std::unordered_map<std::string, double> dict_d;
+
+        int index = 0;
+
+        for(std::pair<std::string, u_int64_t> key_val : dict)
+        {
+            std::set<std::string> f64_index = {"x_axis_position", "y_axis_position", "z_axis_position", "data_time_stamp"};
+            if (f64_index.contains(key_val.first))
+            {
+                dict_d[key_val.first] = ConvertNumberToFloat(key_val.second, true);
+            }
+            else
+            {
+                dict_d[key_val.first] = ConvertNumberToFloat(key_val.second, false);
+            }
+            index += 1;
+        }
+        double_dicts.push_back(dict_d);
+    }
+    return double_dicts;
 }
 
 

@@ -604,6 +604,50 @@ const std::vector<std::pair<std::string, int>> SUB_COMM_KEY_POS = {
 };
 
 
+const std::unordered_map<std::string, u_int64_t> SUB_COMM_KEY_VAL_INT = {
+    {"dummy_data",      0},
+    {"x_axis_position", 0},
+    {"y_axis_position", 0},
+    {"z_axis_position", 0},
+    {"x_axis_velocity", 0},
+    {"y_axis_velocity", 0},
+    {"z_axis_velocity", 0},
+    {"pod_data_stamp",  0},
+    {"q0_quaternion",   0},
+    {"q1_quaternion",   0},
+    {"q2_quaternion",   0},
+    {"q3_quaternion",   0},
+    {"omega_x",         0},
+    {"omega_y",         0},
+    {"omega_z",         0},
+    {"data_time_stamp", 0,},
+    {"pointing_status", 0},
+    {"temp_status",     0},
+    {"tile_1_1",        0},
+    {"tile_1_2",        0},
+    {"tile_2_2",        0},
+    {"tile_3_3",        0},
+    {"tile_3_4",        0},
+    {"tile_4_4",        0},
+    {"tile_5_5",        0},
+    {"tile_5_6",        0},
+    {"tile_6_6",        0},
+    {"tile_7_7",        0},
+    {"tile_7_8",        0},
+    {"tile_8_8",        0},
+    {"tile_9_9",        0},
+    {"tile_9_10",       0},
+    {"tile_10_10",      0},
+    {"tile_11_11",      0},
+    {"tile_11_12",      0},
+    {"tile_12_12",      0},
+    {"tile_13_13",      0},
+    {"tile_13_14",      0},
+    {"tile_14_14",      0},
+    {"na_tgu_temp",     0}
+};
+
+
 const std::unordered_map<std::string, std::string> SUB_COMM_KEY_VAL = {
     {"dummy_data",      "0000000000000000"},
     {"x_axis_position", "0000000000000000000000000000000000000000000000000000000000000000"},
@@ -646,6 +690,7 @@ const std::unordered_map<std::string, std::string> SUB_COMM_KEY_VAL = {
     {"tile_14_14",      "0000000000000000"},
     {"na_tgu_temp",     "0000000000000000"}
 };
+
 
 
 const std::unordered_map<std::string, float> SUB_COMM_KEY_VAL_F = {

@@ -16,6 +16,22 @@ Description: Main function with random command-line arguments for testing purpos
 #include "misc_types.h"
 
 
+void print_header_dict(
+    std::string filename
+) {
+    PACKET_VEC_2D packets = L0Packet::get_packets_in_bursts(filename, "IW1");
+
+    std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets[5]);
+
+    std::unordered_map<std::string, double> dict = dicts[1];
+
+    for (std::pair<std::string, double> key_val : dict)
+    {
+        std::cout << key_val.first << ": " << key_val.second << std::endl;
+    }
+}
+
+
 void print_packet_at_index(
     std::string filename,
     int  index
@@ -50,7 +66,8 @@ int main(int argc, char* argv[])
         "print_annotation_record [record_index] [path]",
         "time [num_packets] [path]",
         "thread_test [path]",
-        "omp_test [path]"
+        "omp_test [path]",
+        "print_header_dict [path]"
     };
 
     if(argv[1] == __null) 
@@ -119,6 +136,14 @@ int main(int argc, char* argv[])
         STRING_VEC_1D types = {"int", "path"};
         validate_args(command, args, types, &(argv[0]));
         print_annotation_record(std::string(argv[3]), std::stoi(argv[2]));
+    }
+
+    else if (command == "print_header_dict")
+    {
+        STRING_VEC_1D args  = {"path"};
+        STRING_VEC_1D types = {"path"};
+        validate_args(command, args, types, &(argv[0]));
+        print_header_dict(std::string(argv[2]));
     }
 
     else if (command == "time")

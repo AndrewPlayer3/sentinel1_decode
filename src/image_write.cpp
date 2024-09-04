@@ -135,3 +135,43 @@ void write_range_doppler_burst(
     CF_VEC_2D range_doppler = range_doppler_burst(in_filename, swath_name, burst_num);
     write_tif(range_doppler, out_filename, scaling_mode);
 }
+
+
+void write_azimuth_compressed_burst(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const std::string& scaling_mode
+) {
+    std::cout << "Decoding Burst" << std::endl;
+    Burst burst(in_filename, swath_name, burst_num);
+
+    std::cout << "Range Compressing Burst" << std::endl;
+    CF_VEC_2D range_compressed = range_compress_burst(burst);
+
+    PACKET_VEC_1D packets = burst.get_packets();
+
+    std::cout << "Azimuth Compressing Burst" << std::endl;
+    CF_VEC_2D azimuth_compressed = azimuth_compress(packets, range_compressed);
+
+    std::cout << "Calling write_tif" << std::endl;
+    write_tif(azimuth_compressed, out_filename, scaling_mode);
+}
+
+
+void write_azimuth_compressed_swath(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const std::string& scaling_mode
+) {
+    std::cout << "Decoding Swath" << std::endl;
+    Swath swath(in_filename, swath_name);
+    
+    std::cout << "Azimuth Compressing Swath" << std::endl;
+    CF_VEC_2D azimuth_compressed = azimuth_compress_swath(swath);
+
+    std::cout << "Calling write_tif" <<  std::endl;
+    write_tif(azimuth_compressed, out_filename, scaling_mode);
+}

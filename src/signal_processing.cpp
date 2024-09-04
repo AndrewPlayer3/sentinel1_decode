@@ -49,10 +49,11 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
 
     F_VEC_1D window = hanning_window(num_samples);
 
-    for (int i = 0; i < num_samples; i++)
-    {
-        complex_samples[i] *= window[i];
-    }
+    std::transform(
+        window.begin(), window.end(), 
+            complex_samples.begin(), complex_samples.begin(),
+                [] (float& w, std::complex<float>& n) { return n * w; }
+    );
 }
 
 
@@ -146,21 +147,20 @@ F_VEC_1D norm_1d(
 
     for (int i = 0; i < num_samples; i++)
     {
-        float real = complex_values[i].real();
-        float imag = complex_values[i].imag();
-
-        float mag = sqrt(real*real + imag*imag);
+        float mag = std::norm(complex_values[i]);
 
         norm[i] = mag;
 
         if (mag > max_value) max_value = mag;
     }
 
-    for (int i = 0; i < num_samples; i++)
-    {
-        norm[i] = log_scale ? 20 * log10(norm[i] / max_value) : norm[i] / max_value;
-    }
-
+    std::for_each(
+        norm.begin(), norm.end(), 
+            [log_scale, max_value](float &n) 
+            { 
+                log_scale ? 20 * log10(n / max_value) : n / max_value;
+            }
+    );
     return norm;
 }
 
@@ -174,10 +174,7 @@ F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
     #pragma omp parallel for
     for (int i = 0; i < num_samples; i++)
     {
-        float real = complex_values[i].real();
-        float imag = complex_values[i].imag();
-
-        float mag = sqrt(real*real + imag*imag);
+        float mag = std::norm(complex_values[i]);
 
         magnitude[i] = mag;    
     }
@@ -200,10 +197,7 @@ F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
     {
         for (int j = 0; j < cols; j++)
         {
-            float real = complex_values[i][j].real();
-            float imag = complex_values[i][j].imag();
-
-            magnitude[i][j] = sqrt(real*real + imag*imag);
+            magnitude[i][j] = std::norm(complex_values[i][j]);
         }
     }
 
@@ -254,12 +248,11 @@ CF_VEC_1D compute_1d_dft(
 
     if (inverse)
     {
-        for (int i = 0; i < fft_size; i++)
-        {
-            fft_vector[i] /= fft_size;
-        }
+        std::for_each(
+            fft_vector.begin(), fft_vector.end(), 
+                [fft_size](std::complex<float> &n) { n /= fft_size; }
+        );
     }
-
     return fft_vector;
 }
 
@@ -298,12 +291,10 @@ CF_VEC_2D _compute_axis_dft(
     int min_fft_size  = 8;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    std::cout << "Initializing Complex Arrays" << std::endl;
-
+    std::cout << "Initializing Arrays for Axis DFT" << std::endl;
     CF_VEC_2D fft_array_out(signal_rows, CF_VEC_1D(fft_size));
 
-    std::cout << "Initializing Plans, Excecuting FFTs" << std::endl;
-
+    std::cout << "Initializing Plans and Excecuting Axis FFTs" << std::endl;
     for (int row = 0; row < signal_rows; row++)
     {
         fftwf_plan plan = fftwf_plan_dft_1d(
@@ -316,22 +307,19 @@ CF_VEC_2D _compute_axis_dft(
         fftwf_execute(plan);
         fftwf_destroy_plan(plan);
     }
-
-    std::cout << "Setting FFT Output Data" << std::endl;
-
     float norm_factor = inverse ? 1.0f / (fft_size) : 1.0f;
 
     if (inverse)
     {
+        std::cout << "Normalizing Inverse Axis FFT Output" << std::endl;
         for (int i = 0; i < signal_rows; i++)
         {
-            for (int j = 0; j < fft_size; j++)
-            {
-                fft_array_out[i][j] *= norm_factor;
-            }
+            std::for_each(
+                fft_array_out[i].begin(), fft_array_out[i].end(), 
+                    [norm_factor](std::complex<float> &n) { n *= norm_factor; }
+            );
         }
     }
-
     return fft_array_out;
 }
 
@@ -343,7 +331,6 @@ CF_VEC_2D compute_2d_dft(
     int fft_cols = 0
 ) {
     std::cout << "Initializing 1D Complex Vector for FFTW" << std::endl;
-
     if (fft_rows == 0) fft_rows = signal.size();
     if (fft_cols == 0) fft_cols = signal[0].size();
 
@@ -397,7 +384,6 @@ CF_VEC_2D compute_2d_dft(
             signal_fft[i][j] = signal_fftw[i*fft_cols+j] * norm_factor;
         }
     }
-
     return signal_fft;
 }
 

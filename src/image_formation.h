@@ -1,9 +1,11 @@
 #pragma once
 
 #include <math.h>
+#include <algorithm>
 #include <numeric>
 
 #include "signal_processing.h"
+#include "aux_decoding.h"
 #include "packet.h"
 #include "burst.h"
 #include "swath.h"
@@ -66,6 +68,10 @@ CF_VEC_2D range_doppler_swath(
 CF_VEC_2D azimuth_compress(
     PACKET_VEC_1D& packets,
     CF_VEC_2D& signals
+);
+
+CF_VEC_2D azimuth_compress_swath(
+   Swath& swath
 );
 
 CF_VEC_2D range_doppler_burst(

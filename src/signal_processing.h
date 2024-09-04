@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <complex>
+#include <numeric>
 
 #include "structs.h"
 #include "misc_types.h"

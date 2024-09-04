@@ -41,3 +41,5 @@ VEC_UNSORTEDMAP index_decoder(
 VEC_UNSORTEDMAP index_decoder(
     std::ifstream& data
 );
+
+std::vector<std::unordered_map<std::string, double>> build_data_word_dicts(PACKET_VEC_1D& packets);
