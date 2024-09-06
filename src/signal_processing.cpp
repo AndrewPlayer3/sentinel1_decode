@@ -26,11 +26,12 @@ F_VEC_1D hanning_window(const int& num_samples)
 {
     F_VEC_1D window(num_samples);
 
-    for (int i = 0; i < num_samples; i++)
-    {
-        window[i] = sin(PI * i / num_samples) * sin(PI * i / num_samples);
-    }
+    std::iota(window.begin(), window.end(), 0.0f);
 
+    std::for_each(
+        window.begin(), window.end(),
+            [num_samples] (float& n) { n = sin(PI * n / num_samples) * sin(PI * n / num_samples); }
+    );
     return window;
 }
 
@@ -42,10 +43,11 @@ CF_VEC_1D apply_hanning_window(const CF_VEC_1D& complex_samples)
     F_VEC_1D  window = hanning_window(num_samples);
     CF_VEC_1D filtered_samples(num_samples);
 
-    for (int i = 0; i < num_samples; i++)
-    {
-        filtered_samples[i] = complex_samples[i] * window[i];
-    }
+    std::transform(
+        complex_samples.begin(), complex_samples.end(), window.begin(), 
+            filtered_samples.begin(),
+                [] (const std::complex<float>& n, const float& m) { return n * m; }
+    );
     return filtered_samples;
 }
 
@@ -71,15 +73,14 @@ F_VEC_1D flatten(const F_VEC_2D& values)
 
     F_VEC_1D flat(rows * cols);
 
-    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
+        const F_VEC_1D& value_row = values[i];
         for (int j = 0; j < cols; j++)
         {
-            flat[i * cols + j] = values[i][j];
+            flat[i * cols + j] = value_row[j];
         }
     }
-
     return flat;
 }
 
@@ -91,15 +92,14 @@ CF_VEC_1D flatten(const CF_VEC_2D& values)
 
     CF_VEC_1D flat(rows * cols);
 
-    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
+        const CF_VEC_1D& value_row = values[i];
         for (int j = 0; j < cols; j++)
         {
-            flat[i * cols + j] = values[i][j];
+            flat[i * cols + j] = value_row[j];
         }
     }
-
     return flat;
 }
 
@@ -117,14 +117,13 @@ F_VEC_2D norm_2d(
 
     for (int i = 0; i < rows; i++)
     {
+        const CF_VEC_1D& complex_value_row = complex_values[i];
+        F_VEC_1D& norm_row = norm[i];
+
         for (int j = 0; j < cols; j++)
         {
-            float real = complex_values[i][j].real();
-            float imag = complex_values[i][j].imag();
-
-            float mag = sqrt((real * real) + (imag * imag));
-
-            norm[i][j] = mag;
+            float mag = std::abs(complex_value_row[j]);
+            norm_row[j] = mag;
 
             if (mag > max_value) max_value = mag;
         }
@@ -132,12 +131,12 @@ F_VEC_2D norm_2d(
 
     for (int i = 0; i < rows; i++)
     {
+        F_VEC_1D& norm_row = norm[i];
         for (int j = 0; j < cols; j++)
         {
-            norm[i][j] = log_scale ? 20 * log10(norm[i][j] / max_value) : norm[i][j] / max_value;
+            norm_row[j] = log_scale ? 20 * log10(norm_row[j] / max_value) : norm_row[j] / max_value;
         }
     }
-
     return norm;
 }
 
@@ -147,16 +146,14 @@ F_VEC_1D norm_1d(
     const bool& log_scale = false
 ) {
     int num_samples = complex_values.size();
-
     float max_value = 0;
 
     F_VEC_1D norm(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
-        float mag = std::norm(complex_values[i]);
-
-        norm[i] = mag;
+        float mag = std::abs(complex_values[i]);
+        norm[i]   = mag;
 
         if (mag > max_value) max_value = mag;
     }
@@ -174,40 +171,34 @@ F_VEC_1D norm_1d(
 
 F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
 {
-    int num_samples = complex_values.size();
+    F_VEC_1D magnitude(complex_values.size());
 
-    F_VEC_1D magnitude(num_samples);
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_samples; i++)
-    {
-        float mag = std::norm(complex_values[i]);
-
-        magnitude[i] = mag;    
-    }
-
+    std::transform(
+        complex_values.begin(), complex_values.end(),
+            magnitude.begin(),
+                [] (const std::complex<float>& n) { return std::abs(n); }
+    );
     return magnitude;
 }
 
 
 F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
 {
-    float max_value = 0;    
-
     int rows = complex_values.size();
     int cols = complex_values[0].size();
 
     F_VEC_2D magnitude(rows, F_VEC_1D(cols));
 
-    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
-        for (int j = 0; j < cols; j++)
-        {
-            magnitude[i][j] = std::norm(complex_values[i][j]);
-        }
-    }
+        const CF_VEC_1D& complex_values_row = complex_values[i];
 
+        std::transform(
+            complex_values_row.begin(), complex_values_row.end(),
+                magnitude[i].begin(),
+                    [] (const std::complex<float>& n) { return std::abs(n); }
+        );
+    }
     return magnitude;
 }
 
@@ -221,9 +212,10 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 
     for (int i = 0; i < cols; i++)
     {
+        CF_VEC_1D& arr_t_row = arr_t[i];
         for (int j = 0; j < rows; j++)
         {
-            arr_t[i][j] = arr[j][i];
+            arr_t_row[j] = arr[j][i];
         }
     }
     return arr_t;
@@ -248,19 +240,77 @@ CF_VEC_1D compute_1d_dft(
         fft_direction,
         FFTW_ESTIMATE
     );
-
     fftwf_execute(plan);
-
     fftwf_destroy_plan(plan);
+
+    float norm_factor = 1.0f / static_cast<float>(fft_size);
 
     if (inverse)
     {
         std::for_each(
             fft_vector.begin(), fft_vector.end(), 
-                [fft_size](std::complex<float> &n) { n /= fft_size; }
+                [norm_factor](std::complex<float> &n) { n *= norm_factor; }
         );
     }
     return fft_vector;
+}
+
+
+void compute_1d_dft_in_place(
+          CF_VEC_1D& signal,
+          int   fft_size = 0,
+    const bool& inverse  = false
+) {
+    if (fft_size <= 0) fft_size = signal.size();
+
+    int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
+
+    fftwf_plan plan = fftwf_plan_dft_1d(
+        fft_size,
+        reinterpret_cast<fftwf_complex*>(signal.data()),
+        reinterpret_cast<fftwf_complex*>(signal.data()),
+        fft_direction,
+        FFTW_ESTIMATE
+    );
+    fftwf_execute(plan);
+    fftwf_destroy_plan(plan);
+
+    float norm_factor = 1.0f / static_cast<float>(fft_size);
+
+    if (inverse)
+    {
+        std::for_each(
+            signal.begin(), signal.end(), 
+                [norm_factor](std::complex<float>& n) { n *= norm_factor; }
+        );
+    }
+}
+
+
+void compute_axis_dft_in_place(
+    CF_VEC_2D&  signals,
+          int   fft_size = 0,
+    const int&  axis     = 0,
+    const bool& inverse  = false
+) {
+    if (axis != 0 and axis != 1) 
+    {
+        throw std::invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
+    }
+    if (fft_size == 0)
+    {
+        fft_size = axis ? signals[0].size() : signals.size();
+    }
+    if (not axis)
+    {
+        signals = transpose(signals);
+        _compute_axis_dft(signals, fft_size, inverse);
+        signals = transpose(signals);
+    }
+    else
+    {
+        _compute_axis_dft(signals, fft_size, inverse);
+    }
 }
 
 
@@ -281,14 +331,16 @@ CF_VEC_2D compute_axis_dft(
     if (not axis)
     {
         CF_VEC_2D signals_out = transpose(signals);
-        signals_out = _compute_axis_dft(signals_out, fft_size, inverse);
+        _compute_axis_dft(signals_out, fft_size, inverse);
         return transpose(signals_out);
     }
-    return _compute_axis_dft(signals, fft_size, inverse);
+    CF_VEC_2D signals_out = signals;
+    _compute_axis_dft(signals_out, fft_size, inverse);
+    return signals_out;
 }
 
 
-CF_VEC_2D _compute_axis_dft(
+void _compute_axis_dft(
     CF_VEC_2D&  signals,
           int&  fft_size,
     const bool& inverse
@@ -298,16 +350,14 @@ CF_VEC_2D _compute_axis_dft(
     int min_fft_size  = 8;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    std::cout << "Initializing Arrays for Axis DFT" << std::endl;
-    CF_VEC_2D fft_array_out(signal_rows, CF_VEC_1D(fft_size));
-
     std::cout << "Initializing Plans and Excecuting Axis FFTs" << std::endl;
     for (int row = 0; row < signal_rows; row++)
     {
+        CF_VEC_1D& signal_row = signals[row];
         fftwf_plan plan = fftwf_plan_dft_1d(
             fft_size,
-            reinterpret_cast<fftwf_complex*>(signals[row].data()),
-            reinterpret_cast<fftwf_complex*>(fft_array_out[row].data()),
+            reinterpret_cast<fftwf_complex*>(signal_row.data()),
+            reinterpret_cast<fftwf_complex*>(signal_row.data()),
             fft_direction,
             FFTW_ESTIMATE
         );
@@ -322,12 +372,11 @@ CF_VEC_2D _compute_axis_dft(
         for (int i = 0; i < signal_rows; i++)
         {
             std::for_each(
-                fft_array_out[i].begin(), fft_array_out[i].end(), 
+                signals[i].begin(), signals[i].end(), 
                     [norm_factor](std::complex<float> &n) { n *= norm_factor; }
             );
         }
     }
-    return fft_array_out;
 }
 
 

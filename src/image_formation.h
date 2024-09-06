@@ -3,6 +3,8 @@
 #include <math.h>
 #include <algorithm>
 #include <numeric>
+#include <execution>
+#include <ctime>
 
 #include "signal_processing.h"
 #include "aux_decoding.h"
@@ -38,6 +40,10 @@ CF_VEC_2D range_compress_swath(
 CF_VEC_2D range_compress_swath(
     std::ifstream&     data,
     const std::string& swath_name
+);
+
+CF_VEC_2D range_compress_swath(
+    Swath& swath
 );
 
 CF_VEC_2D range_compress_burst(
