@@ -46,6 +46,16 @@ double L0Packet::get_swst()
 }
 
 
+double L0Packet::get_time()
+{
+    int coarse_time = _secondary_header["coarse_time"];
+    int fine_time   = _secondary_header["fine_time"];
+
+    double time = coarse_time + (1 / fine_time);
+    return time;
+}
+
+
 /* Returns the RX gain in dB */
 double L0Packet::get_rx_gain()
 {
@@ -215,7 +225,8 @@ void L0Packet::print_pulse_info()
 {
     int range_decimation = _secondary_header["range_decimation"];
     int tx_pulse_number  = _secondary_header["tx_pulse_number"];
-    
+
+    std::cout << "Time: "                    << get_time()            << std::endl;
     std::cout << "Swath: "                   << get_swath()           << std::endl;
     std::cout << "RX Polarization: "         << get_rx_polarization() << std::endl;
     std::cout << "TX Polarization: "         << get_tx_polarization() << std::endl;
@@ -255,26 +266,21 @@ CF_VEC_1D L0Packet::get_replica_chirp()
     float txprr = get_tx_ramp_rate();
     float txpl  = get_pulse_length();
 
-    // float phi_1 = txpsf - (txprr * (-0.5 * txpl));
-    // float phi_2 = txprr / 2;
-
     float phi_1 = txpsf;
     float phi_2 = txprr * 0.5;
 
     int range_dec   = secondary_header("range_decimation");
     int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));
 
-    float range_start = -0.5 * txpl;
-    float range_end   =  0.5 * txpl;
-    float delta       = txpl / (num_samples - 1);
+    float range_start = 0.0f;
+    float delta       = txpl / (num_samples);
 
     F_VEC_1D  time(num_samples);
     CF_VEC_1D chirp(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
-        if (i == 0) time[i] = range_start;
-        else time[i] = time[i-1] + delta;
+        time[i] = i * delta;
     }
     for (int i = 0; i < num_samples; i++)
     {

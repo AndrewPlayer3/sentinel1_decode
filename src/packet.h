@@ -10,6 +10,7 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 
 #pragma once
 
+#include <numeric>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -180,6 +181,7 @@ public:
 
     int get_baq_block_length();
 
+    double get_time();
     double get_pulse_length();
     double get_tx_ramp_rate();
     double get_start_frequency();
