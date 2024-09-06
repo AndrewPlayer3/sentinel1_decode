@@ -297,11 +297,11 @@ CF_VEC_1D get_average_cross_correlation(
 
 CF_VEC_1D unwrap_fine_dc_estimates(
     const CF_VEC_1D& fine_dcs,
-    const float&    burst_time,
-    const float&    pulse_length,
-    const float&    prf,
-    const int&      num_azimuth,
-    const int&      num_range
+    const double&    burst_time,
+    const float&     pulse_length,
+    const float&     prf,
+    const int&       num_azimuth,
+    const int&       num_range
 ) {
     CF_VEC_1D u(num_azimuth);
     for (int i = 0; i < num_azimuth; i++)
@@ -310,7 +310,7 @@ CF_VEC_1D unwrap_fine_dc_estimates(
     }
     compute_1d_dft_in_place(u, 0, false);
 
-    float u_max = 0.0;
+    double u_max = 0.0;
     for (const std::complex<float>& u_val : u)
     {
         if (std::norm(u_val) > u_max) u_max = std::norm(u_val);
@@ -318,13 +318,7 @@ CF_VEC_1D unwrap_fine_dc_estimates(
     float a = u_max / burst_time;
     float b = std::tan(u_max / (2.0f * PI));
 
-    float delta = pulse_length / num_azimuth;
-    F_VEC_1D  time(num_azimuth);
-    for (float t = 0.0f; t < num_azimuth; t++)
-    {
-        if (t == 0) time[t] = burst_time;
-        else time[t] = time[t-1] + delta;
-    }
+    F_VEC_1D time = linspace(0.0f, pulse_length, num_azimuth);
 
     CF_VEC_1D residual(num_azimuth);
     std::transform(
@@ -351,11 +345,11 @@ CF_VEC_1D unwrap_fine_dc_estimates(
 
 CF_VEC_1D get_fine_dcs_for_burst(
     const CF_VEC_2D& signals,
-    const float& burst_time,
-    const float& pulse_length,
-    const float& prf,
-    const int&   num_azimuth,
-    const int&   num_range
+    const double& burst_time,
+    const float&  pulse_length,
+    const float&  prf,
+    const int&    num_azimuth,
+    const int&    num_range
 ) {
     CF_VEC_1D accc = get_average_cross_correlation(signals);
 
@@ -447,16 +441,10 @@ CF_VEC_1D get_azimuth_matched_filter(
     const float& velocity, 
     const float& slant_range
 ) {
-    float sample_range_start    = doppler_centroid_est - (prf / 2);
-    float sample_range_end      = doppler_centroid_est + (prf / 2);
-    float delta                 = (sample_range_start + sample_range_end) / num_azimuth;
+    double sample_range_start = doppler_centroid_est - (prf / 2.0);
+    double sample_range_end = doppler_centroid_est + (prf / 2.0);
+    F_VEC_1D azimuth_sample_range = linspace(sample_range_start, sample_range_end, num_azimuth);
 
-    F_VEC_1D azimuth_sample_range(num_azimuth);
-
-    for (int i = 0; i < num_azimuth; i++)
-    {
-        azimuth_sample_range[i] = doppler_centroid_est - (prf / 2) + (delta * i);
-    }
     CF_VEC_1D D(num_azimuth);
 
     float denominator = (4.0f * velocity * velocity * doppler_centroid_est * doppler_centroid_est);
@@ -570,13 +558,9 @@ CF_VEC_2D azimuth_compress(
     float prf  = 1 / pri;
     float swst = initial_packet.get_swst() * 0.000001;
 
-    float burst_time = initial_packet.get_time();
-
-    std::cout << "Burst Time: " << burst_time << std::endl;
+    double burst_time = initial_packet.get_time();
 
     burst_time = gps_time_to_seconds_since_midnight(burst_time);
-
-    std::cout << "Burst Time: " << burst_time << std::endl;
 
     std::cout << "Converting to Range Doppler Domain" << std::endl;
     CF_VEC_2D signals_rd = compute_axis_dft(signals, 0, 0, false);
@@ -592,7 +576,9 @@ CF_VEC_2D azimuth_compress(
     );
 
     double V = get_velocity(packets);
-
+    std::cout << "Velocity: " << std::endl;
+ 
+ 
     std::cout << "Computing the Azimuth Match Filters" << std::endl;
     CF_VEC_2D reference_functions = get_azimuth_matched_filters(
         fine_dcs, V, pl, pri, swst, rank, num_azimuth, num_range

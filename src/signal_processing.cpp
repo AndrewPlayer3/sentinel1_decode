@@ -1,6 +1,34 @@
 #include "signal_processing.h"
 
 
+CF_VEC_1D linspace(const std::complex<float>& start, const std::complex<float>& end, const int& size)
+{
+    CF_VEC_1D range(size);
+
+    std::complex<float> step = (end - start) / (static_cast<float>(size) - 1);
+
+    for (int i = 0; i < size; ++i) {
+        range[i] = start + static_cast<float>(i) * step;
+    }
+
+    return range;
+}
+
+
+F_VEC_1D linspace(const float& start, const float& end, const int& size)
+{
+    F_VEC_1D range(size);
+
+    float step = (end - start) / (size - 1);
+
+    for (int i = 0; i < size; ++i) {
+        range[i] = start + i * step;
+    }
+
+    return range;
+}
+
+
 CF_VEC_1D conjugate(const CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();

@@ -19,6 +19,7 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 
 #include "decoding_utils.h"
 #include "misc_types.h"
+#include "signal_processing.h"
 
 
 /* H_CODE / S_CODE struct representing one element of a quadrature */

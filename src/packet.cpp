@@ -48,10 +48,10 @@ double L0Packet::get_swst()
 
 double L0Packet::get_time()
 {
-    int coarse_time = _secondary_header["coarse_time"];
-    int fine_time   = _secondary_header["fine_time"];
+    double coarse_time = static_cast<double>(_secondary_header["coarse_time"]);
+    double fine_time   = static_cast<double>(_secondary_header["fine_time"]);
 
-    double time = coarse_time + (1 / fine_time);
+    double time = coarse_time + (1.0f / fine_time);
     return time;
 }
 
@@ -272,16 +272,9 @@ CF_VEC_1D L0Packet::get_replica_chirp()
     int range_dec   = secondary_header("range_decimation");
     int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));
 
-    float range_start = 0.0f;
-    float delta       = txpl / (num_samples);
+    F_VEC_1D  time = linspace(0.0f, txpl, num_samples);
 
-    F_VEC_1D  time(num_samples);
     CF_VEC_1D chirp(num_samples);
-
-    for (int i = 0; i < num_samples; i++)
-    {
-        time[i] = i * delta;
-    }
     for (int i = 0; i < num_samples; i++)
     {
         float t  = time[i]; 

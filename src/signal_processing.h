@@ -12,6 +12,18 @@
 #include "fftw3.h"
 
 
+CF_VEC_1D linspace(
+    const std::complex<float>& start,
+    const std::complex<float>& end,
+    const int& size
+);
+
+F_VEC_1D linspace(
+    const float& start, 
+    const float& end, 
+    const int&   size
+);
+
 F_VEC_1D flatten(
     const F_VEC_2D& values
 );
