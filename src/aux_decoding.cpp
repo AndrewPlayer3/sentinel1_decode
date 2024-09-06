@@ -120,31 +120,6 @@ VEC_UNSORTEDMAP annotation_decoder(std::ifstream& data)
 }
 
 
-
-double ConvertNumberToFloat(unsigned long number, int isDoublePrecision)
-{
-    int mantissaShift = isDoublePrecision ? 52 : 23;
-    unsigned long exponentMask = isDoublePrecision ? 0x7FF0000000000000 : 0x7f800000;
-    int bias = isDoublePrecision ? 1023 : 127;
-    int signShift = isDoublePrecision ? 63 : 31;
-
-    int sign = (number >> signShift) & 0x01;
-    int exponent = ((number & exponentMask) >> mantissaShift) - bias;
-
-    int power = -1;
-    double total = 0.0;
-    for ( int i = 0; i < mantissaShift; i++ )
-    {
-        int calc = (number >> (mantissaShift-i-1)) & 0x01;
-        total += calc * pow(2.0, power);
-        power--;
-    }
-    double value = (sign ? -1 : 1) * pow(2.0, exponent) * (total + 1.0);
-
-    return value;
-}
-
-
 std::vector<std::unordered_map<std::string, double>> build_data_word_dicts(PACKET_VEC_1D& packets)
 {
     int num_packets = packets.size();
@@ -189,11 +164,11 @@ std::vector<std::unordered_map<std::string, double>> build_data_word_dicts(PACKE
             std::set<std::string> f64_index = {"x_axis_position", "y_axis_position", "z_axis_position", "data_time_stamp"};
             if (f64_index.contains(key_val.first))
             {
-                dict_d[key_val.first] = ConvertNumberToFloat(key_val.second, true);
+                dict_d[key_val.first] = int_to_ieee754(key_val.second, true);
             }
             else
             {
-                dict_d[key_val.first] = ConvertNumberToFloat(key_val.second, false);
+                dict_d[key_val.first] = int_to_ieee754(key_val.second, false);
             }
             index += 1;
         }
@@ -201,51 +176,3 @@ std::vector<std::unordered_map<std::string, double>> build_data_word_dicts(PACKE
     }
     return double_dicts;
 }
-
-
-// def build_data_word_dict(packets):
-//     data_word_dicts = []
-//     sub_comm_dict = SUB_COMM_KEY_VAL.copy()
-    
-//     initial_data_word_index = 0
-//     sc_data_word_index = 0
-
-//     for i in range(len(packets)):
-//         packet = packets[i]
-        
-//         secondary_header = packet.get_secondary_header()
-        
-//         sc_data_word_index = secondary_header['sc_data_word_index']
-
-//         if i == 0:
-//             initial_data_word_index = sc_data_word_index
-//         else:
-//             if sc_data_word_index == initial_data_word_index:
-//                 data_word_dicts.append(sub_comm_dict)
-//                 sub_comm_dict = SUB_COMM_KEY_VAL.copy()
-
-//         data_word =  secondary_header['sc_data_word']
-
-//         key, pos = SUB_COMM_KEY_POS[sc_data_word_index]
-//         pos = pos * WORD_SIZE
-//         sub_comm_dict[key] = sub_comm_dict[key][0:pos] + data_word + sub_comm_dict[key][pos+WORD_SIZE:]
-    
-//     if sc_data_word_index != initial_data_word_index:
-//         data_word_dicts.append(sub_comm_dict)
-
-//     for i in range(len(data_word_dicts)):
-//         data_word_dicts[i]['x_axis_position'] = to_float64(data_word_dicts[i]['x_axis_position'])
-//         data_word_dicts[i]['y_axis_position'] = to_float64(data_word_dicts[i]['y_axis_position'])
-//         data_word_dicts[i]['z_axis_position'] = to_float64(data_word_dicts[i]['z_axis_position'])
-//         data_word_dicts[i]['x_axis_velocity'] = to_float32(data_word_dicts[i]['x_axis_velocity'])
-//         data_word_dicts[i]['y_axis_velocity'] = to_float32(data_word_dicts[i]['y_axis_velocity'])
-//         data_word_dicts[i]['z_axis_velocity'] = to_float32(data_word_dicts[i]['z_axis_velocity'])
-//         data_word_dicts[i]['q0_quaternion']   = to_float32(data_word_dicts[i]['q0_quaternion'])
-//         data_word_dicts[i]['q1_quaternion']   = to_float32(data_word_dicts[i]['q1_quaternion'])
-//         data_word_dicts[i]['q2_quaternion']   = to_float32(data_word_dicts[i]['q2_quaternion'])
-//         data_word_dicts[i]['q3_quaternion']   = to_float32(data_word_dicts[i]['q3_quaternion'])
-//         data_word_dicts[i]['omega_x']         = to_float32(data_word_dicts[i]['omega_x'])
-//         data_word_dicts[i]['omega_y']         = to_float32(data_word_dicts[i]['omega_y'])
-//         data_word_dicts[i]['omega_z']         = to_float32(data_word_dicts[i]['omega_z'])
-
-//     return data_word_dicts
