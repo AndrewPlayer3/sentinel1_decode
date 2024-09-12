@@ -99,11 +99,8 @@ void plot_azimuth_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    std::cout << "Decoding Swath" << std::endl;
-    Swath swath(filename, swath_name);
-
     std::cout << "Azimuth Compressing Swath" << std::endl;
-    CF_VEC_2D azimuth_compressed_swath = azimuth_compress_swath(swath);
+    CF_VEC_2D azimuth_compressed_swath = azimuth_compress_swath(filename, swath_name);
 
     std::cout << "Plotting" << std::endl;
     plot_complex_image(azimuth_compressed_swath, scaling_mode);

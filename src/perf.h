@@ -14,6 +14,7 @@ Description: Functions for evaluating the performance of packet decoding.
 
 #include "packet.h"
 #include "misc_types.h"
+#include "image_formation.h"
 
 double time_packet_generation(
     const std::string& filename,
@@ -28,4 +29,22 @@ void omp_test(
 
 void thread_test(
     const std::string& filename
+);
+
+/* Returns the time in seconds that it takes to range compress the given burst */
+double time_range_compression(
+    const std::string& filename, 
+    const std::string& swath_name,
+    const int&  burst_num, 
+    const bool& log, 
+    const int&  log_interval
+);
+
+/* Returns the time in seconds that it takes to azimuth compress the burst */
+double time_azimuth_compression(
+    const std::string& filename, 
+    const std::string& swath_name,
+    const int&  burst_num, 
+    const bool& log, 
+    const int&  log_interval
 );

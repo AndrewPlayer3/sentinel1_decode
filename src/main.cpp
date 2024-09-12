@@ -67,6 +67,8 @@ int main(int argc, char* argv[])
         "time [num_packets] [path]",
         "thread_test [path]",
         "omp_test [path]",
+        "time_range_compression [swath_name] [burst_num] [path]",
+        "time_azimuth_compression [swath_name] [burst_num] [path]",
         "print_header_dict [path]"
     };
 
@@ -155,6 +157,42 @@ int main(int argc, char* argv[])
         double runtime = time_packet_generation(std::string(argv[3]), std::stoi(argv[2]), false, 0);
 
         std::cout << "Decoded " << std::stoi(argv[2]) << " packets in " << runtime << "s." << std::endl;
+    }
+
+    else if (command == "time_range_compression")
+    {
+        STRING_VEC_1D args  = {"swath", "burst_num", "path"};
+        STRING_VEC_1D types = {"string", "int", "path"};
+        validate_args(command, args, types, &(argv[0]));
+
+        double runtime = time_range_compression(
+            std::string(argv[4]),
+            std::string(argv[2]),
+            std::stoi(argv[3]),
+            false,
+            false
+        );
+
+        std::cout << "Range compressed " << std::string(argv[2]) << " " << std::stoi(argv[3]) 
+                  << " in " << runtime << "s." << std::endl;          
+    }
+
+    else if (command == "time_azimuth_compression")
+    {
+        STRING_VEC_1D args  = {"swath", "burst_num", "path"};
+        STRING_VEC_1D types = {"string", "int", "path"};
+        validate_args(command, args, types, &(argv[0]));
+
+        double runtime = time_azimuth_compression(
+            std::string(argv[4]),
+            std::string(argv[2]),
+            std::stoi(argv[3]),
+            false,
+            false
+        );
+
+        std::cout << "Azimuth compressed " << std::string(argv[2]) << " " << std::stoi(argv[3]) 
+                  << " in " << runtime << "s." << std::endl;          
     }
 
     else if (command == "thread_test")

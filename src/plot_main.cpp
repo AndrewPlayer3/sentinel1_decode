@@ -229,9 +229,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    fftwf_init_threads();
-    fftwf_plan_with_nthreads(omp_get_max_threads());
-
     std::string command = std::string(argv[1]);
 
     std::unordered_map<std::string, bool> options = {
@@ -268,8 +265,6 @@ int main(int argc, char* argv[])
     {
         std::cout << command << " is not a valid command." << std::endl;
     }
-
-    fftwf_cleanup_threads();
 
     return 0;
 }

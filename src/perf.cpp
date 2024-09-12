@@ -115,3 +115,52 @@ void thread_test(const std::string& filename)
 
     std::cout << "Decoded " << num_packets << " packets in " << difference.count() << "s." << std::endl;
 }
+
+
+/* Returns the time in seconds that it takes to decode the complex samples of num_packets packets */
+double time_range_compression(
+    const std::string& filename, 
+    const std::string& swath_name,
+    const int&  burst_num, 
+    const bool& log, 
+    const int&  log_interval
+) {
+
+    Burst burst(filename, swath_name, burst_num);
+
+    std::chrono::time_point start = std::chrono::high_resolution_clock::now();
+    
+    CF_VEC_2D compressed_burst = range_compress_burst(burst);
+
+    std::chrono::time_point end   = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> difference = end - start;
+
+    return difference.count();
+}
+
+
+/* Returns the time in seconds that it takes to decode the complex samples of num_packets packets */
+double time_azimuth_compression(
+    const std::string& filename, 
+    const std::string& swath_name,
+    const int&  burst_num, 
+    const bool& log, 
+    const int&  log_interval
+) {
+
+    Burst burst(filename, swath_name, burst_num);
+
+    PACKET_VEC_1D packets = burst.get_packets();
+    CF_VEC_2D signals = burst.get_signals();
+
+    std::chrono::time_point start = std::chrono::high_resolution_clock::now();
+
+    CF_VEC_2D compressed_burst = azimuth_compress(packets, signals);
+
+    std::chrono::time_point end   = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> difference = end - start;
+
+    return difference.count();
+}

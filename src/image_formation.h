@@ -81,6 +81,11 @@ CF_VEC_2D azimuth_compress_swath(
    Swath& swath
 );
 
+CF_VEC_2D azimuth_compress_swath(
+    const std::string& filename,
+    const std::string& swath_name
+);
+
 CF_VEC_2D range_doppler_burst(
     const std::string& filename,
     const std::string& swath_name,

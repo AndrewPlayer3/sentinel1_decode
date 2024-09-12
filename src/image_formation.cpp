@@ -407,6 +407,37 @@ std::vector<double> get_velocities(
 
 
 CF_VEC_2D azimuth_compress_swath(
+    const std::string& filename,
+    const std::string& swath_name
+) {
+    Swath swath(filename, swath_name);
+    
+    CF_VEC_2D azimuth_compressed_swath;
+    
+    int num_bursts = swath.get_num_bursts();
+
+    for (int i = 0; i < num_bursts; i++)
+    {
+        Burst burst = swath.get_burst(i);
+        PACKET_VEC_1D packets = burst.get_packets();
+
+        std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
+        CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
+
+        std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
+        CF_VEC_2D azimuth_compressed_burst = azimuth_compress(packets, range_compressed_burst);
+
+        std::cout << "Adding Azimuth Compressed Burst " << i << " of " << num_bursts 
+                  << " to the Output Vector."<< std::endl;
+        azimuth_compressed_swath.insert(
+            azimuth_compressed_swath.end(), azimuth_compressed_burst.begin(), azimuth_compressed_burst.end()
+        );
+    }
+    return azimuth_compressed_swath;
+}
+
+
+CF_VEC_2D azimuth_compress_swath(
     Swath& swath
 ) {
     CF_VEC_2D azimuth_compressed_swath;
@@ -545,7 +576,6 @@ CF_VEC_2D azimuth_compress(
 ) {
     const int& num_azimuth = signals.size();
     const int& num_range = signals[0].size();
-    
 
     std::cout << "Getting Azimuth FM Descriptors from Header Information" << std::endl;
     int num_packets = packets.size();
