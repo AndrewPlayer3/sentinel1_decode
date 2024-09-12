@@ -473,7 +473,7 @@ CF_VEC_1D get_azimuth_matched_filter(
     const double& slant_range
 ) {
     double sample_range_start = doppler_centroid_est - (prf / 2.0);
-    double sample_range_end = doppler_centroid_est + (prf / 2.0);
+    double sample_range_end   = doppler_centroid_est + (prf / 2.0);
     F_VEC_1D azimuth_sample_range = linspace(sample_range_start, sample_range_end, num_azimuth);
 
     CF_VEC_1D D(num_azimuth);
