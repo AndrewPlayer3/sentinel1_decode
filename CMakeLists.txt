@@ -31,9 +31,10 @@ include_directories(${PYTHON_INCLUDE} ${NUMPY_INCLUDE} ${HOMEBREW_INCLUDE})
 link_directories(${PYTHON_LIBS} ${HOMEBREW_LIB} ${HOMEBREW_PYTHON_INCLUDE})
 
 # Executable: main
-add_executable(s1_print src/main.cpp src/cli.cpp src/packet.cpp src/perf.cpp src/decoding_utils.cpp src/aux_decoding.cpp)
+add_executable(s1_print src/main.cpp src/cli.cpp src/packet.cpp src/signal_processing.cpp src/image_formation.cpp src/perf.cpp src/decoding_utils.cpp src/aux_decoding.cpp)
 set_target_properties(s1_print PROPERTIES OUTPUT_NAME "../bin/s1_print.exe")
 set_target_properties(s1_print PROPERTIES CXX_COMPILER "${CLANG_COMPILER}")
+target_link_libraries(s1_print PRIVATE fftw3f_omp fftw3f m)
 
 # Executable: write
 add_executable(s1_write_tiff src/write_main.cpp src/cli.cpp src/image_write.cpp src/image_formation.cpp src/packet.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/signal_processing.cpp)
