@@ -606,9 +606,8 @@ CF_VEC_2D azimuth_compress(
     );
 
     double V = get_velocity(packets);
-    std::cout << "Velocity: " << std::endl;
- 
- 
+    std::cout << "Velocity: " << V << std::endl;
+
     std::cout << "Computing the Azimuth Match Filters" << std::endl;
     CF_VEC_2D reference_functions = get_azimuth_matched_filters(
         fine_dcs, V, pl, pri, swst, rank, num_azimuth, num_range
