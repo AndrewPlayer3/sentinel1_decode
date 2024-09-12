@@ -166,11 +166,8 @@ void write_azimuth_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    std::cout << "Decoding Swath" << std::endl;
-    Swath swath(in_filename, swath_name);
-    
     std::cout << "Azimuth Compressing Swath" << std::endl;
-    CF_VEC_2D azimuth_compressed = azimuth_compress_swath(swath);
+    CF_VEC_2D azimuth_compressed = azimuth_compress_swath(in_filename, swath_name);
 
     std::cout << "Calling write_tif" <<  std::endl;
     write_tif(azimuth_compressed, out_filename, scaling_mode);
