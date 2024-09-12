@@ -220,10 +220,11 @@ F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& complex_values_row = complex_values[i];
+               F_VEC_1D& magnitude_row = magnitude[i];
 
         std::transform(
             complex_values_row.begin(), complex_values_row.end(),
-                magnitude[i].begin(),
+                magnitude_row.begin(),
                     [] (const std::complex<float>& n) { return std::abs(n); }
         );
     }
