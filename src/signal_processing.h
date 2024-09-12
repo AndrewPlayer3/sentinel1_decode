@@ -24,6 +24,8 @@ F_VEC_1D linspace(
     const int&   size
 );
 
+std::vector<float> flatten(const std::vector<std::vector<float>>& values);
+
 F_VEC_1D flatten(
     const F_VEC_2D& values
 );
@@ -57,7 +59,7 @@ F_VEC_1D norm_1d(
     const bool& log_scale
 );
 
-F_VEC_2D norm_2d(
+std::vector<std::vector<float>> norm_2d(
     const CF_VEC_2D& complex_values,
     const bool& log_scale
 );
@@ -66,7 +68,7 @@ F_VEC_1D magnitude_1d(
     const CF_VEC_1D& complex_values
 );
 
-F_VEC_2D magnitude_2d(
+std::vector<std::vector<float>> magnitude_2d(
     const CF_VEC_2D& complex_values
 );
 
@@ -116,7 +118,7 @@ F_VEC_1D scale(
     const std::string& scaling_mode
 );
 
-F_VEC_1D scale(
+std::vector<float> scale(
     const CF_VEC_2D& signal,
     const std::string& scaling_mode
 );

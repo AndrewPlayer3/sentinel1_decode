@@ -116,12 +116,12 @@ void plot_complex_image(
     int rows = signal.size();
     int cols = signal[0].size();
 
-    F_VEC_1D samples = scale(signal, scaling_mode);
+    std::vector<float> samples = scale(signal, scaling_mode);
 
     std::cout << "Calling Plot" << std::endl;
 
     matplotlibcpp::figure();
-    matplotlibcpp::imshow(reinterpret_cast<float*>(&samples[0]), rows, cols, 1);
+    matplotlibcpp::imshow(&samples[0], rows, cols, 1);
     matplotlibcpp::show();
 }
 

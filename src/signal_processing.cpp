@@ -94,6 +94,26 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
 }
 
 
+std::vector<float> flatten(const std::vector<std::vector<float>>& values)
+{
+    int rows = values.size();
+    int cols = values[0].size();
+
+    std::vector<float> flat(rows * cols);
+
+    for (int i = 0; i < rows; i++)
+    {
+        const std::vector<float>& value_row = values[i];
+        for (int j = 0; j < cols; j++)
+        {
+            flat[i * cols + j] = value_row[j];
+        }
+    }
+    return flat;
+}
+
+
+
 F_VEC_1D flatten(const F_VEC_2D& values)
 {
     int rows = values.size();
@@ -132,7 +152,7 @@ CF_VEC_1D flatten(const CF_VEC_2D& values)
 }
 
 
-F_VEC_2D norm_2d(
+std::vector<std::vector<float>> norm_2d(
     const CF_VEC_2D& complex_values,
     const bool& log_scale = false
 ) {
@@ -141,12 +161,12 @@ F_VEC_2D norm_2d(
     int rows = complex_values.size();
     int cols = complex_values[0].size();
 
-    F_VEC_2D norm(rows, F_VEC_1D(cols));
+    std::vector<std::vector<float>> norm(rows, std::vector<float>(cols));
 
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& complex_value_row = complex_values[i];
-        F_VEC_1D& norm_row = norm[i];
+        std::vector<float>& norm_row = norm[i];
 
         for (int j = 0; j < cols; j++)
         {
@@ -159,7 +179,7 @@ F_VEC_2D norm_2d(
 
     for (int i = 0; i < rows; i++)
     {
-        F_VEC_1D& norm_row = norm[i];
+        std::vector<float>& norm_row = norm[i];
         for (int j = 0; j < cols; j++)
         {
             norm_row[j] = log_scale ? 20 * log10(norm_row[j] / max_value) : norm_row[j] / max_value;
@@ -210,17 +230,17 @@ F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
 }
 
 
-F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
+std::vector<std::vector<float>> magnitude_2d(const CF_VEC_2D& complex_values)
 {
     int rows = complex_values.size();
     int cols = complex_values[0].size();
 
-    F_VEC_2D magnitude(rows, F_VEC_1D(cols));
+    std::vector<std::vector<float>> magnitude(rows, std::vector<float>(cols));
 
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& complex_values_row = complex_values[i];
-               F_VEC_1D& magnitude_row = magnitude[i];
+               std::vector<float>& magnitude_row = magnitude[i];
 
         std::transform(
             complex_values_row.begin(), complex_values_row.end(),
@@ -497,12 +517,20 @@ F_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
 }
 
 
-F_VEC_1D scale(const CF_VEC_2D& signal, const std::string& scaling_mode)
+std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mode)
 {
     int rows = signal.size();
     int cols = signal[0].size();
-    
-    F_VEC_1D samples(rows*cols);
+
+    for (const CF_VEC_1D& row : signal)
+    {
+        if (row.size() != cols)
+        {
+            std::cout << "Mismatched Row Size: " << row.size() << " is not the same as " << cols << "." << std::endl;
+        }
+    }
+
+    std::vector<float> samples(rows*cols);
 
     if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
     else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));

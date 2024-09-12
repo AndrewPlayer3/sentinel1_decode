@@ -1,7 +1,7 @@
 #include "image_write.h"
 
 void _write_tif(
-    std::vector<double>& img_data,
+    std::vector<float>& img_data,
     const int& rows,
     const int& cols,
     const std::string out_filename
@@ -34,7 +34,7 @@ void write_tif(
     int rows = img_data.size();
     int cols = img_data[0].size();
 
-    F_VEC_1D scaled = scale(img_data, scaling_mode);
+    std::vector<float> scaled = scale(img_data, scaling_mode);
 
     _write_tif(scaled, rows, cols, out_filename);
 }
