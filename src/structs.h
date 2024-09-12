@@ -17,13 +17,13 @@ Description: Some data structs/tables and constants containing information neces
 
 #include "misc_types.h"
 
-const std::complex<float> I(0.0f, 1.0f); 
+const std::complex<double> I(0.0, 1.0); 
 
-const float PI             = 3.14159235;
-const float SPEED_OF_LIGHT = 299792458.0;
+const double PI             = 3.14159235;
+const double SPEED_OF_LIGHT = 299792458.0;
 
 const double F_REF = 37.53472224;
-const float DELTA_T_SUPPRESSED = (320 / (8 * F_REF)) * 1e-6;
+const double DELTA_T_SUPPRESSED = (320 / (8 * F_REF)) * 1e-6;
 
 
 const u_int8_t PRIMARY_HEADER_SIZE   = 6;
@@ -693,7 +693,7 @@ const std::unordered_map<std::string, std::string> SUB_COMM_KEY_VAL = {
 
 
 
-const std::unordered_map<std::string, float> SUB_COMM_KEY_VAL_F = {
+const std::unordered_map<std::string, double> SUB_COMM_KEY_VAL_F = {
     {"dummy_data",      0.0},
     {"x_axis_position", 0.0},
     {"y_axis_position", 0.0},

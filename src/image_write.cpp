@@ -1,7 +1,7 @@
 #include "image_write.h"
 
 void _write_tif(
-    std::vector<float>& img_data,
+    std::vector<double>& img_data,
     const int& rows,
     const int& cols,
     const std::string out_filename

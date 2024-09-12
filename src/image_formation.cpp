@@ -11,25 +11,25 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp, const int& rang
 
     std::for_each(
         reference.begin() + num_samples, reference.end(),
-            [] (std::complex<float>& n) { n = 0.0; }
+            [] (std::complex<double>& n) { n = 0.0; }
     );
 
     CF_VEC_1D rep_fft = conjugate(reference);
 
     F_VEC_1D norm = magnitude_1d(replica_chirp);
 
-    float norm_size = norm.size();
+    double norm_size = norm.size();
     std::for_each(
         norm.begin(), norm.end(),
-            [norm_size](std::complex<float> n) { n *= n / norm_size; }
+            [norm_size](std::complex<double> n) { n *= n / norm_size; }
     );
-    float energy = std::accumulate(norm.begin(), norm.end(), 0.0);
+    double energy = std::accumulate(norm.begin(), norm.end(), 0.0);
 
     apply_hanning_window_in_place(rep_fft);
 
     std::for_each(
         rep_fft.begin(), rep_fft.end(),
-            [energy](std::complex<float> &n) { n /= energy; }
+            [energy](std::complex<double> &n) { n /= energy; }
     );
 
     compute_1d_dft_in_place(rep_fft, 0, false);
@@ -51,7 +51,7 @@ CF_VEC_1D pulse_compression(
     std::transform(
         reference.begin(), reference.end(),
             signal_fft.begin(), signal_fft.begin(),
-                [] (std::complex<float>& n, std::complex<float>& r) { return n * r;}
+                [] (std::complex<double>& n, std::complex<double>& r) { return n * r;}
     );
     compute_1d_dft_in_place(signal_fft, num_samples, true);
     return signal_fft;
@@ -71,7 +71,7 @@ CF_VEC_1D pulse_compression_in_place(
     std::transform(
         reference.begin(), reference.end(),
             signal_fft.begin(), signal_fft.begin(),
-                [] (std::complex<float>& n, std::complex<float>& r) { return n * r;}
+                [] (std::complex<double>& n, std::complex<double>& r) { return n * r;}
     );
     compute_1d_dft_in_place(signal_fft, num_samples, true);
     return signal_fft;
@@ -242,7 +242,7 @@ CF_VEC_1D get_accc_range_blocks(
     CF_VEC_1D block;
 
     int block_size = static_cast<int>(std::ceil(
-        static_cast<float>(avg_cross_corr.size()) / static_cast<float>(num_azimuth)
+        static_cast<double>(avg_cross_corr.size()) / static_cast<double>(num_azimuth)
     ));
 
     for (int i = 0; i < avg_cross_corr.size(); i++)
@@ -264,7 +264,7 @@ CF_VEC_1D get_accc_range_blocks(
     std::transform(
         accc_blocks.begin(), accc_blocks.end(), averaged_blocks.begin(),
             [] (const CF_VEC_1D& v) {
-                return std::accumulate(v.begin(), v.end(), std::complex<float>(0.0f, 0.0f)) / static_cast<float>(v.size());
+                return std::accumulate(v.begin(), v.end(), std::complex<double>(0.0, 0.0)) / static_cast<double>(v.size());
             }
     );
 
@@ -278,7 +278,7 @@ CF_VEC_1D get_average_cross_correlation(
     int num_azimuth = signals.size();
     int num_range = signals[0].size();
 
-    std::vector<std::complex<float>> accc(num_range, std::complex<float>(0, 0));
+    std::vector<std::complex<double>> accc(num_range, std::complex<double>(0, 0));
 
     for (int i = 0; i < num_azimuth - 1; i++)
     {
@@ -298,35 +298,35 @@ CF_VEC_1D get_average_cross_correlation(
 CF_VEC_1D unwrap_fine_dc_estimates(
     const CF_VEC_1D& fine_dcs,
     const double&    burst_time,
-    const float&     pulse_length,
-    const float&     prf,
+    const double&     pulse_length,
+    const double&     prf,
     const int&       num_azimuth,
     const int&       num_range
 ) {
     CF_VEC_1D u(num_azimuth);
     for (int i = 0; i < num_azimuth; i++)
     {
-        u[i] = std::exp(I * 2.0f * PI * fine_dcs[i] / prf);
+        u[i] = std::exp(I * 2.0 * PI * fine_dcs[i] / prf);
     }
     compute_1d_dft_in_place(u, 0, false);
 
     double u_max = 0.0;
-    for (const std::complex<float>& u_val : u)
+    for (const std::complex<double>& u_val : u)
     {
         if (std::norm(u_val) > u_max) u_max = std::norm(u_val);
     }
-    float a = u_max / burst_time;
-    float b = std::tan(u_max / (2.0f * PI));
+    double a = u_max / burst_time;
+    double b = std::tan(u_max / (2.0 * PI));
 
-    F_VEC_1D time = linspace(0.0f, pulse_length, num_azimuth);
+    F_VEC_1D time = linspace(0.0, pulse_length, num_azimuth);
 
     CF_VEC_1D residual(num_azimuth);
     std::transform(
         time.begin(), time.end(), u.begin(),
             residual.begin(),
-                [a, b] (const float& t, const std::complex<float>& n) 
+                [a, b] (const double& t, const std::complex<double>& n) 
                 { 
-                    return std::tan(n * std::exp(-1.0f * I * (a * t + b)) / (2 * PI));
+                    return std::tan(n * std::exp(-1.0 * I * (a * t + b)) / (2 * PI));
                 }
     );
 
@@ -334,7 +334,7 @@ CF_VEC_1D unwrap_fine_dc_estimates(
     std::transform(
         residual.begin(), residual.end(), time.begin(),
             unwrapped_fine_dcs.begin(),
-                [a, b, prf] (const std::complex<float>& r, const float& t) 
+                [a, b, prf] (const std::complex<double>& r, const double& t) 
                 { 
                     return (a * t + b + r) / prf;
                 }
@@ -346,8 +346,8 @@ CF_VEC_1D unwrap_fine_dc_estimates(
 CF_VEC_1D get_fine_dcs_for_burst(
     const CF_VEC_2D& signals,
     const double& burst_time,
-    const float&  pulse_length,
-    const float&  prf,
+    const double&  pulse_length,
+    const double&  prf,
     const int&    num_azimuth,
     const int&    num_range
 ) {
@@ -357,8 +357,8 @@ CF_VEC_1D get_fine_dcs_for_burst(
     std::transform(
         accc.begin(), accc.end(),
             fine_dcs.begin(),
-                [prf] (std::complex<float>& c) { 
-                    return -1.0f * ( prf / (2.0f * PI)) * std::tan(c.imag() / c.real());
+                [prf] (std::complex<double>& c) { 
+                    return -1.0 * ( prf / (2.0 * PI)) * std::tan(c.imag() / c.real());
                 }
     );
 
@@ -467,10 +467,10 @@ CF_VEC_2D azimuth_compress_swath(
 
 CF_VEC_1D get_azimuth_matched_filter(
     const int&   num_azimuth,
-    const float& doppler_centroid_est,
-    const float& prf,
-    const float& velocity, 
-    const float& slant_range
+    const double& doppler_centroid_est,
+    const double& prf,
+    const double& velocity, 
+    const double& slant_range
 ) {
     double sample_range_start = doppler_centroid_est - (prf / 2.0);
     double sample_range_end = doppler_centroid_est + (prf / 2.0);
@@ -478,18 +478,18 @@ CF_VEC_1D get_azimuth_matched_filter(
 
     CF_VEC_1D D(num_azimuth);
 
-    float denominator = (4.0f * velocity * velocity * doppler_centroid_est * doppler_centroid_est);
+    double denominator = (4.0 * velocity * velocity * doppler_centroid_est * doppler_centroid_est);
 
     for (int i = 0; i < num_azimuth; i++)
     {
-        float range_migration_factor = 1.0f - (
+        double range_migration_factor = 1.0 - (
             std::pow(SPEED_OF_LIGHT, 2) * std::pow(azimuth_sample_range[i], 2) / denominator
         );
-        D[i] = std::sqrt(std::complex<float>(range_migration_factor, 0.0f));
+        D[i] = std::sqrt(std::complex<double>(range_migration_factor, 0.0));
     }
     CF_VEC_1D azimuth_match_filter(num_azimuth);
 
-    std::complex<float> phase = I * 4.0f * PI * slant_range * doppler_centroid_est;
+    std::complex<double> phase = I * 4.0 * PI * slant_range * doppler_centroid_est;
     for (int i = 0; i < num_azimuth; i++)
     {
         azimuth_match_filter[i] = std::exp(
@@ -505,23 +505,23 @@ CF_VEC_1D get_azimuth_matched_filter(
 
 CF_VEC_2D get_azimuth_matched_filters(
     const CF_VEC_1D& doppler_centroid_ests,
-    const float& velocity,
-    const float& pulse_length,
-    const float& pri,
-    const float& window_start_time,
+    const double& velocity,
+    const double& pulse_length,
+    const double& pri,
+    const double& window_start_time,
     const int&   rank,
     const int&   num_azimuth,
     const int&   num_range
 ) {
-    float prf = 1 / pri;
+    double prf = 1 / pri;
 
-    float slant_range_time_near = rank * pri + window_start_time + DELTA_T_SUPPRESSED;
-    float slant_range_time_far  = slant_range_time_near + pulse_length;
-    float slant_range_near      = (slant_range_time_near * SPEED_OF_LIGHT) / 2;
-    float slant_range_far       = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
-    float slant_range           = (slant_range_near + slant_range_far) / 2;
+    double slant_range_time_near = rank * pri + window_start_time + DELTA_T_SUPPRESSED;
+    double slant_range_time_far  = slant_range_time_near + pulse_length;
+    double slant_range_near      = (slant_range_time_near * SPEED_OF_LIGHT) / 2;
+    double slant_range_far       = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
+    double slant_range           = (slant_range_near + slant_range_far) / 2;
 
-    int block_size = int(std::ceil(float(num_range) / float(num_azimuth)) * 100.0);
+    int block_size = int(std::ceil(double(num_range) / double(num_azimuth)) * 100.0);
 
     CF_VEC_1D current_match_filter(num_azimuth);
     CF_VEC_2D azimuth_match_filters(num_range, CF_VEC_1D(num_azimuth));
@@ -531,7 +531,7 @@ CF_VEC_2D get_azimuth_matched_filters(
     {
         if (i % block_size == 0)
         {
-            float fine_dc = std::abs(doppler_centroid_ests[fine_dc_index]);
+            double fine_dc = std::abs(doppler_centroid_ests[fine_dc_index]);
             current_match_filter = get_azimuth_matched_filter(
                 num_azimuth,
                 fine_dc,
@@ -583,10 +583,10 @@ CF_VEC_2D azimuth_compress(
     L0Packet initial_packet = packets[0];
 
     int   rank = initial_packet.secondary_header("rank");
-    float pl   = initial_packet.get_pulse_length() * 0.000001;
-    float pri  = initial_packet.get_pri() * 0.000001;
-    float prf  = 1 / pri;
-    float swst = initial_packet.get_swst() * 0.000001;
+    double pl   = initial_packet.get_pulse_length() * 0.000001;
+    double pri  = initial_packet.get_pri() * 0.000001;
+    double prf  = 1 / pri;
+    double swst = initial_packet.get_swst() * 0.000001;
 
     double burst_time = initial_packet.get_time();
 
@@ -632,7 +632,7 @@ CF_VEC_2D azimuth_compress(
         std::transform(
             azimuth_row.begin(), azimuth_row.end(),
                 reference_function.begin(), azimuth_row.begin(),
-                    [] (std::complex<float>& signal, std::complex<float>& match) { return signal * match; }
+                    [] (std::complex<double>& signal, std::complex<double>& match) { return signal * match; }
         );
     }
 

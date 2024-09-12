@@ -13,14 +13,14 @@
 
 
 CF_VEC_1D linspace(
-    const std::complex<float>& start,
-    const std::complex<float>& end,
+    const std::complex<double>& start,
+    const std::complex<double>& end,
     const int& size
 );
 
 F_VEC_1D linspace(
-    const float& start, 
-    const float& end, 
+    const double& start, 
+    const double& end, 
     const int&   size
 );
 

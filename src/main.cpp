@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
         PACKET_VEC_1D       packets = L0Packet::get_packets(data, std::stoi(argv[2]) + 1);
         CF_VEC_1D signal  = packets[std::stoi(argv[2])].get_signal();
 
-        for (std::complex<float> sample : signal)
+        for (std::complex<double> sample : signal)
         {
             std::cout << sample << std::endl;
         }

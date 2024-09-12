@@ -51,7 +51,7 @@ double L0Packet::get_time()
     double coarse_time = static_cast<double>(_secondary_header["coarse_time"]);
     double fine_time   = static_cast<double>(_secondary_header["fine_time"]);
 
-    double time = coarse_time + (1.0f / fine_time);
+    double time = coarse_time + (1.0 / fine_time);
     return time;
 }
 
@@ -262,23 +262,23 @@ CF_VEC_1D L0Packet::get_replica_chirp()
         _set_signal();
     }
 
-    float txpsf = get_start_frequency();
-    float txprr = get_tx_ramp_rate();
-    float txpl  = get_pulse_length();
+    double txpsf = get_start_frequency();
+    double txprr = get_tx_ramp_rate();
+    double txpl  = get_pulse_length();
 
-    float phi_1 = txpsf;
-    float phi_2 = txprr * 0.5;
+    double phi_1 = txpsf;
+    double phi_2 = txprr * 0.5;
 
     int range_dec   = secondary_header("range_decimation");
     int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));
 
-    F_VEC_1D  time = linspace(0.0f, txpl, num_samples);
+    F_VEC_1D  time = linspace(0.0, txpl, num_samples);
 
     CF_VEC_1D chirp(num_samples);
     for (int i = 0; i < num_samples; i++)
     {
-        float t  = time[i]; 
-        chirp[i] = float(1.0 / num_samples) * exp(I * 2.0f * PI * ((phi_1 * t) + phi_2 * (t * t)));
+        double t  = time[i]; 
+        chirp[i] = double(1.0 / num_samples) * exp(I * 2.0 * PI * ((phi_1 * t) + phi_2 * (t * t)));
     }
     return chirp;
 }
@@ -413,8 +413,8 @@ CF_VEC_1D L0Packet::_get_signal_types_a_and_b(
     {
         D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(std::complex<float>(components[0], components[2]));
-        complex_samples.push_back(std::complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<double>(components[0], components[2]));
+        complex_samples.push_back(std::complex<double>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -517,8 +517,8 @@ CF_VEC_1D L0Packet::_get_signal_type_c(
     {
         D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(std::complex<float>(components[0], components[2]));
-        complex_samples.push_back(std::complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<double>(components[0], components[2]));
+        complex_samples.push_back(std::complex<double>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -649,8 +649,8 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
     {
         D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(std::complex<float>(components[0], components[2]));
-        complex_samples.push_back(std::complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<double>(components[0], components[2]));
+        complex_samples.push_back(std::complex<double>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -741,8 +741,8 @@ std::unordered_map<std::string, int> L0Packet::_parse_header(
 
     std::unordered_map<std::string, int> header;
 
-    F_VEC_1D floats;
-    D_VEC_1D doubles;
+    // F_VEC_1D doubles;
+    // D_VEC_1D doubles;
 
     for (int i = 0; i < num_fields; i++) 
     {   

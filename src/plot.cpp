@@ -121,7 +121,7 @@ void plot_complex_image(
     std::cout << "Calling Plot" << std::endl;
 
     matplotlibcpp::figure();
-    matplotlibcpp::imshow(&samples[0], rows, cols, 1);
+    matplotlibcpp::imshow(reinterpret_cast<float*>(&samples[0]), rows, cols, 1);
     matplotlibcpp::show();
 }
 

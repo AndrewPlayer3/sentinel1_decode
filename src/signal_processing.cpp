@@ -1,25 +1,25 @@
 #include "signal_processing.h"
 
 
-CF_VEC_1D linspace(const std::complex<float>& start, const std::complex<float>& end, const int& size)
+CF_VEC_1D linspace(const std::complex<double>& start, const std::complex<double>& end, const int& size)
 {
     CF_VEC_1D range(size);
 
-    std::complex<float> step = (end - start) / (static_cast<float>(size) - 1);
+    std::complex<double> step = (end - start) / (static_cast<double>(size) - 1);
 
     for (int i = 0; i < size; ++i) {
-        range[i] = start + static_cast<float>(i) * step;
+        range[i] = start + static_cast<double>(i) * step;
     }
 
     return range;
 }
 
 
-F_VEC_1D linspace(const float& start, const float& end, const int& size)
+F_VEC_1D linspace(const double& start, const double& end, const int& size)
 {
     F_VEC_1D range(size);
 
-    float step = (end - start) / (size - 1);
+    double step = (end - start) / (size - 1);
 
     for (int i = 0; i < size; ++i) {
         range[i] = start + i * step;
@@ -45,7 +45,7 @@ void conjugate_in_place(CF_VEC_1D& complex_samples)
 {
     std::for_each(
         complex_samples.begin(), complex_samples.end(),
-            [] (std::complex<float>& n) { n = std::conj(n); }
+            [] (std::complex<double>& n) { n = std::conj(n); }
     );
 }  
 
@@ -54,11 +54,11 @@ F_VEC_1D hanning_window(const int& num_samples)
 {
     F_VEC_1D window(num_samples);
 
-    std::iota(window.begin(), window.end(), 0.0f);
+    std::iota(window.begin(), window.end(), 0.0);
 
     std::for_each(
         window.begin(), window.end(),
-            [num_samples] (float& n) { n = sin(PI * n / num_samples) * sin(PI * n / num_samples); }
+            [num_samples] (double& n) { n = sin(PI * n / num_samples) * sin(PI * n / num_samples); }
     );
     return window;
 }
@@ -74,7 +74,7 @@ CF_VEC_1D apply_hanning_window(const CF_VEC_1D& complex_samples)
     std::transform(
         complex_samples.begin(), complex_samples.end(), window.begin(), 
             filtered_samples.begin(),
-                [] (const std::complex<float>& n, const float& m) { return n * m; }
+                [] (const std::complex<double>& n, const double& m) { return n * m; }
     );
     return filtered_samples;
 }
@@ -89,7 +89,7 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
     std::transform(
         window.begin(), window.end(), 
             complex_samples.begin(), complex_samples.begin(),
-                [] (float& w, std::complex<float>& n) { return n * w; }
+                [] (double& w, std::complex<double>& n) { return n * w; }
     );
 }
 
@@ -136,7 +136,7 @@ F_VEC_2D norm_2d(
     const CF_VEC_2D& complex_values,
     const bool& log_scale = false
 ) {
-    float max_value = 0.0;    
+    double max_value = 0.0;    
 
     int rows = complex_values.size();
     int cols = complex_values[0].size();
@@ -150,7 +150,7 @@ F_VEC_2D norm_2d(
 
         for (int j = 0; j < cols; j++)
         {
-            float mag = std::abs(complex_value_row[j]);
+            double mag = std::abs(complex_value_row[j]);
             norm_row[j] = mag;
 
             if (mag > max_value) max_value = mag;
@@ -174,13 +174,13 @@ F_VEC_1D norm_1d(
     const bool& log_scale = false
 ) {
     int num_samples = complex_values.size();
-    float max_value = 0;
+    double max_value = 0;
 
     F_VEC_1D norm(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
-        float mag = std::abs(complex_values[i]);
+        double mag = std::abs(complex_values[i]);
         norm[i]   = mag;
 
         if (mag > max_value) max_value = mag;
@@ -188,7 +188,7 @@ F_VEC_1D norm_1d(
 
     std::for_each(
         norm.begin(), norm.end(), 
-            [log_scale, max_value](float &n) 
+            [log_scale, max_value](double &n) 
             { 
                 log_scale ? 20 * log10(n / max_value) : n / max_value;
             }
@@ -204,7 +204,7 @@ F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
     std::transform(
         complex_values.begin(), complex_values.end(),
             magnitude.begin(),
-                [] (const std::complex<float>& n) { return std::abs(n); }
+                [] (const std::complex<double>& n) { return std::abs(n); }
     );
     return magnitude;
 }
@@ -225,7 +225,7 @@ F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
         std::transform(
             complex_values_row.begin(), complex_values_row.end(),
                 magnitude_row.begin(),
-                    [] (const std::complex<float>& n) { return std::abs(n); }
+                    [] (const std::complex<double>& n) { return std::abs(n); }
         );
     }
     return magnitude;
@@ -272,13 +272,13 @@ CF_VEC_1D compute_1d_dft(
     fftwf_execute(plan);
     fftwf_destroy_plan(plan);
 
-    float norm_factor = 1.0f / static_cast<float>(fft_size);
+    double norm_factor = 1.0 / static_cast<double>(fft_size);
 
     if (inverse)
     {
         std::for_each(
             fft_vector.begin(), fft_vector.end(), 
-                [norm_factor](std::complex<float> &n) { n *= norm_factor; }
+                [norm_factor](std::complex<double> &n) { n *= norm_factor; }
         );
     }
     return fft_vector;
@@ -304,13 +304,13 @@ void compute_1d_dft_in_place(
     fftwf_execute(plan);
     fftwf_destroy_plan(plan);
 
-    float norm_factor = 1.0f / static_cast<float>(fft_size);
+    double norm_factor = 1.0 / static_cast<double>(fft_size);
 
     if (inverse)
     {
         std::for_each(
             signal.begin(), signal.end(), 
-                [norm_factor](std::complex<float>& n) { n *= norm_factor; }
+                [norm_factor](std::complex<double>& n) { n *= norm_factor; }
         );
     }
 }
@@ -393,7 +393,7 @@ void _compute_axis_dft(
         fftwf_execute(plan);
         fftwf_destroy_plan(plan);
     }
-    float norm_factor = inverse ? 1.0f / (fft_size) : 1.0f;
+    double norm_factor = inverse ? 1.0 / (fft_size) : 1.0;
 
     if (inverse)
     {
@@ -402,7 +402,7 @@ void _compute_axis_dft(
         {
             std::for_each(
                 signals[i].begin(), signals[i].end(), 
-                    [norm_factor](std::complex<float> &n) { n *= norm_factor; }
+                    [norm_factor](std::complex<double> &n) { n *= norm_factor; }
             );
         }
     }
@@ -442,7 +442,7 @@ CF_VEC_2D compute_2d_dft(
     if (inverse) std::cout << "Executing 2D IFFT Plan" << std::endl;
     else         std::cout << "Executing 2D FFT Plan"  << std::endl;
 
-    float norm_factor = inverse ? 1.0f / (fft_rows * fft_cols) : 1.0f;
+    double norm_factor = inverse ? 1.0 / (fft_rows * fft_cols) : 1.0;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
     plan = fftwf_plan_dft_2d(

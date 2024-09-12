@@ -10,8 +10,8 @@ Description: Some typedefs/structs for convinience.
 #include <vector>
 
 
-typedef struct std::vector<float>                    F_VEC_1D;
-typedef struct std::vector<std::vector<float>>       F_VEC_2D;
+typedef struct std::vector<double>                    F_VEC_1D;
+typedef struct std::vector<std::vector<double>>       F_VEC_2D;
 
 typedef struct std::vector<double>                   D_VEC_1D;
 typedef struct std::vector<std::vector<double>>      D_VEC_2D;
@@ -34,8 +34,8 @@ typedef struct std::vector<std::vector<u_int64_t>>   UINT64_VEC_2D;
 typedef struct std::vector<std::string>              STRING_VEC_1D;
 typedef struct std::vector<std::vector<std::string>> STRING_VEC_2D;
 
-typedef struct std::vector<std::complex<float>>              CF_VEC_1D;
-typedef struct std::vector<std::vector<std::complex<float>>> CF_VEC_2D;
+typedef struct std::vector<std::complex<double>>              CF_VEC_1D;
+typedef struct std::vector<std::vector<std::complex<double>>> CF_VEC_2D;
 
 
 struct SIGNAL_PAIR {
