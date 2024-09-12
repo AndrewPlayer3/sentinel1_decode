@@ -242,11 +242,11 @@ std::vector<std::vector<float>> magnitude_2d(const CF_VEC_2D& complex_values)
         const CF_VEC_1D& complex_values_row = complex_values[i];
                std::vector<float>& magnitude_row = magnitude[i];
 
-        std::transform(
-            complex_values_row.begin(), complex_values_row.end(),
-                magnitude_row.begin(),
-                    [] (const std::complex<double>& n) { return std::abs(n); }
-        );
+        for (int j = 0; j < cols; j++)
+        {
+            float mag = std::abs(complex_values_row[j]);
+            magnitude_row[j] = mag;
+        }
     }
     return magnitude;
 }
@@ -282,15 +282,15 @@ CF_VEC_1D compute_1d_dft(
 
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    fftwf_plan plan = fftwf_plan_dft_1d(
+    fftw_plan plan = fftw_plan_dft_1d(
         fft_size,
-        reinterpret_cast<fftwf_complex*>(fft_vector.data()),
-        reinterpret_cast<fftwf_complex*>(fft_vector.data()),
+        reinterpret_cast<fftw_complex*>(fft_vector.data()),
+        reinterpret_cast<fftw_complex*>(fft_vector.data()),
         fft_direction,
         FFTW_ESTIMATE
     );
-    fftwf_execute(plan);
-    fftwf_destroy_plan(plan);
+    fftw_execute(plan);
+    fftw_destroy_plan(plan);
 
     double norm_factor = 1.0 / static_cast<double>(fft_size);
 
@@ -314,15 +314,15 @@ void compute_1d_dft_in_place(
 
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    fftwf_plan plan = fftwf_plan_dft_1d(
+    fftw_plan plan = fftw_plan_dft_1d(
         fft_size,
-        reinterpret_cast<fftwf_complex*>(signal.data()),
-        reinterpret_cast<fftwf_complex*>(signal.data()),
+        reinterpret_cast<fftw_complex*>(signal.data()),
+        reinterpret_cast<fftw_complex*>(signal.data()),
         fft_direction,
         FFTW_ESTIMATE
     );
-    fftwf_execute(plan);
-    fftwf_destroy_plan(plan);
+    fftw_execute(plan);
+    fftw_destroy_plan(plan);
 
     double norm_factor = 1.0 / static_cast<double>(fft_size);
 
@@ -403,15 +403,15 @@ void _compute_axis_dft(
     for (int row = 0; row < signal_rows; row++)
     {
         CF_VEC_1D& signal_row = signals[row];
-        fftwf_plan plan = fftwf_plan_dft_1d(
+        fftw_plan plan = fftw_plan_dft_1d(
             fft_size,
-            reinterpret_cast<fftwf_complex*>(signal_row.data()),
-            reinterpret_cast<fftwf_complex*>(signal_row.data()),
+            reinterpret_cast<fftw_complex*>(signal_row.data()),
+            reinterpret_cast<fftw_complex*>(signal_row.data()),
             fft_direction,
             FFTW_ESTIMATE
         );
-        fftwf_execute(plan);
-        fftwf_destroy_plan(plan);
+        fftw_execute(plan);
+        fftw_destroy_plan(plan);
     }
     double norm_factor = inverse ? 1.0 / (fft_size) : 1.0;
 
@@ -457,7 +457,7 @@ CF_VEC_2D compute_2d_dft(
         }
     }
 
-    fftwf_plan plan;
+    fftw_plan plan;
 
     if (inverse) std::cout << "Executing 2D IFFT Plan" << std::endl;
     else         std::cout << "Executing 2D FFT Plan"  << std::endl;
@@ -465,18 +465,18 @@ CF_VEC_2D compute_2d_dft(
     double norm_factor = inverse ? 1.0 / (fft_rows * fft_cols) : 1.0;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    plan = fftwf_plan_dft_2d(
+    plan = fftw_plan_dft_2d(
         fft_rows, fft_cols, 
-        reinterpret_cast<fftwf_complex*>(signal_fftw.data()),
-        reinterpret_cast<fftwf_complex*>(signal_fftw.data()),
+        reinterpret_cast<fftw_complex*>(signal_fftw.data()),
+        reinterpret_cast<fftw_complex*>(signal_fftw.data()),
         fft_direction, FFTW_ESTIMATE
     );
 
-    fftwf_execute(plan);
+    fftw_execute(plan);
 
     std::cout << "Destroying DFT Plan" << std::endl;
 
-    fftwf_destroy_plan(plan);
+    fftw_destroy_plan(plan);
 
     std::cout << "Copying Complex Data into 2D Vector" << std::endl;
 
@@ -521,14 +521,6 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
 {
     int rows = signal.size();
     int cols = signal[0].size();
-
-    for (const CF_VEC_1D& row : signal)
-    {
-        if (row.size() != cols)
-        {
-            std::cout << "Mismatched Row Size: " << row.size() << " is not the same as " << cols << "." << std::endl;
-        }
-    }
 
     std::vector<float> samples(rows*cols);
 
