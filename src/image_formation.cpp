@@ -209,8 +209,30 @@ CF_VEC_2D range_doppler_swath(
     std::ifstream&     data,
     const std::string& swath_name
 ) {
-    CF_VEC_2D range_compressed = range_compress_swath(data, swath_name);
-    return compute_axis_dft(range_compressed, 0, 0, false);
+    Swath swath(data, swath_name);
+
+    CF_VEC_2D range_doppler_swath;
+
+    int num_bursts = swath.get_num_bursts();
+
+    for (int i = 0; i < num_bursts; i++)
+    {
+        Burst burst = swath.get_burst(i);
+
+        std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
+        CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
+
+        std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
+        CF_VEC_2D range_doppler_burst = compute_axis_dft(range_compressed_burst, 0, 0, false);
+
+        std::cout << "Adding Range Doppler Burst " << i << " of " << num_bursts 
+                  << " to the Output Vector."<< std::endl;
+        range_doppler_swath.insert(
+            range_doppler_swath.end(), range_doppler_burst.begin(), range_doppler_burst.end()
+        );
+    }
+
+    return range_doppler_swath;
 }
 
 
@@ -287,7 +309,7 @@ CF_VEC_1D get_average_cross_correlation(
 
         for (int j = 0; j < num_range; j++)
         {
-            accc[j] += (signal[j] * std::conj(next_signal[j]));
+            accc[j] += (signal[j] * std::conj(next_signal[j])) / (std::abs(signal[j]) * std::abs(next_signal[j]));
         }
     }
 
@@ -326,7 +348,7 @@ CF_VEC_1D unwrap_fine_dc_estimates(
             residual.begin(),
                 [a, b] (const double& t, const std::complex<double>& n) 
                 { 
-                    return std::tan(n * std::exp(-1.0 * I * (a * t + b)) / (2 * PI));
+                    return std::atan(n * std::exp(-1.0 * I * (a * t + b)) / (2 * PI));
                 }
     );
 
@@ -341,6 +363,58 @@ CF_VEC_1D unwrap_fine_dc_estimates(
     );
     return unwrapped_fine_dcs;
 }
+
+
+// CF_VEC_1D unwrap_fine_dc_estimates(
+//     const CF_VEC_1D& fine_dcs,
+//     const double&    burst_time,
+//     const float&     pulse_length,
+//     const float&     prf,
+//     const int&       num_azimuth,
+//     const int&       num_range
+// ) {
+//     std::complex<double> imag(0.0, 1.0);
+    
+//     // Compute complex exponentials
+//     CF_VEC_1D u(num_azimuth);
+//     for (int i = 0; i < num_azimuth; i++) {
+//         u[i] = std::exp(imag * 2.0 * PI * fine_dcs[i] / static_cast<double>(prf));
+//     }
+//     compute_1d_dft_in_place(u, 0, false);
+
+//     // Find the maximum phase (unwrap these phases first)
+//     CF_VEC_1D unwrapped_phases(num_azimuth);
+//     for (int i = 0; i < num_azimuth; i++) {
+//         unwrapped_phases[i] = std::arg(u[i]); // Phase of the DFT result
+//     }
+
+//     // Calculate a (rate of phase change) and b (initial phase)
+//     F_VEC_1D time = linspace(0.0, pulse_length, num_azimuth);
+//     std::complex<double> a = (unwrapped_phases.back() - unwrapped_phases.front()) / (time.back() - time.front());
+//     std::complex<double> b = unwrapped_phases[0];
+
+//     // Compute residual (optional adjustment)
+//     CF_VEC_1D residual(num_azimuth);
+//     std::transform(
+//         time.begin(), time.end(), unwrapped_phases.begin(),
+//         residual.begin(),
+//         [a, b] (const double& t, const std::complex<double>& phase) {
+//             return phase - (a * t + b); // Compute residual
+//         }
+//     );
+
+//     // Final unwrapped Doppler centroids
+//     CF_VEC_1D unwrapped_fine_dcs(num_azimuth);
+//     std::transform(
+//         residual.begin(), residual.end(), time.begin(),
+//         unwrapped_fine_dcs.begin(),
+//         [a, b, prf] (const std::complex<double>& r, const double& t) {
+//             return (a * t + b + r) / static_cast<double>(prf); // Adjust phase
+//         }
+//     );
+
+//     return unwrapped_fine_dcs;
+// }
 
 
 CF_VEC_1D get_fine_dcs_for_burst(
@@ -361,6 +435,10 @@ CF_VEC_1D get_fine_dcs_for_burst(
                     return -1.0 * ( prf / (2.0 * PI)) * std::tan(c.imag() / c.real());
                 }
     );
+
+    std::cout << "First 10 Fine DCs: " << std::endl;
+    for (int i = 0; i < 10; i++) std::cout << fine_dcs[i] << " ";
+    std::cout << std::endl;
 
     fine_dcs.resize(num_azimuth);
 
@@ -492,14 +570,14 @@ CF_VEC_1D get_azimuth_matched_filter(
     std::complex<double> phase = I * 4.0 * PI * slant_range * doppler_centroid_est;
     for (int i = 0; i < num_azimuth; i++)
     {
-        azimuth_match_filter[i] = std::exp(
+        azimuth_match_filter[i] = (1.0 / num_azimuth) * std::exp(
             (phase * D[i] * D[i]) / SPEED_OF_LIGHT
         );
     }
     conjugate_in_place(azimuth_match_filter);
-    apply_hanning_window_in_place(azimuth_match_filter);
+    // apply_hanning_window_in_place(azimuth_match_filter);
 
-    return compute_1d_dft(azimuth_match_filter, 0, false);
+    return azimuth_match_filter; // compute_1d_dft(azimuth_match_filter, 0, false);
 }
 
 
@@ -521,7 +599,7 @@ CF_VEC_2D get_azimuth_matched_filters(
     double slant_range_far       = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
     double slant_range           = (slant_range_near + slant_range_far) / 2;
 
-    int block_size = int(std::ceil(double(num_range) / double(num_azimuth)) * 100.0);
+    int block_size = int(std::ceil(double(num_range) / double(num_azimuth)));
 
     CF_VEC_1D current_match_filter(num_azimuth);
     CF_VEC_2D azimuth_match_filters(num_range, CF_VEC_1D(num_azimuth));

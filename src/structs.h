@@ -19,7 +19,7 @@ Description: Some data structs/tables and constants containing information neces
 
 const std::complex<double> I(0.0, 1.0); 
 
-const double PI             = 3.14159235;
+const double PI             = 3.14159265358979;
 const double SPEED_OF_LIGHT = 299792458.0;
 
 const double F_REF = 37.53472224;

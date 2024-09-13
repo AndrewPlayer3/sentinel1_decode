@@ -72,6 +72,16 @@ void plot_range_compressed_swath(
 }
 
 
+void plot_range_doppler_swath(
+    const std::string& filename,
+    const std::string& swath_name,
+    const std::string& scaling_mode
+) {
+    CF_VEC_2D range_doppler = range_doppler_swath(filename, swath_name);
+    plot_complex_image(range_doppler, scaling_mode);
+}
+
+
 void plot_azimuth_compressed_burst(
     const std::string& filename,
     const std::string& swath_name,
