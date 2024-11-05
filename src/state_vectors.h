@@ -129,5 +129,5 @@ struct STATE_VECTORS
     void parse_subcomm_dicts(SUBCOMM_DICTS subcomm_dicts);
     void print();
 
-    void interpolate(const double& time);
+    STATE_VECTOR interpolate(const double& time);
 };

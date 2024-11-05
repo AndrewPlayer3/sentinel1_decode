@@ -23,6 +23,8 @@ const std::complex<double> I(0.0, 1.0);
 const double PI             = 3.14159265358979;
 const double SPEED_OF_LIGHT = 299792458.0;
 
+const double CENTER_FREQ = 5.405000454334350e+9;
+const double WAVELENGTH = SPEED_OF_LIGHT / CENTER_FREQ;
 const double F_REF = 37.53472224;
 const double DELTA_T_SUPPRESSED = (320 / (8 * F_REF)) * 1e-6;
 

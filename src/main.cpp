@@ -80,7 +80,6 @@ int main(int argc, char* argv[])
         "thread_test [path]",
         "omp_test [path]",
         "time_range_compression [swath_name] [burst_num] [path]",
-        "time_azimuth_compression [swath_name] [burst_num] [path]",
         "print_header_dict [path]"
     };
 
@@ -186,24 +185,6 @@ int main(int argc, char* argv[])
         );
 
         std::cout << "Range compressed " << std::string(argv[2]) << " " << std::stoi(argv[3]) 
-                  << " in " << runtime << "s." << std::endl;          
-    }
-
-    else if (command == "time_azimuth_compression")
-    {
-        STRING_VEC_1D args  = {"swath", "burst_num", "path"};
-        STRING_VEC_1D types = {"string", "int", "path"};
-        validate_args(command, args, types, &(argv[0]));
-
-        double runtime = time_azimuth_compression(
-            std::string(argv[4]),
-            std::string(argv[2]),
-            std::stoi(argv[3]),
-            false,
-            false
-        );
-
-        std::cout << "Azimuth compressed " << std::string(argv[2]) << " " << std::stoi(argv[3]) 
                   << " in " << runtime << "s." << std::endl;          
     }
 

@@ -153,7 +153,7 @@ D_VEC_1D interpolate_vector(const F_VEC_2D& vec, int a_index, int b_index, doubl
 }
 
 
-void STATE_VECTORS::interpolate(const double& time)
+STATE_VECTOR STATE_VECTORS::interpolate(const double& time)
 {
     STATE_VECTOR state_vector;
 
@@ -172,7 +172,7 @@ void STATE_VECTORS::interpolate(const double& time)
     state_vector.angular_rate = interpolate_vector(angular_rates, a_index, b_index, t);
     state_vector.attitude = interpolate_vector(attitudes, a_index, b_index, t);
 
-    D_VEC_1D v = state_vector.position;
+    return state_vector;
 }
 
 

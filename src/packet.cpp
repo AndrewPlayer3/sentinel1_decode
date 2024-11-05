@@ -256,12 +256,44 @@ void L0Packet::_set_data_format()
 }
 
 
+double L0Packet::get_range_sample_rate()
+{
+    int range_dec = secondary_header("range_decimation");
+    return RANGE_DECIMATION[range_dec];
+}
+
+
+D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
+{
+    if (num_ranges <= 0) num_ranges = 4 * _num_quads;
+
+    double txpsf = get_start_frequency();
+    double txprr = get_tx_ramp_rate();
+    double txpl  = get_pulse_length() * 1e-6;
+
+    double start_time = get_swst() * 1e-6;
+    double pri = get_pri() *1e-6;
+    double rank = _secondary_header.at("rank");
+
+    double delta_t = (320 / (8 * F_REF)) * 1e-6;
+
+    double delay = rank * pri + start_time + delta_t;
+
+    double min_slant_range = delay * SPEED_OF_LIGHT / 2;
+    double max_slant_range = (delay + txpl) * SPEED_OF_LIGHT / 2;
+
+    return linspace(min_slant_range, max_slant_range, num_ranges);
+}
+
+
 CF_VEC_1D L0Packet::get_replica_chirp()
 {
     if (!_signal_set_flag)
     {
         _set_signal();
     }
+
+    int num_range = _signal.size();
 
     double txpsf = get_start_frequency();
     double txprr = get_tx_ramp_rate();
@@ -275,12 +307,16 @@ CF_VEC_1D L0Packet::get_replica_chirp()
 
     F_VEC_1D  time = linspace(0.0, txpl, num_samples);
 
-    CF_VEC_1D chirp(num_samples);
-    for (int i = 0; i < num_samples; i++)
+    int min_index = int(ceil((num_range - num_samples)/2))-1;
+    int max_index = min_index + num_samples;
+
+    CF_VEC_1D chirp(num_range);
+    for (int i = min_index; i < max_index; i++)
     {
-        double t  = time[i]; 
+        double t  = time[i - min_index]; 
         chirp[i] = double(1.0 / num_samples) * exp(I * 2.0 * PI * ((phi_1 * t) + phi_2 * (t * t)));
     }
+
     return chirp;
 }
 

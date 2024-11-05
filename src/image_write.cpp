@@ -144,19 +144,16 @@ void write_azimuth_compressed_burst(
     const int&         burst_num,
     const std::string& scaling_mode
 ) {
-    std::cout << "Decoding Burst" << std::endl;
-    Burst burst(in_filename, swath_name, burst_num);
+    PACKET_VEC_1D packets = L0Packet::get_packets(in_filename);
+    STATE_VECTORS state_vectors(packets);
 
-    std::cout << "Range Compressing Burst" << std::endl;
-    CF_VEC_2D range_compressed = range_compress_burst(burst);
-
-    PACKET_VEC_1D packets = burst.get_packets();
+    std::ifstream data = open_file(in_filename);
 
     std::cout << "Azimuth Compressing Burst" << std::endl;
-    CF_VEC_2D azimuth_compressed = azimuth_compress(packets, range_compressed);
+    CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(data, swath_name, burst_num, state_vectors);
 
     std::cout << "Calling write_tif" << std::endl;
-    write_tif(azimuth_compressed, out_filename, scaling_mode);
+    write_tif(azimuth_compressed_burst, out_filename, scaling_mode);
 }
 
 

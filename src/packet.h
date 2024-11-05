@@ -206,6 +206,8 @@ public:
     void print_modes();
     void print_pulse_info();
 
+    double get_range_sample_rate();
+    D_VEC_1D get_slant_ranges(int num_ranges=0);
     CF_VEC_1D get_signal();
     CF_VEC_1D get_replica_chirp();
 

@@ -7,7 +7,6 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp, const int& rang
 
     CF_VEC_1D reference = replica_chirp;
     apply_hanning_window_in_place(reference);
-    reference.resize(range_samples);
 
     F_VEC_1D norm = magnitude_1d(replica_chirp);
 
@@ -37,23 +36,14 @@ CF_VEC_1D pulse_compression(
     int num_samples     = signal.size();
     int replica_samples = replica_chirp.size();
 
-    int fft_pad_amount = int(std::pow(2, std::ceil(std::log2(num_samples))) - num_samples);
-    int num_fft_samples = num_samples + fft_pad_amount;
-
     CF_VEC_1D signal_ = signal;
-    signal_.resize(num_fft_samples);
-    compute_1d_dft_in_place(signal_,  0, false);
-
-    CF_VEC_1D reference = get_reference_function(replica_chirp, num_fft_samples);
+    CF_VEC_1D reference = get_reference_function(replica_chirp, signal.size());
 
     std::transform(
         reference.begin(), reference.end(),
             signal_.begin(), signal_.begin(),
                 [] (std::complex<double>& n, std::complex<double>& r) { return n * r;}
     );
-    compute_1d_dft_in_place(signal_, 0, true);
-
-    std::rotate(signal_.begin(), signal_.end()-(replica_samples / 2), signal_.end());
 
     return CF_VEC_1D(signal_.begin(), signal_.begin() + num_samples);
 }
@@ -124,9 +114,10 @@ CF_VEC_2D range_compress_swath(
 
     for (int i = 0; i < num_signals; i++)
     {
-        pulse_compressed[i] = pulse_compression(signal_pair.signals[i], signal_pair.replica_chirps[i]);
+        CF_VEC_1D sig_fft = compute_1d_dft(signal_pair.signals[i], 0, false);
+        pulse_compressed[i] = pulse_compression(sig_fft, signal_pair.replica_chirps[i]);
     }
-    return pulse_compressed;
+    return compute_axis_dft(pulse_compressed, 0, 1, true);
 }
 
 
@@ -159,6 +150,7 @@ CF_VEC_2D range_compress_burst(
     const int&         burst_num
 ) {
     std::ifstream data = open_file(filename);
+
     return range_compress_burst(data, swath, burst_num);
 }
 
@@ -172,13 +164,28 @@ CF_VEC_2D range_compress_burst(
 
     int num_packets = burst.get_num_packets();
 
-    CF_VEC_2D pulse_compressed(num_packets);
+    CF_VEC_2D range_compressed(num_packets);
+
+    CF_VEC_2D signals = burst.get_signals();
+              signals = compute_axis_dft(signals, 0, 1, false);
+
+    int num_range = signals[0].size();
 
     for (int i = 0; i < num_packets; i++)
     {
-        pulse_compressed[i] = pulse_compression(burst.get_signal(i), burst.get_replica_chirp(i));
+        range_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
     }
-    return pulse_compressed;
+
+    range_compressed = compute_axis_dft(range_compressed, 0, 1, true);
+
+    std::for_each(
+        range_compressed.begin(), range_compressed.end(),
+            [num_range] (CF_VEC_1D& row) { 
+                std::rotate(row.begin(), row.end()-(num_range / 2), row.end());
+             }
+    );
+
+    return range_compressed;
 }
 
 
@@ -189,11 +196,14 @@ CF_VEC_2D range_compress_burst(
 
     CF_VEC_2D pulse_compressed(num_packets);
 
+    CF_VEC_2D signals = burst.get_signals();
+              signals = compute_axis_dft(signals, 0, 1, false);
+
     for (int i = 0; i < num_packets; i++)
     {
-        pulse_compressed[i] = pulse_compression(burst.get_signal(i), burst.get_replica_chirp(i));
+        pulse_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
     }
-    return pulse_compressed;
+    return compute_axis_dft(pulse_compressed, 0, 1, true);
 }
 
 
@@ -507,50 +517,30 @@ CF_VEC_2D azimuth_compress_swath(
     const std::string& filename,
     const std::string& swath_name
 ) {
+    PACKET_VEC_1D packets = L0Packet::get_packets(filename);
+    STATE_VECTORS state_vectors(packets);
+    
     Swath swath(filename, swath_name);
     
-    CF_VEC_2D azimuth_compressed_swath;
-    
-    int num_bursts = swath.get_num_bursts();
-
-    for (int i = 0; i < num_bursts; i++)
-    {
-        Burst burst = swath.get_burst(i);
-        PACKET_VEC_1D packets = burst.get_packets();
-
-        std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
-
-        std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D azimuth_compressed_burst = azimuth_compress(packets, range_compressed_burst);
-
-        std::cout << "Adding Azimuth Compressed Burst " << i << " of " << num_bursts 
-                  << " to the Output Vector."<< std::endl;
-        azimuth_compressed_swath.insert(
-            azimuth_compressed_swath.end(), azimuth_compressed_burst.begin(), azimuth_compressed_burst.end()
-        );
-    }
-    return azimuth_compressed_swath;
+    return azimuth_compress_swath(swath, state_vectors);
 }
 
 
 CF_VEC_2D azimuth_compress_swath(
-    Swath& swath
+    Swath& swath,
+    STATE_VECTORS& state_vectors
 ) {
     CF_VEC_2D azimuth_compressed_swath;
-    
+
     int num_bursts = swath.get_num_bursts();
 
-    for (int i = 0; i < num_bursts; i++)
+    for (int i = 0; i < num_bursts - 1; i++)
     {
         Burst burst = swath.get_burst(i);
         PACKET_VEC_1D packets = burst.get_packets();
 
-        std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
-
         std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D azimuth_compressed_burst = azimuth_compress(packets, range_compressed_burst);
+        CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(burst, state_vectors);
 
         std::cout << "Adding Azimuth Compressed Burst " << i << " of " << num_bursts 
                   << " to the Output Vector."<< std::endl;
@@ -684,7 +674,7 @@ void fftshift(std::vector<std::complex<double>>& data) {
 }
 
 
-CF_VEC_2D azimuth_compress(
+CF_VEC_2D azimuth_compress_wip(
     PACKET_VEC_1D& packets,
     CF_VEC_2D& signals
 ) {
@@ -759,4 +749,147 @@ CF_VEC_2D azimuth_compress(
 
     std::cout << "Transposing after Azimuth Match Filtering" << std::endl;
     return transpose(range_azimuth);
+}
+
+
+CF_VEC_2D azimuth_compress_burst_mvp(
+    std::ifstream&     data,
+    const std::string& swath,
+    const int&         burst_num,
+    STATE_VECTORS&     state_vectors
+) {
+    Burst burst(data, swath, burst_num);
+    return azimuth_compress_burst_mvp(burst, state_vectors);
+}
+
+
+
+CF_VEC_2D azimuth_compress_burst_mvp(
+    Burst& burst,
+    STATE_VECTORS&     state_vectors
+) {
+    int num_packets = burst.get_num_packets();
+
+    CF_VEC_2D range_compressed(num_packets);
+
+    CF_VEC_2D signals = compute_2d_dft(burst.get_signals(), false, 0, 0);
+
+    signals = transpose(signals);
+
+    std::for_each(
+        signals.begin(), signals.end(),
+            [num_packets] (CF_VEC_1D& row) { 
+                std::rotate(row.begin(), row.end()-(num_packets / 2), row.end());
+             }
+    );
+
+    signals = transpose(signals);
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        range_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
+    }
+
+    int num_range = range_compressed[0].size();
+
+    double burst_length_seconds = burst[-1].get_time() - burst[0].get_time();
+
+    D_VEC_1D times(num_packets);
+
+    D_VEC_2D velocities(num_packets, D_VEC_1D(3));
+    D_VEC_2D positions(num_packets, D_VEC_1D(3));
+
+    D_VEC_1D velocities_norm(num_packets);
+    D_VEC_1D positions_norm(num_packets);
+
+    D_VEC_1D positions_norm_squared(num_packets);
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        times[i] = burst[i].get_time();
+
+        STATE_VECTOR state_vector = state_vectors.interpolate(times[i]);
+
+        D_VEC_1D v = state_vector.velocity;
+        D_VEC_1D p = state_vector.position;
+
+        positions[i]  = v;
+        velocities[i] = p;
+
+        velocities_norm[i] = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+        positions_norm[i]  = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
+        positions_norm_squared[i] = positions_norm[i] * positions_norm[i];
+    }
+
+    double a = 6378137.0;     // WGS84 Semi-Major
+    double b = 6356752.3142;  // WGS84 Semi-Minor
+    double e = 0.0067395;     // WGS84 Eccentricity
+
+    D_VEC_1D slant_ranges = burst[0].get_slant_ranges();
+
+    double range_sample_rate = burst[0].get_range_sample_rate();
+    double pulse_length = burst[0].get_pulse_length() * 1e-6;
+    double pri = burst[0].get_pri() * 1e-6;
+    double prf = 1 / pri;
+
+    D_VEC_1D range_freqs = linspace(-range_sample_rate/2, range_sample_rate/2, num_range);
+    D_VEC_1D az_freqs = linspace(-prf/2, prf/2, num_packets);
+
+    D_VEC_2D rcmc_factor_D(num_packets, D_VEC_1D(num_range));
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        double latitude = positions[i][2] / positions[i][0];
+
+        double earth_radius = sqrt(
+            (pow(a*a*cos(latitude), 2) + pow(b*b*sin(latitude), 2))
+            /
+            (pow(a*cos(latitude), 2) + pow(b*sin(latitude), 2))
+        );
+
+        double pos = positions_norm[i];
+        double v_sat = velocities_norm[i];
+
+        for (int j = 0; j < num_range; j++)
+        {
+            double numerator = pow(earth_radius, 2) + pow(pos, 2) - pow(slant_ranges[j], 2);
+            double denominator = 2 * earth_radius * pos;
+            double beta = numerator / denominator;
+            double v_ground = earth_radius * v_sat * beta / pos;
+
+            double v_rel = sqrt(v_sat * v_ground);
+
+            double rcmc_factor = sqrt(1 - 
+                (pow(WAVELENGTH, 2) * pow(az_freqs[i], 2)) / (4 * pow(v_rel, 2))
+            );
+            double rcmc_shift  = slant_ranges[0] * ((1 / rcmc_factor) - 1);
+
+            std::complex<double> rcmc_filter = exp(4.0 * I * PI * range_freqs[j] * rcmc_shift / SPEED_OF_LIGHT);
+
+            rcmc_factor_D[i][j] = rcmc_factor;
+            range_compressed[i][j] *= rcmc_filter;
+        }
+    }
+
+    range_compressed = compute_axis_dft(range_compressed, 0, 1, true);
+
+    std::for_each(
+        range_compressed.begin(), range_compressed.end(),
+            [num_range] (CF_VEC_1D& row) { 
+                std::rotate(row.begin(), row.end()-(num_range / 2), row.end());
+             }
+    );
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        for (int j = 0; j < num_range; j++)
+        {
+            std::complex<double> az_matched_filter = exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor_D[i][j] / WAVELENGTH);
+            range_compressed[i][j] *= az_matched_filter;
+        }
+    }
+
+    range_compressed = compute_axis_dft(range_compressed, 0, 0, true);
+
+    return range_compressed;
 }

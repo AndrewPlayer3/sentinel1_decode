@@ -80,6 +80,11 @@ public:
     CF_VEC_2D get_signals()        { return _signals;         }
     CF_VEC_2D get_replica_chirps() { return _replica_chirps;  }
 
+    L0Packet operator[](int index) { 
+        if (index >= 0) return _packets[index];
+        else            return _packets[_num_packets + index];
+    }
+
     CF_VEC_1D get_signal(const int& index) 
     {
         if (index < 0 or index >= _num_packets)
