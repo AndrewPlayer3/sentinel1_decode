@@ -221,15 +221,11 @@ Quaternion get_quaternions_from_rotation_matrix(F_VEC_2D& R)
 
 F_VEC_1D Quaternion::to_euler_angles()
 {
-    F_VEC_1D R = to_rotation_matrix_yxz();
-
-    auto clamp = [] (double val, double min, double max) {
-        return std::max(min, std::min(max, val));
-    };
-
     double roll, pitch, yaw;
 
-    pitch = asin(-clamp(R[7], -1.0, 1.0));
+    F_VEC_1D R = to_rotation_matrix();
+
+    pitch = asin(-std::max(-1.0, std::min(1.0, R[7])));
 
     if (std::abs(R[7]) < 1)
     {
@@ -246,7 +242,7 @@ F_VEC_1D Quaternion::to_euler_angles()
 }
 
 
-D_VEC_1D Quaternion::to_rotation_matrix_yxz()
+D_VEC_1D Quaternion::to_rotation_matrix()
 {
     D_VEC_1D R(9);
 

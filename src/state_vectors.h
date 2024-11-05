@@ -48,7 +48,7 @@ struct Quaternion
 
     F_VEC_1D to_euler_angles();
 
-    D_VEC_1D to_rotation_matrix_yxz();
+    D_VEC_1D to_rotation_matrix();
 };
 
 
