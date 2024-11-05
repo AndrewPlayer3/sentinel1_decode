@@ -1,14 +1,30 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <complex>
+#include <numeric>
 
 #include "structs.h"
 #include "misc_types.h"
 #include "omp.h"
 #include "fftw3.h"
 
+
+CF_VEC_1D linspace(
+    const std::complex<double>& start,
+    const std::complex<double>& end,
+    const int& size
+);
+
+F_VEC_1D linspace(
+    const double& start, 
+    const double& end, 
+    const int&   size
+);
+
+std::vector<float> flatten(const std::vector<std::vector<float>>& values);
 
 F_VEC_1D flatten(
     const F_VEC_2D& values
@@ -20,6 +36,10 @@ CF_VEC_1D flatten(
 
 CF_VEC_1D conjugate(
     const CF_VEC_1D& complex_samples
+);
+
+void conjugate_in_place(
+    CF_VEC_1D& complex_samples
 );
 
 F_VEC_1D hanning_window(
@@ -39,7 +59,7 @@ F_VEC_1D norm_1d(
     const bool& log_scale
 );
 
-F_VEC_2D norm_2d(
+std::vector<std::vector<float>> norm_2d(
     const CF_VEC_2D& complex_values,
     const bool& log_scale
 );
@@ -48,9 +68,11 @@ F_VEC_1D magnitude_1d(
     const CF_VEC_1D& complex_values
 );
 
-F_VEC_2D magnitude_2d(
+std::vector<std::vector<float>> magnitude_2d(
     const CF_VEC_2D& complex_values
 );
+
+CF_VEC_2D transpose(const CF_VEC_2D& arr);
 
 CF_VEC_1D compute_1d_dft(
     const CF_VEC_1D& complex_signal,
@@ -58,13 +80,26 @@ CF_VEC_1D compute_1d_dft(
     const bool& inverse
 );
 
-CF_VEC_2D _compute_axis_dft(
+void compute_1d_dft_in_place(
+          CF_VEC_1D& signal,
+          int   fft_size,
+    const bool& inverse
+);
+
+void _compute_axis_dft(
     CF_VEC_2D&  signals,
           int&  fft_size,
     const bool& inverse
 );
 
 CF_VEC_2D compute_axis_dft(
+    CF_VEC_2D&  signals,
+          int   fft_size,
+    const int&  axis,
+    const bool& inverse
+);
+
+void compute_axis_dft_in_place(
     CF_VEC_2D&  signals,
           int   fft_size,
     const int&  axis,
@@ -83,7 +118,7 @@ F_VEC_1D scale(
     const std::string& scaling_mode
 );
 
-F_VEC_1D scale(
+std::vector<float> scale(
     const CF_VEC_2D& signal,
     const std::string& scaling_mode
 );

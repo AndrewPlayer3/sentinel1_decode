@@ -82,6 +82,49 @@ void range_compressed_swath_command(char* argv[], std::unordered_map<std::string
 }
 
 
+void range_doppler_swath_command(char* argv[], std::unordered_map<std::string, bool>& options)
+{
+    STRING_VEC_1D args  = {"swath", "filepath"};
+    STRING_VEC_1D types = {"string", "path"};
+    validate_args("range_doppler_swath", args, types, argv);
+
+    std::string swath     = std::string(argv[2]);
+    std::string filename  = std::string(argv[3]);
+    std::string scaling   = parse_scaling_mode(options);
+
+    plot_range_doppler_swath(filename, swath, scaling);
+}
+
+
+void azimuth_compressed_burst_command(char* argv[], std::unordered_map<std::string, bool>& options)
+{
+    STRING_VEC_1D args = {"swath", "burst_num", "filepath"};
+    STRING_VEC_1D types = {"string", "int", "path"};
+    validate_args("azimuth_compressed_burst", args, types, argv);
+
+    std::string swath    = std::string(argv[2]);
+    int burst_num        = std::stoi(argv[3]);
+    std::string filename = std::string(argv[4]);
+    std::string scaling  = parse_scaling_mode(options);
+
+    plot_azimuth_compressed_burst(filename, swath, burst_num, scaling);
+}
+
+
+void azimuth_compressed_swath_command(char* argv[], std::unordered_map<std::string, bool>& options)
+{
+    STRING_VEC_1D args = {"swath", "filepath"};
+    STRING_VEC_1D types = {"string", "path"};
+    validate_args("azimuth_compressed_swath", args, types, argv);
+
+    std::string swath    = std::string(argv[2]);
+    std::string filename = std::string(argv[3]);
+    std::string scaling  = parse_scaling_mode(options);
+
+    plot_azimuth_compressed_swath(filename, swath, scaling);
+}
+
+
 void fft_axis_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
     STRING_VEC_1D args  = {"swath", "burst_num", "axis", "fft_size", "filepath"};
@@ -188,6 +231,9 @@ int main(int argc, char* argv[])
         "fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]",
         "range_compressed_burst [swath] [burst_num] [path]",
         "range_compressed_swath [swath] [path]",
+        "range_doppler_swath [swath] [path]"
+        "azimuth_compressed_burst [swath] [burst_num] [path]",
+        "azimuth_compressed_swath [swath] [path]",
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 
@@ -197,9 +243,6 @@ int main(int argc, char* argv[])
         print_help(help_strings);
         return 1;
     }
-
-    fftwf_init_threads();
-    fftwf_plan_with_nthreads(omp_get_max_threads());
 
     std::string command = std::string(argv[1]);
 
@@ -225,6 +268,10 @@ int main(int argc, char* argv[])
     else if (command == "burst_pulses")           pulse_image_command(&(argv[0]), options);
     else if (command == "range_compressed_burst") range_compressed_burst_command(&(argv[0]), options);
     else if (command == "range_compressed_swath") range_compressed_swath_command(&(argv[0]), options);
+    else if (command == "range_doppler_swath")    range_doppler_swath_command(&(argv[0]), options);
+    else if (command == "azimuth_compressed_burst") azimuth_compressed_burst_command(&(argv[0]), options);
+    else if (command == "azimuth_compressed_swath") azimuth_compressed_swath_command(&(argv[0]), options);
+
 
     else if (command == "help" or command == "--help" or command == "-h")
     {
@@ -234,8 +281,6 @@ int main(int argc, char* argv[])
     {
         std::cout << command << " is not a valid command." << std::endl;
     }
-
-    fftwf_cleanup_threads();
 
     return 0;
 }

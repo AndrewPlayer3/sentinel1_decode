@@ -118,5 +118,3 @@ VEC_UNSORTEDMAP annotation_decoder(std::ifstream& data)
     }
     return annotation_records;
 }
-
-

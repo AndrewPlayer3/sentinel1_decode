@@ -10,6 +10,7 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 
 #pragma once
 
+#include <numeric>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -18,6 +19,7 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 
 #include "decoding_utils.h"
 #include "misc_types.h"
+#include "signal_processing.h"
 
 
 /* H_CODE / S_CODE struct representing one element of a quadrature */
@@ -180,6 +182,7 @@ public:
 
     int get_baq_block_length();
 
+    double get_time();
     double get_pulse_length();
     double get_tx_ramp_rate();
     double get_start_frequency();
@@ -203,6 +206,8 @@ public:
     void print_modes();
     void print_pulse_info();
 
+    double get_range_sample_rate();
+    D_VEC_1D get_slant_ranges(int num_ranges=0);
     CF_VEC_1D get_signal();
     CF_VEC_1D get_replica_chirp();
 
@@ -218,6 +223,7 @@ public:
     static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath);
     static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
     static void decode_packets_in_place(PACKET_VEC_1D& packets);
+    static void get_state_vectors(PACKET_VEC_1D& packets);
 };
 
 

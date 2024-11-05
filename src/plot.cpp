@@ -72,6 +72,48 @@ void plot_range_compressed_swath(
 }
 
 
+void plot_range_doppler_swath(
+    const std::string& filename,
+    const std::string& swath_name,
+    const std::string& scaling_mode
+) {
+    CF_VEC_2D range_doppler = range_doppler_swath(filename, swath_name);
+    plot_complex_image(range_doppler, scaling_mode);
+}
+
+
+void plot_azimuth_compressed_burst(
+    const std::string& filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const std::string& scaling_mode
+) {
+    PACKET_VEC_1D packets = L0Packet::get_packets(filename);
+    STATE_VECTORS state_vectors(packets);
+
+    std::ifstream data = open_file(filename);
+
+    std::cout << "Azimuth Compressing Burst" << std::endl;
+    CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(data, swath_name, burst_num, state_vectors);
+
+    std::cout << "Plotting" << std::endl;
+    plot_complex_image(azimuth_compressed_burst, scaling_mode);
+}
+
+
+void plot_azimuth_compressed_swath(
+    const std::string& filename,
+    const std::string& swath_name,
+    const std::string& scaling_mode
+) {
+    std::cout << "Azimuth Compressing Swath" << std::endl;
+    CF_VEC_2D azimuth_compressed_swath = azimuth_compress_swath(filename, swath_name);
+
+    std::cout << "Plotting" << std::endl;
+    plot_complex_image(azimuth_compressed_swath, scaling_mode);
+}
+
+
 void plot_complex_image(
     const CF_VEC_2D&   signal,
     const std::string& scaling_mode
@@ -81,7 +123,7 @@ void plot_complex_image(
     int rows = signal.size();
     int cols = signal[0].size();
 
-    F_VEC_1D samples = scale(signal, scaling_mode);
+    std::vector<float> samples = scale(signal, scaling_mode);
 
     std::cout << "Calling Plot" << std::endl;
 

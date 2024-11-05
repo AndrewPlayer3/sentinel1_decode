@@ -46,6 +46,16 @@ double L0Packet::get_swst()
 }
 
 
+double L0Packet::get_time()
+{
+    double coarse_time = static_cast<double>(_secondary_header["coarse_time"]);
+    double fine_time   = static_cast<double>(_secondary_header["fine_time"]);
+
+    double time = coarse_time + (1.0 / fine_time);
+    return time;
+}
+
+
 /* Returns the RX gain in dB */
 double L0Packet::get_rx_gain()
 {
@@ -215,7 +225,9 @@ void L0Packet::print_pulse_info()
 {
     int range_decimation = _secondary_header["range_decimation"];
     int tx_pulse_number  = _secondary_header["tx_pulse_number"];
-    
+
+    std::cout << std::fixed                  << std::setprecision(8);
+    std::cout << "Time: "                    << get_time()            << std::endl;
     std::cout << "Swath: "                   << get_swath()           << std::endl;
     std::cout << "RX Polarization: "         << get_rx_polarization() << std::endl;
     std::cout << "TX Polarization: "         << get_tx_polarization() << std::endl;
@@ -244,6 +256,36 @@ void L0Packet::_set_data_format()
 }
 
 
+double L0Packet::get_range_sample_rate()
+{
+    int range_dec = secondary_header("range_decimation");
+    return RANGE_DECIMATION[range_dec];
+}
+
+
+D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
+{
+    if (num_ranges <= 0) num_ranges = 4 * _num_quads;
+
+    double txpsf = get_start_frequency();
+    double txprr = get_tx_ramp_rate();
+    double txpl  = get_pulse_length() * 1e-6;
+
+    double start_time = get_swst() * 1e-6;
+    double pri = get_pri() *1e-6;
+    double rank = _secondary_header.at("rank");
+
+    double delta_t = (320 / (8 * F_REF)) * 1e-6;
+
+    double delay = rank * pri + start_time + delta_t;
+
+    double min_slant_range = delay * SPEED_OF_LIGHT / 2;
+    double max_slant_range = (delay + txpl) * SPEED_OF_LIGHT / 2;
+
+    return linspace(min_slant_range, max_slant_range, num_ranges);
+}
+
+
 CF_VEC_1D L0Packet::get_replica_chirp()
 {
     if (!_signal_set_flag)
@@ -251,32 +293,30 @@ CF_VEC_1D L0Packet::get_replica_chirp()
         _set_signal();
     }
 
-    float txpsf = get_start_frequency();
-    float txprr = get_tx_ramp_rate();
-    float txpl  = get_pulse_length();
-    float phi_1 = txpsf - (txprr * (-0.5 * txpl));
-    float phi_2 = txprr / 2;
+    int num_range = _signal.size();
+
+    double txpsf = get_start_frequency();
+    double txprr = get_tx_ramp_rate();
+    double txpl  = get_pulse_length();
+
+    double phi_1 = txpsf;
+    double phi_2 = txprr * 0.5;
 
     int range_dec   = secondary_header("range_decimation");
     int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));
 
-    float range_start = -0.5 * txpl;
-    float range_end   =  0.5 * txpl;
-    float delta       = txpl / (num_samples - 1);
+    F_VEC_1D  time = linspace(0.0, txpl, num_samples);
 
-    F_VEC_1D  time(num_samples);
-    CF_VEC_1D chirp(num_samples);
+    int min_index = int(ceil((num_range - num_samples)/2))-1;
+    int max_index = min_index + num_samples;
 
-    for (int i = 0; i < num_samples; i++)
+    CF_VEC_1D chirp(num_range);
+    for (int i = min_index; i < max_index; i++)
     {
-        if (i == 0) time[i] = range_start;
-        else time[i] = time[i-1] + delta;
+        double t  = time[i - min_index]; 
+        chirp[i] = double(1.0 / num_samples) * exp(I * 2.0 * PI * ((phi_1 * t) + phi_2 * (t * t)));
     }
-    for (int i = 0; i < num_samples; i++)
-    {
-        float t  = time[i]; 
-        chirp[i] = float(1.0 / num_samples) * exp(I * 2.0f * PI * ((phi_1 * t) + phi_2 * (t * t)));
-    }
+
     return chirp;
 }
 
@@ -410,8 +450,8 @@ CF_VEC_1D L0Packet::_get_signal_types_a_and_b(
     {
         D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(std::complex<float>(components[0], components[2]));
-        complex_samples.push_back(std::complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<double>(components[0], components[2]));
+        complex_samples.push_back(std::complex<double>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -514,8 +554,8 @@ CF_VEC_1D L0Packet::_get_signal_type_c(
     {
         D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(std::complex<float>(components[0], components[2]));
-        complex_samples.push_back(std::complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<double>(components[0], components[2]));
+        complex_samples.push_back(std::complex<double>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -646,8 +686,8 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
     {
         D_VEC_1D components = s_values[i-1];
 
-        complex_samples.push_back(std::complex<float>(components[0], components[2]));
-        complex_samples.push_back(std::complex<float>(components[1], components[3]));
+        complex_samples.push_back(std::complex<double>(components[0], components[2]));
+        complex_samples.push_back(std::complex<double>(components[1], components[3]));
     }
     return complex_samples;
 }
@@ -738,8 +778,11 @@ std::unordered_map<std::string, int> L0Packet::_parse_header(
 
     std::unordered_map<std::string, int> header;
 
+    // F_VEC_1D doubles;
+    // D_VEC_1D doubles;
+
     for (int i = 0; i < num_fields; i++) 
-    {
+    {   
         header[field_names[i]] = read_n_bits(bytes, bit_index, bit_lengths[i]);
 
         bit_index += bit_lengths[i];

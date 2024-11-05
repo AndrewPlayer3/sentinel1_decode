@@ -14,6 +14,34 @@ Description: Main function with random command-line arguments for testing purpos
 #include "perf.h"
 #include "aux_decoding.h"
 #include "misc_types.h"
+#include "state_vectors.h"
+
+
+void print_state_vectors(
+    std::string filename
+) {
+    PACKET_VEC_1D packets = L0Packet::get_packets(filename, 0);
+    STATE_VECTORS state_vectors(packets);
+    state_vectors.print();
+    double time = 1407578098.0;
+    state_vectors.interpolate(time);
+}
+
+
+void print_header_dict(
+    std::string filename
+) {
+    PACKET_VEC_2D packets = L0Packet::get_packets_in_bursts(filename, "IW1");
+
+    std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets[5]);
+
+    std::unordered_map<std::string, double> dict = dicts[1];
+
+    for (std::pair<std::string, double> key_val : dict)
+    {
+        std::cout << key_val.first << ": " << key_val.second << std::endl;
+    }
+}
 
 
 void print_packet_at_index(
@@ -50,7 +78,9 @@ int main(int argc, char* argv[])
         "print_annotation_record [record_index] [path]",
         "time [num_packets] [path]",
         "thread_test [path]",
-        "omp_test [path]"
+        "omp_test [path]",
+        "time_range_compression [swath_name] [burst_num] [path]",
+        "print_header_dict [path]"
     };
 
     if(argv[1] == __null) 
@@ -99,7 +129,7 @@ int main(int argc, char* argv[])
         PACKET_VEC_1D       packets = L0Packet::get_packets(data, std::stoi(argv[2]) + 1);
         CF_VEC_1D signal  = packets[std::stoi(argv[2])].get_signal();
 
-        for (std::complex<float> sample : signal)
+        for (std::complex<double> sample : signal)
         {
             std::cout << sample << std::endl;
         }
@@ -121,6 +151,14 @@ int main(int argc, char* argv[])
         print_annotation_record(std::string(argv[3]), std::stoi(argv[2]));
     }
 
+    else if (command == "print_state_vectors")
+    {
+        STRING_VEC_1D args  = {"path"};
+        STRING_VEC_1D types = {"path"};
+        validate_args(command, args, types, &(argv[0]));
+        print_state_vectors(std::string(argv[2]));
+    }
+
     else if (command == "time")
     {
         STRING_VEC_1D args  = {"packet_count", "path"};
@@ -130,6 +168,24 @@ int main(int argc, char* argv[])
         double runtime = time_packet_generation(std::string(argv[3]), std::stoi(argv[2]), false, 0);
 
         std::cout << "Decoded " << std::stoi(argv[2]) << " packets in " << runtime << "s." << std::endl;
+    }
+
+    else if (command == "time_range_compression")
+    {
+        STRING_VEC_1D args  = {"swath", "burst_num", "path"};
+        STRING_VEC_1D types = {"string", "int", "path"};
+        validate_args(command, args, types, &(argv[0]));
+
+        double runtime = time_range_compression(
+            std::string(argv[4]),
+            std::string(argv[2]),
+            std::stoi(argv[3]),
+            false,
+            false
+        );
+
+        std::cout << "Range compressed " << std::string(argv[2]) << " " << std::stoi(argv[3]) 
+                  << " in " << runtime << "s." << std::endl;          
     }
 
     else if (command == "thread_test")

@@ -146,3 +146,27 @@ std::ifstream open_file(const std::string& filename)
     }
     return data;
 }
+
+
+double int_to_ieee754(unsigned long number, int is_double)
+{
+    int mantissaShift = is_double ? 52 : 23;
+    unsigned long exponentMask = is_double ? 0x7FF0000000000000 : 0x7f800000;
+    int bias = is_double ? 1023 : 127;
+    int signShift = is_double ? 63 : 31;
+
+    int sign = (number >> signShift) & 0x01;
+    int exponent = ((number & exponentMask) >> mantissaShift) - bias;
+
+    int power = -1;
+    double total = 0.0;
+    for ( int i = 0; i < mantissaShift; i++ )
+    {
+        int calc = (number >> (mantissaShift-i-1)) & 0x01;
+        total += calc * pow(2.0, power);
+        power--;
+    }
+    double value = (sign ? -1 : 1) * pow(2.0, exponent) * (total + 1.0);
+
+    return value;
+}

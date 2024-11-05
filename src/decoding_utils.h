@@ -45,3 +45,8 @@ u_int64_t read_n_bits(
 std::ifstream open_file(
     const std::string& filename
 );
+
+double int_to_ieee754(
+    unsigned long number,
+    int is_double
+);

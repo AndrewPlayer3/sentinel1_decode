@@ -44,6 +44,16 @@ public:
     std::string  get_swath()      { return _swath;      }
     BURST_VEC_1D get_bursts()     { return _bursts;     }
 
+    int get_num_packets() 
+    {
+        int num_packets = 0;
+        for (int i = 0; i < _num_bursts; i++)
+        {
+            num_packets += _bursts[i].get_num_packets();
+        }
+        return num_packets;
+    }
+
 
     Burst get_burst(const int& burst_num) 
     { 

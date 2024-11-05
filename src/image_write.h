@@ -7,9 +7,10 @@
 #include "packet.h"
 #include "burst.h"
 #include "swath.h"
+#include "state_vectors.h"
 
 void _write_tif(
-    std::vector<float>& img_data,
+    std::vector<double>& img_data,
     const int& rows,
     const int& cols,
     const std::string out_filename
@@ -78,5 +79,20 @@ void write_range_doppler_burst(
     const std::string& out_filename,
     const std::string& swath_name,
     const int&         burst_num,
+    const std::string& scaling_mode
+);
+
+void write_azimuth_compressed_burst(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const std::string& scaling_mode
+);
+
+void write_azimuth_compressed_swath(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
     const std::string& scaling_mode
 );
