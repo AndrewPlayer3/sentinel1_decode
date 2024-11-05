@@ -7,6 +7,7 @@
 #include "packet.h"
 #include "burst.h"
 #include "swath.h"
+#include "state_vectors.h"
 
 void _write_tif(
     std::vector<double>& img_data,

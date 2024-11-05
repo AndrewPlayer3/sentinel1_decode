@@ -31,13 +31,13 @@ include_directories(${PYTHON_INCLUDE} ${NUMPY_INCLUDE} ${HOMEBREW_INCLUDE})
 link_directories(${PYTHON_LIBS} ${HOMEBREW_LIB} ${HOMEBREW_PYTHON_INCLUDE})
 
 # Executable: main
-add_executable(s1_print src/main.cpp src/cli.cpp src/packet.cpp src/signal_processing.cpp src/image_formation.cpp src/perf.cpp src/decoding_utils.cpp src/aux_decoding.cpp)
+add_executable(s1_print src/main.cpp src/cli.cpp src/packet.cpp src/signal_processing.cpp src/image_formation.cpp src/perf.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/state_vectors.cpp)
 set_target_properties(s1_print PROPERTIES OUTPUT_NAME "../bin/s1_print.exe")
 set_target_properties(s1_print PROPERTIES CXX_COMPILER "${CLANG_COMPILER}")
 target_link_libraries(s1_print PRIVATE fftw3_omp fftw3 m)
 
 # Executable: write
-add_executable(s1_write_tiff src/write_main.cpp src/cli.cpp src/image_write.cpp src/image_formation.cpp src/packet.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/signal_processing.cpp)
+add_executable(s1_write_tiff src/write_main.cpp src/cli.cpp src/image_write.cpp src/image_formation.cpp src/packet.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/signal_processing.cpp src/state_vectors.cpp)
 set_target_properties(s1_write_tiff PROPERTIES OUTPUT_NAME "../bin/s1_write_tiff.exe")
 target_link_libraries(s1_write_tiff PRIVATE fftw3_omp fftw3 m tiff)
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -45,7 +45,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 # Executable: plot
-add_executable(s1_plot src/plot_main.cpp src/cli.cpp src/plot.cpp src/image_formation.cpp src/aux_decoding.cpp src/packet.cpp src/decoding_utils.cpp src/signal_processing.cpp)
+add_executable(s1_plot src/plot_main.cpp src/cli.cpp src/plot.cpp src/image_formation.cpp src/aux_decoding.cpp src/packet.cpp src/decoding_utils.cpp src/signal_processing.cpp src/state_vectors.cpp)
 set_target_properties(s1_plot PROPERTIES OUTPUT_NAME "../bin/s1_plot.exe")
 target_link_libraries(s1_plot PRIVATE python3.12)
 target_link_libraries(s1_plot PRIVATE fftw3_omp fftw3 m)

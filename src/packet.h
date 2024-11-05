@@ -221,6 +221,7 @@ public:
     static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath);
     static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
     static void decode_packets_in_place(PACKET_VEC_1D& packets);
+    static void get_state_vectors(PACKET_VEC_1D& packets);
 };
 
 

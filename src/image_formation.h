@@ -11,6 +11,7 @@
 #include "packet.h"
 #include "burst.h"
 #include "swath.h"
+#include "state_vectors.h"
 
 CF_VEC_1D pulse_compression(
     const CF_VEC_1D& signal,
@@ -71,6 +72,8 @@ CF_VEC_2D range_doppler_swath(
     std::ifstream&     data,
     const std::string& swath_name
 );
+
+void fftshift(std::vector<std::complex<double>>& data);
 
 CF_VEC_2D azimuth_compress(
     PACKET_VEC_1D& packets,

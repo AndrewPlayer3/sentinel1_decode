@@ -14,6 +14,16 @@ Description: Main function with random command-line arguments for testing purpos
 #include "perf.h"
 #include "aux_decoding.h"
 #include "misc_types.h"
+#include "state_vectors.h"
+
+
+void print_state_vectors(
+    std::string filename
+) {
+    PACKET_VEC_1D packets = L0Packet::get_packets(filename, 0);
+    STATE_VECTORS state_vectors(packets);
+    state_vectors.print();
+}
 
 
 void print_header_dict(
@@ -140,12 +150,12 @@ int main(int argc, char* argv[])
         print_annotation_record(std::string(argv[3]), std::stoi(argv[2]));
     }
 
-    else if (command == "print_header_dict")
+    else if (command == "print_state_vectors")
     {
         STRING_VEC_1D args  = {"path"};
         STRING_VEC_1D types = {"path"};
         validate_args(command, args, types, &(argv[0]));
-        print_header_dict(std::string(argv[2]));
+        print_state_vectors(std::string(argv[2]));
     }
 
     else if (command == "time")

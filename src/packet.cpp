@@ -937,3 +937,15 @@ void L0Packet::decode_packets_in_place(PACKET_VEC_1D& packets)
         packets[i].get_signal();
     }
 }
+
+
+void L0Packet::get_state_vectors(PACKET_VEC_1D& packets)
+{
+    
+}
+
+
+// void L0Packet::get_state_vectors(PACKET_VEC_2D& packets)
+// {
+//     packets = packets.
+// }

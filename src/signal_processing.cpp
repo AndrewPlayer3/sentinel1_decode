@@ -524,6 +524,10 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
 
     std::vector<float> samples(rows*cols);
 
+    std::cout << "Before: " << std::endl;
+    for (int i = 0; i < 100; i++) std::cout << signal[0][i] << " ";
+    std::cout << std::endl;
+    
     if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
     else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));
     else if (scaling_mode == "mag"     ) samples = flatten(magnitude_2d(signal));    
@@ -544,5 +548,10 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
     {
         throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
     }
+
+    std::cout << "After: " << std::endl;
+    for (int i = 0; i < 100; i++) std::cout << samples[i] << " ";
+    std::cout << std::endl;
+
     return samples;
 }

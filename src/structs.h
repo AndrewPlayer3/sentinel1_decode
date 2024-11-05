@@ -10,6 +10,7 @@ Description: Some data structs/tables and constants containing information neces
 
 #pragma once
 
+#include <set>
 #include <vector>
 #include <string>
 #include <complex>
@@ -620,7 +621,7 @@ const std::unordered_map<std::string, u_int64_t> SUB_COMM_KEY_VAL_INT = {
     {"omega_x",         0},
     {"omega_y",         0},
     {"omega_z",         0},
-    {"data_time_stamp", 0,},
+    {"data_time_stamp", 0},
     {"pointing_status", 0},
     {"temp_status",     0},
     {"tile_1_1",        0},
@@ -734,4 +735,12 @@ const std::unordered_map<std::string, double> SUB_COMM_KEY_VAL_F = {
     {"tile_13_14",      0.0},
     {"tile_14_14",      0.0},
     {"na_tgu_temp",     0.0}
+};
+
+const std::set<std::string> SUB_COMM_DOUBLE_KEYS = {
+    "x_axis_position",
+    "y_axis_position",
+    "z_axis_position",
+    // "data_time_stamp",
+    // "pod_data_stamp"
 };
