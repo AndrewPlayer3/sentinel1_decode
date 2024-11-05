@@ -75,8 +75,9 @@ void STATE_VECTORS::parse_subcomm_dicts(SUBCOMM_DICTS subcomm_dicts)
             times.push_back(state_vector.time);
             positions.push_back(state_vector.position);
             velocities.push_back(state_vector.velocity);
-            quaternions.push_back(parse_quaternions(state_vector.quaternions).to_vector(SCALAR_LAST));
+            quaternions.push_back(state_vector.quaternions);
             angular_rates.push_back(state_vector.angular_rate);
+            attitudes.push_back(state_vector.attitude);
         }
     }
 }
@@ -84,22 +85,26 @@ void STATE_VECTORS::parse_subcomm_dicts(SUBCOMM_DICTS subcomm_dicts)
 
 void STATE_VECTORS::print()
 {
+    int hyphen_count = 210;
+    std::cout << std::string(hyphen_count, '-') << std::endl;
     std::cout << std::setw(15) << "time"
-                << std::setw(15) << "position_x"
-                << std::setw(15) << "position_y"
-                << std::setw(15) << "position_z"
-                << std::setw(15) << "velocity_x"
-                << std::setw(15) << "velocity_y"
-                << std::setw(15) << "velocity_z"
-                << std::setw(15) << "q0_quaternion"
-                << std::setw(15) << "q1_quaternion"
-                << std::setw(15) << "q2_quaternion"
-                << std::setw(15) << "q3_quaternion" << std::endl;
-
-    std::cout << std::string(165, '-') << std::endl;
-
+              << std::setw(15) << "position_x"
+              << std::setw(15) << "position_y"
+              << std::setw(15) << "position_z"
+              << std::setw(15) << "velocity_x"
+              << std::setw(15) << "velocity_y"
+              << std::setw(15) << "velocity_z"
+              << std::setw(15) << "q0_quaternion"
+              << std::setw(15) << "q1_quaternion"
+              << std::setw(15) << "q2_quaternion"
+              << std::setw(15) << "q3_quaternion"
+              << std::setw(15) << "roll"
+              << std::setw(15) << "pitch"
+              << std::setw(15) << "yaw" << std::endl;
+    std::cout << std::string(hyphen_count, '-') << std::endl;
     for (size_t i = 0; i < positions.size(); ++i) {
-        std::cout << std::setw(15) << times[i]
+        std::cout   << std::fixed    << std::setprecision(4)
+                    << std::setw(15) << times[i]
                     << std::setw(15) << positions[i][0]
                     << std::setw(15) << positions[i][1]
                     << std::setw(15) << positions[i][2]
@@ -109,10 +114,65 @@ void STATE_VECTORS::print()
                     << std::setw(15) << quaternions[i][0]
                     << std::setw(15) << quaternions[i][1]
                     << std::setw(15) << quaternions[i][2]
-                    << std::setw(15) << quaternions[i][3] << std::endl;
+                    << std::setw(15) << quaternions[i][3]
+                    << std::setw(15) << attitudes[i][0]
+                    << std::setw(15) << attitudes[i][1]
+                    << std::setw(15) << attitudes[i][2] << std::endl;
     }
-    std::cout << std::string(165, '-') << std::endl;
-    std::cout << "State Vector Count: " << times.size() << std::endl;
+    std::cout << std::string(hyphen_count, '-') << std::endl;
+}
+
+
+// Find the indexes a and b in times that bound time: I.e. times[a] <= time <= times[b]
+std::pair<D_VEC_1D::iterator, D_VEC_1D::iterator> find_time_bounds(const double& time, D_VEC_1D::iterator times_start, D_VEC_1D::iterator times_end)
+{
+    int size = times_end - times_start;
+
+    if (size == 1) return {times_start, times_end};
+
+    int pivot = size / 2;
+    double time_at_pivot = *(times_start + pivot);
+
+    if (time_at_pivot == time)     return {times_start, times_start};
+    else if (time_at_pivot > time) return find_time_bounds(time, times_start, times_start+pivot);
+    else                           return find_time_bounds(time, times_start+pivot, times_end);
+}
+
+
+D_VEC_1D interpolate_vector(const F_VEC_2D& vec, int a_index, int b_index, double linear_extrapolant)
+{
+    D_VEC_1D new_vec(vec.size());
+
+    std::transform(
+        vec[a_index].begin(), vec[a_index].end(), 
+            vec[b_index].begin(), new_vec.begin(),
+                [linear_extrapolant] (double a, double b) { return std::lerp(a, b, linear_extrapolant); }
+    );
+
+    return new_vec;
+}
+
+
+void STATE_VECTORS::interpolate(const double& time)
+{
+    STATE_VECTOR state_vector;
+
+    std::pair<D_VEC_1D::iterator, D_VEC_1D::iterator> time_bounds = find_time_bounds(time, times.begin(), times.end());
+
+    int a_index = time_bounds.first - times.begin();
+    int b_index = time_bounds.second - times.begin();
+
+    double a = *time_bounds.first;
+    double b = *time_bounds.second;
+    double t = (time - a) / (b - a);
+
+    state_vector.velocity = interpolate_vector(velocities, a_index, b_index, t);
+    state_vector.position = interpolate_vector(positions, a_index, b_index, t);
+    state_vector.quaternions = interpolate_vector(quaternions, a_index, b_index, t);
+    state_vector.angular_rate = interpolate_vector(angular_rates, a_index, b_index, t);
+    state_vector.attitude = interpolate_vector(attitudes, a_index, b_index, t);
+
+    D_VEC_1D v = state_vector.position;
 }
 
 
@@ -156,6 +216,69 @@ Quaternion get_quaternions_from_rotation_matrix(F_VEC_2D& R)
     }
 
     return q;
+}
+
+
+F_VEC_1D Quaternion::to_euler_angles()
+{
+    F_VEC_1D R = to_rotation_matrix_yxz();
+
+    auto clamp = [] (double val, double min, double max) {
+        return std::max(min, std::min(max, val));
+    };
+
+    double roll, pitch, yaw;
+
+    pitch = asin(-clamp(R[7], -1.0, 1.0));
+
+    if (std::abs(R[7]) < 1)
+    {
+        roll = atan2(R[6], R[8]);
+        yaw = atan2(R[1], R[4]);
+    }
+    else
+    {
+        roll = atan2(R[5], R[4]);
+        yaw = 0.0;
+    }
+
+    return {-pitch, -roll, yaw};
+}
+
+
+D_VEC_1D Quaternion::to_rotation_matrix_yxz()
+{
+    D_VEC_1D R(9);
+
+    double x2 = x + x;
+    double y2 = y + y;
+    double z2 = z + z;
+
+    double xx = x * x2;
+    double xy = x * y2;
+    double xz = x * z2;
+
+    double yy = y * y2;
+    double yz = y * z2;
+    double zz = z * z2;
+
+    double wx = w * x2;
+    double wy = w * y2;
+    double wz = w * z2;
+
+    R[ 0 ] = ( 1 - ( yy + zz ) );
+    R[ 1 ] = ( xy + wz ) * 1;
+    R[ 2 ] = ( xz - wy ) * 1;
+
+    R[ 3 ] = ( xy - wz ) * 1;
+    R[ 4 ] = ( 1 - ( xx + zz ) ) * 1;
+    R[ 5 ] = ( yz + wx ) * 1;
+
+    R[ 6 ] = ( xz + wy ) * 1;
+    R[ 7 ] = ( yz - wx ) * 1;
+    R[ 8 ] = ( 1 - ( xx + yy ) ) * 1;
+
+    return R;
 }
 
 

@@ -23,6 +23,8 @@ void print_state_vectors(
     PACKET_VEC_1D packets = L0Packet::get_packets(filename, 0);
     STATE_VECTORS state_vectors(packets);
     state_vectors.print();
+    double time = 1407578098.0;
+    state_vectors.interpolate(time);
 }
 
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include "packet.h"
 
 typedef struct std::unordered_map<std::string, u_int64_t> SUBCOMM_DICT_INT;
@@ -43,7 +45,12 @@ struct Quaternion
         if (order == SCALAR_FIRST) return {w, x, y, z};
         else                       return {x, y, z, w};
     }
+
+    F_VEC_1D to_euler_angles();
+
+    D_VEC_1D to_rotation_matrix_yxz();
 };
+
 
 Quaternion get_quaternions_from_rotation_matrix(F_VEC_2D& R);
 F_VEC_2D get_eocfi_rotation_matrix(const Quaternion& q);
@@ -58,6 +65,8 @@ struct STATE_VECTOR
     F_VEC_1D quaternions;
     F_VEC_1D angular_rate;
     F_VEC_1D attitude;
+
+    STATE_VECTOR() {}
 
     STATE_VECTOR(SUBCOMM_DICT_DOUBLE& subcomm_dict) 
     {
@@ -75,20 +84,22 @@ struct STATE_VECTOR
             subcomm_dict.at("z_axis_velocity"),
         };
 
-        quaternions = {
-            subcomm_dict.at("q0_quaternion"),
-            subcomm_dict.at("q1_quaternion"),
-            subcomm_dict.at("q2_quaternion"),
-            subcomm_dict.at("q3_quaternion"),
-        };
-
         angular_rate = {
             subcomm_dict.at("omega_x"),
             subcomm_dict.at("omega_y"),
             subcomm_dict.at("omega_z"),
         };
 
-        attitude = {};
+        Quaternion quat = parse_quaternions({
+            subcomm_dict.at("q0_quaternion"),
+            subcomm_dict.at("q1_quaternion"),
+            subcomm_dict.at("q2_quaternion"),
+            subcomm_dict.at("q3_quaternion"),
+        });
+
+        quaternions = quat.to_vector(SCALAR_LAST);
+
+        attitude = quat.to_euler_angles();
     }
 };
 
@@ -117,4 +128,6 @@ struct STATE_VECTORS
 
     void parse_subcomm_dicts(SUBCOMM_DICTS subcomm_dicts);
     void print();
+
+    void interpolate(const double& time);
 };

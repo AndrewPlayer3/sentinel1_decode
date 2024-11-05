@@ -226,6 +226,7 @@ void L0Packet::print_pulse_info()
     int range_decimation = _secondary_header["range_decimation"];
     int tx_pulse_number  = _secondary_header["tx_pulse_number"];
 
+    std::cout << std::fixed                  << std::setprecision(8);
     std::cout << "Time: "                    << get_time()            << std::endl;
     std::cout << "Swath: "                   << get_swath()           << std::endl;
     std::cout << "RX Polarization: "         << get_rx_polarization() << std::endl;
@@ -937,15 +938,3 @@ void L0Packet::decode_packets_in_place(PACKET_VEC_1D& packets)
         packets[i].get_signal();
     }
 }
-
-
-void L0Packet::get_state_vectors(PACKET_VEC_1D& packets)
-{
-    
-}
-
-
-// void L0Packet::get_state_vectors(PACKET_VEC_2D& packets)
-// {
-//     packets = packets.
-// }
