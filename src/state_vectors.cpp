@@ -266,17 +266,17 @@ D_VEC_1D Quaternion::to_rotation_matrix_yxz()
     double wy = w * y2;
     double wz = w * z2;
 
-    R[ 0 ] = ( 1 - ( yy + zz ) );
-    R[ 1 ] = ( xy + wz ) * 1;
-    R[ 2 ] = ( xz - wy ) * 1;
+    R[0] = (1 - (yy + zz));
+    R[1] = xy + wz;
+    R[2] = xz - wy;
 
-    R[ 3 ] = ( xy - wz ) * 1;
-    R[ 4 ] = ( 1 - ( xx + zz ) ) * 1;
-    R[ 5 ] = ( yz + wx ) * 1;
+    R[3] = xy - wz;
+    R[4] = (1 - (xx + zz));
+    R[5] = yz + wx;
 
-    R[ 6 ] = ( xz + wy ) * 1;
-    R[ 7 ] = ( yz - wx ) * 1;
-    R[ 8 ] = ( 1 - ( xx + yy ) ) * 1;
+    R[6] = xz + wy;
+    R[7] = yz - wx;
+    R[8] = (1 - (xx + yy));
 
     return R;
 }
