@@ -141,7 +141,7 @@ std::pair<D_VEC_1D::iterator, D_VEC_1D::iterator> find_time_bounds(const double&
 
 D_VEC_1D interpolate_vector(const F_VEC_2D& vec, int a_index, int b_index, double linear_extrapolant)
 {
-    D_VEC_1D new_vec(vec.size());
+    D_VEC_1D new_vec(vec[a_index].size());
 
     std::transform(
         vec[a_index].begin(), vec[a_index].end(), 
@@ -154,17 +154,42 @@ D_VEC_1D interpolate_vector(const F_VEC_2D& vec, int a_index, int b_index, doubl
 
 
 STATE_VECTOR STATE_VECTORS::interpolate(const double& time)
-{
+{    
     STATE_VECTOR state_vector;
+
+    int num_times = times.size();
+    int a_index, b_index;
+    double a, b, t;
+
+    if (time > times.back())
+    {
+        state_vector.velocity = velocities.back();
+        state_vector.position = positions.back();
+        state_vector.quaternions = quaternions.back();
+        state_vector.angular_rate = angular_rates.back();
+        state_vector.attitude = attitudes.back();
+
+        return state_vector;
+    }
+    if (time < times[0])
+    {
+        state_vector.velocity = velocities[0];
+        state_vector.position = positions[0];
+        state_vector.quaternions = quaternions[0];
+        state_vector.angular_rate = angular_rates[0];
+        state_vector.attitude = attitudes[0];
+
+        return state_vector;
+    }
 
     std::pair<D_VEC_1D::iterator, D_VEC_1D::iterator> time_bounds = find_time_bounds(time, times.begin(), times.end());
 
-    int a_index = time_bounds.first - times.begin();
-    int b_index = time_bounds.second - times.begin();
+    a_index = time_bounds.first - times.begin();
+    b_index = time_bounds.second - times.begin();
 
-    double a = *time_bounds.first;
-    double b = *time_bounds.second;
-    double t = (time - a) / (b - a);
+    a = *time_bounds.first;
+    b = *time_bounds.second;
+    t = (time - a) / (b - a);
 
     state_vector.velocity = interpolate_vector(velocities, a_index, b_index, t);
     state_vector.position = interpolate_vector(positions, a_index, b_index, t);

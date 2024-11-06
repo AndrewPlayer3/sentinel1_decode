@@ -160,6 +160,7 @@ std::vector<std::vector<float>> norm_2d(
 
     int rows = complex_values.size();
     int cols = complex_values[0].size();
+    double scale_factor = rows * cols;
 
     std::vector<std::vector<float>> norm(rows, std::vector<float>(cols));
 
@@ -170,21 +171,11 @@ std::vector<std::vector<float>> norm_2d(
 
         for (int j = 0; j < cols; j++)
         {
-            double mag = std::abs(complex_value_row[j]);
-            norm_row[j] = mag;
+            norm_row[j] = std::abs(complex_value_row[j]) / scale_factor;
 
-            if (mag > max_value) max_value = mag;
         }
     }
 
-    for (int i = 0; i < rows; i++)
-    {
-        std::vector<float>& norm_row = norm[i];
-        for (int j = 0; j < cols; j++)
-        {
-            norm_row[j] = log_scale ? 20 * log10(norm_row[j] / max_value) : norm_row[j] / max_value;
-        }
-    }
     return norm;
 }
 
