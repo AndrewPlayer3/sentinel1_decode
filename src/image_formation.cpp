@@ -534,13 +534,10 @@ CF_VEC_2D azimuth_compress_swath(
 
     int num_bursts = swath.get_num_bursts();
 
-    for (int i = 0; i < num_bursts - 1; i++)
+    for (int i = 0; i < num_bursts; i++)
     {
-        Burst burst = swath.get_burst(i);
-        PACKET_VEC_1D packets = burst.get_packets();
-
         std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(burst, state_vectors);
+        CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(swath[i], state_vectors);
 
         std::cout << "Adding Azimuth Compressed Burst " << i << " of " << num_bursts 
                   << " to the Output Vector."<< std::endl;
@@ -768,43 +765,39 @@ CF_VEC_2D azimuth_compress_burst_mvp(
     Burst& burst,
     STATE_VECTORS&     state_vectors
 ) {
+    //std::cout << std::fixed << std::setprecision(5) << "Failing Time: " << burst[32681].get_time() << std::endl;
+    //burst[32681].print_modes();
+    //burst[32681].print_pulse_info();
+
     int num_packets = burst.get_num_packets();
 
-    CF_VEC_2D range_compressed(num_packets);
-
-    CF_VEC_2D signals = compute_2d_dft(burst.get_signals(), false, 0, 0);
-
-    signals = transpose(signals);
+    CF_VEC_2D range_compressed = compute_2d_dft(burst.get_signals(), false, 0, 0);
+    int num_az    = range_compressed.size();
+    int num_range = range_compressed[0].size();
+  
+    range_compressed = transpose(range_compressed);
 
     std::for_each(
-        signals.begin(), signals.end(),
+        range_compressed.begin(), range_compressed.end(),
             [num_packets] (CF_VEC_1D& row) { 
                 std::rotate(row.begin(), row.end()-(num_packets / 2), row.end());
              }
     );
 
-    signals = transpose(signals);
+    range_compressed = transpose(range_compressed);
 
     for (int i = 0; i < num_packets; i++)
     {
-        range_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
+        range_compressed[i] = pulse_compression(range_compressed[i], burst.get_replica_chirp(i));
     }
-
-    int num_range = range_compressed[0].size();
 
     double burst_length_seconds = burst[-1].get_time() - burst[0].get_time();
 
-    D_VEC_1D times(num_packets);
+    D_VEC_1D times(num_az);
+    D_VEC_2D positions(num_az, D_VEC_1D(3));
+    D_VEC_1D velocities_norm(num_az);
 
-    D_VEC_2D velocities(num_packets, D_VEC_1D(3));
-    D_VEC_2D positions(num_packets, D_VEC_1D(3));
-
-    D_VEC_1D velocities_norm(num_packets);
-    D_VEC_1D positions_norm(num_packets);
-
-    D_VEC_1D positions_norm_squared(num_packets);
-
-    for (int i = 0; i < num_packets; i++)
+    for (int i = 0; i < num_az; i++)
     {
         times[i] = burst[i].get_time();
 
@@ -813,12 +806,8 @@ CF_VEC_2D azimuth_compress_burst_mvp(
         D_VEC_1D v = state_vector.velocity;
         D_VEC_1D p = state_vector.position;
 
-        positions[i]  = v;
-        velocities[i] = p;
-
+        positions[i]  = p;
         velocities_norm[i] = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-        positions_norm[i]  = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
-        positions_norm_squared[i] = positions_norm[i] * positions_norm[i];
     }
 
     double a = 6378137.0;     // WGS84 Semi-Major
@@ -847,7 +836,8 @@ CF_VEC_2D azimuth_compress_burst_mvp(
             (pow(a*cos(latitude), 2) + pow(b*sin(latitude), 2))
         );
 
-        double pos = positions_norm[i];
+        D_VEC_1D p = positions[i];
+        double pos = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
         double v_sat = velocities_norm[i];
 
         for (int j = 0; j < num_range; j++)
@@ -871,7 +861,13 @@ CF_VEC_2D azimuth_compress_burst_mvp(
         }
     }
 
-    range_compressed = compute_axis_dft(range_compressed, 0, 1, true);
+    // std::cout << velocities_norm[0] << " | " << velocities_norm[num_packets - 1] << std::endl;
+    // std::cout << positions[0][0] << " | " << positions[num_packets - 1][0] << std::endl;
+    // std::cout << slant_ranges[0] << " | " << slant_ranges[num_packets - 1] << std::endl;
+    // std::cout << rcmc_factor_D[0][0] << " | " << rcmc_factor_D[num_packets - 1][num_range - 1] << std::endl;
+    // std::cout << range_compressed[0][0] << " | " << range_compressed[num_packets - 1][num_range - 1] << std::endl;
+
+    compute_axis_dft_in_place(range_compressed, 0, 1, true);
 
     std::for_each(
         range_compressed.begin(), range_compressed.end(),
@@ -889,7 +885,7 @@ CF_VEC_2D azimuth_compress_burst_mvp(
         }
     }
 
-    range_compressed = compute_axis_dft(range_compressed, 0, 0, true);
+    compute_axis_dft_in_place(range_compressed, 0, 0, true);
 
     return range_compressed;
 }

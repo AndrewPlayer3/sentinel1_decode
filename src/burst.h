@@ -77,7 +77,7 @@ public:
     std::string get_swath() { return _swath; }
 
     PACKET_VEC_1D get_packets()    { return _packets;         }
-    CF_VEC_2D get_signals()        { return _signals;         }
+    CF_VEC_2D& get_signals()        { return _signals;         }
     CF_VEC_2D get_replica_chirps() { return _replica_chirps;  }
 
     L0Packet operator[](int index) { 
