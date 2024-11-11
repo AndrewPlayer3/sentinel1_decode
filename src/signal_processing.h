@@ -122,3 +122,5 @@ std::vector<float> scale(
     const CF_VEC_2D& signal,
     const std::string& scaling_mode
 );
+
+std::vector<std::vector<float>> scale_2d(const CF_VEC_2D& signal, const std::string& scaling_mode);

@@ -171,8 +171,8 @@ std::vector<std::vector<float>> norm_2d(
 
         for (int j = 0; j < cols; j++)
         {
-            norm_row[j] = std::abs(complex_value_row[j]) / scale_factor;
-
+            if (log_scale) norm_row[j] = 10.0 * log10(std::abs(complex_value_row[j]) / scale_factor);
+            else           norm_row[j] = std::abs(complex_value_row[j]) / scale_factor;
         }
     }
 
@@ -201,7 +201,7 @@ F_VEC_1D norm_1d(
         norm.begin(), norm.end(), 
             [log_scale, max_value](double &n) 
             { 
-                log_scale ? 20 * log10(n / max_value) : n / max_value;
+                return log_scale ? 20 * log10(n / max_value) : n / max_value;
             }
     );
     return norm;
@@ -515,10 +515,12 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
 
     std::vector<float> samples(rows*cols);
 
-    std::cout << "Before: " << std::endl;
-    for (int i = 0; i < 100; i++) std::cout << signal[0][i] << " ";
+    std::cout << "First and Last 5 Before Scaling: " << std::endl;
+    for (int i = 0; i < 5; i++) std::cout << signal[0][i] << " ";
     std::cout << std::endl;
-    
+    for (int i = 5; i > 0; i--) std::cout << signal[rows-1][cols-i] << " ";
+    std::cout << std::endl;
+
     if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
     else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));
     else if (scaling_mode == "mag"     ) samples = flatten(magnitude_2d(signal));    
@@ -540,8 +542,54 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
         throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
     }
 
-    std::cout << "After: " << std::endl;
-    for (int i = 0; i < 100; i++) std::cout << samples[i] << " ";
+    std::cout << "First and Last 5 After Scaling: " << std::endl;
+    for (int i = 0; i < 5; i++) std::cout << samples[i] << " ";
+    std::cout << std::endl;
+    for (int i = 5; i > 0; i--) std::cout << samples[cols*rows-i] << " ";
+    std::cout << std::endl;
+
+    return samples;
+}
+
+
+std::vector<std::vector<float>> scale_2d(const CF_VEC_2D& signal, const std::string& scaling_mode)
+{
+    int rows = signal.size();
+    int cols = signal[0].size();
+
+    std::vector<std::vector<float>> samples;
+
+    std::cout << "First and Last 5 Before Scaling: " << std::endl;
+    for (int i = 0; i < 5; i++) std::cout << signal[0][i] << " ";
+    std::cout << std::endl;
+    for (int i = 5; i > 0; i--) std::cout << signal[rows-1][cols-i] << " ";
+    std::cout << std::endl;
+
+    if      (scaling_mode == "norm_log") samples = norm_2d(signal, true);
+    else if (scaling_mode == "norm"    ) samples = norm_2d(signal, false);
+    else if (scaling_mode == "mag"     ) samples = magnitude_2d(signal);    
+    else if (scaling_mode == "real" or scaling_mode == "imag")
+    {
+        bool real = scaling_mode == "real";
+        int  size = signal.size() * signal[0].size();
+        
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                samples[i][j] = real ? signal[i][j].real() : signal[i][j].imag();
+            }
+        }
+    }
+    else
+    {
+        throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
+    }
+
+    std::cout << "First and Last 5 After Scaling: " << std::endl;
+    for (int i = 0; i < 5; i++) std::cout << samples[0][i] << " ";
+    std::cout << std::endl;
+    for (int i = 5; i > 0; i--) std::cout << samples[rows-1][cols-i] << " ";
     std::cout << std::endl;
 
     return samples;

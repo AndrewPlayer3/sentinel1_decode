@@ -1,5 +1,9 @@
 #include <set>
 
+#include <matplot/matplot.h>
+// #include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+
 #include "packet.h"
 #include "aux_decoding.h"
 #include "burst.h"

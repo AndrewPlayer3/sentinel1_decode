@@ -125,11 +125,31 @@ void plot_complex_image(
 
     std::vector<float> samples = scale(signal, scaling_mode);
 
+    cv::Mat img(rows, cols, CV_32F, samples.data());
+
+    // std::vector<std::vector<double>> s(rows, std::vector<double>(cols));
+    // for (int i = 0; i < rows; i++)
+    // {
+    //     for (int j = 0; j < cols; j++)
+    //     {
+    //         s[i][j] = double(samples[i][j]);
+    //     }
+    // }
+
     std::cout << "Calling Plot" << std::endl;
 
-    matplotlibcpp::figure();
-    matplotlibcpp::imshow(&samples[0], rows, cols, 1);
-    matplotlibcpp::show();
+    // std::vector<std::vector<float>> F = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+
+    cv::namedWindow("foo", cv::WINDOW_GUI_EXPANDED);
+    cv::setWindowProperty("foo", cv::WINDOW_OPENGL, cv::WINDOW_GUI_EXPANDED);
+    cv::imshow("foo", img);
+    // cv::selectROI("foo", img, true, true);
+    cv::waitKey();
+    // matplot::image(s);
+    // matplot::show();
+    // matplotlibcpp::figure();
+    // matplotlibcpp::imshow(&samples[0], rows, cols, 1);
+    // matplotlibcpp::show();
 }
 
 
