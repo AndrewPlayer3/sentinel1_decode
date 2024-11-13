@@ -27,7 +27,6 @@ private:
         {
             L0Packet packet    = _packets[i];
             _signals[i]        = packet.get_signal();
-            _replica_chirps[i] = packet.get_replica_chirp();
         }
     }
 

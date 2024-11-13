@@ -250,6 +250,7 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 
     CF_VEC_2D arr_t(cols, CF_VEC_1D(rows));
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < cols; i++)
     {
         CF_VEC_1D& arr_t_row = arr_t[i];
@@ -391,24 +392,39 @@ void _compute_axis_dft(
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
     std::cout << "Initializing Plans and Excecuting Axis FFTs" << std::endl;
-    for (int row = 0; row < signal_rows; row++)
+    std::vector<fftw_plan> plans(signal_rows);
+
+    std::transform(
+        signals.begin(), signals.end(),
+            plans.begin(),
+                [fft_size, fft_direction] (CF_VEC_1D& row) {
+                    return fftw_plan_dft_1d(
+                        fft_size,
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        fft_direction,
+                        FFTW_ESTIMATE
+                    );
+                }
+    );
+
+    #pragma omp parallel for
+    for (int i = 0; i < signal_rows; i++)
     {
-        CF_VEC_1D& signal_row = signals[row];
-        fftw_plan plan = fftw_plan_dft_1d(
-            fft_size,
-            reinterpret_cast<fftw_complex*>(signal_row.data()),
-            reinterpret_cast<fftw_complex*>(signal_row.data()),
-            fft_direction,
-            FFTW_ESTIMATE
-        );
-        fftw_execute(plan);
-        fftw_destroy_plan(plan);
+        fftw_execute(plans[i]);
     }
+
+    std::for_each(
+        plans.begin(), plans.end(),
+            [] (fftw_plan& plan) { fftw_destroy_plan(plan); }
+    );
+
     double norm_factor = inverse ? 1.0 / (fft_size) : 1.0;
 
     if (inverse)
     {
         std::cout << "Normalizing Inverse Axis FFT Output" << std::endl;
+        #pragma omp parallel for num_threads(4)
         for (int i = 0; i < signal_rows; i++)
         {
             std::for_each(
@@ -417,6 +433,52 @@ void _compute_axis_dft(
             );
         }
     }
+}
+
+
+std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals)
+{
+    std::vector<fftw_plan> plans(signals.size());
+    std::transform(
+        signals.begin(), signals.end(),
+            plans.begin(),
+                [] (CF_VEC_1D& row) {
+                    return fftw_plan_dft_1d(
+                        row.size(),
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        FFTW_FORWARD,
+                        FFTW_ESTIMATE
+                    );
+                }
+    );
+    return plans;
+}
+
+
+void destroy_fftw_plans(std::vector<fftw_plan>& plans)
+{
+    std::for_each(
+        plans.begin(), plans.end(),
+            [] (fftw_plan& plan) { fftw_destroy_plan(plan); }
+    );
+}
+
+
+void fftshift_in_place(CF_VEC_1D& signal)
+{
+    std::rotate(signal.begin(), signal.end()-(signal.size() / 2), signal.end());
+}
+
+
+void fftshift_in_place(CF_VEC_2D& signals)
+{
+    std::for_each(
+        signals.begin(), signals.end(),
+            [] (CF_VEC_1D& row) { 
+                std::rotate(row.begin(), row.end()-(row.size() / 2), row.end());
+            }
+    );
 }
 
 
@@ -481,6 +543,68 @@ CF_VEC_2D compute_2d_dft(
         }
     }
     return signal_fft;
+}
+
+
+CF_VEC_2D compute_2d_dft_in_place(
+    CF_VEC_2D& signal,
+    const bool& inverse,
+    int fft_rows,
+    int fft_cols
+) {
+    std::cout << "Initializing 1D Complex Vector for FFTW" << std::endl;
+    if (fft_rows == 0) fft_rows = signal.size();
+    if (fft_cols == 0) fft_cols = signal[0].size();
+
+    bool rows_out_of_lims = fft_rows < 0 or fft_rows > signal.size();
+    bool cols_out_of_lims = fft_cols < 0 or fft_cols > signal[0].size();
+
+    if (rows_out_of_lims or cols_out_of_lims)
+    {
+        throw std::invalid_argument("Invalid FFT size for signal.");
+    }
+
+    CF_VEC_1D signal_fftw(fft_rows * fft_cols);
+
+    for (int i = 0; i < fft_rows; i++)
+    {
+        for (int j = 0; j < fft_cols; j++)
+        {
+            signal_fftw[i*fft_cols+j] = signal[i][j];
+        }
+    }
+
+    fftw_plan plan;
+
+    if (inverse) std::cout << "Executing 2D IFFT Plan" << std::endl;
+    else         std::cout << "Executing 2D FFT Plan"  << std::endl;
+
+    double norm_factor = inverse ? 1.0 / (fft_rows * fft_cols) : 1.0;
+    int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
+
+    plan = fftw_plan_dft_2d(
+        fft_rows, fft_cols, 
+        reinterpret_cast<fftw_complex*>(signal_fftw.data()),
+        reinterpret_cast<fftw_complex*>(signal_fftw.data()),
+        fft_direction, FFTW_ESTIMATE
+    );
+
+    fftw_execute(plan);
+
+    std::cout << "Destroying DFT Plan" << std::endl;
+
+    fftw_destroy_plan(plan);
+
+    std::cout << "Copying Complex Data into 2D Vector" << std::endl;
+
+    for (int i = 0; i < fft_rows; i++)
+    {
+        for (int j = 0; j < fft_cols; j++)
+        {
+            signal[i][j] = signal_fftw[i*fft_cols+j] * norm_factor;
+        }
+    }
+    return signal;
 }
 
 

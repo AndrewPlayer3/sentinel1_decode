@@ -288,12 +288,7 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
 
 CF_VEC_1D L0Packet::get_replica_chirp()
 {
-    if (!_signal_set_flag)
-    {
-        _set_signal();
-    }
-
-    int num_range = _signal.size();
+    int num_range = 2 * _num_quads;
 
     double txpsf = get_start_frequency();
     double txprr = get_tx_ramp_rate();
@@ -827,7 +822,7 @@ L0Packet L0Packet::get_next_packet(std::ifstream& data)
 PACKET_VEC_1D L0Packet::get_packets(const std::string& filename, const int& num_packets)
 {
     std::ifstream data = open_file(filename);
-    return get_packets(data);
+    return get_packets(data, num_packets);
 }
 
 
@@ -940,6 +935,41 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::st
             previous_az = az;
         }
         if (i == num_packets - 1) bursts.push_back(burst_packets);
+    }
+
+    return bursts;
+}
+
+
+/* Returns all packets in the provided swath, with each burst in its own vector. */
+PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets)
+{
+    int num_packets = packets.size();
+
+    PACKET_VEC_2D bursts; 
+    PACKET_VEC_1D burst_packets;
+    int previous_az = -1;
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = packets[i];
+        bool type_check = get_cal_packets ? packet.get_data_format() != 'D' : packet.get_data_format() == 'D';
+        if (type_check and packet.get_swath() == swath)
+        {
+            int az = packet.secondary_header("azimuth_beam_address");
+
+            if (previous_az == -1) previous_az = az;
+
+            if (az != previous_az and az != previous_az + 1 and burst_packets.size() > 0)
+            {
+                bursts.push_back(burst_packets);
+                burst_packets = PACKET_VEC_1D();
+            }
+            burst_packets.push_back(packet);
+
+            previous_az = az;
+        }
+        if (i == num_packets - 1 && burst_packets.size() > 0) bursts.push_back(burst_packets);
     }
 
     return bursts;

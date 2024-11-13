@@ -125,12 +125,11 @@ double time_range_compression(
     const bool& log, 
     const int&  log_interval
 ) {
-
-    Burst burst(filename, swath_name, burst_num);
+    S1_Decoder s1(filename);
 
     std::chrono::time_point start = std::chrono::high_resolution_clock::now();
     
-    CF_VEC_2D compressed_burst = range_compress_burst(burst);
+    CF_VEC_2D compressed_burst = s1.get_range_compressed_burst(swath_name, burst_num);
 
     std::chrono::time_point end   = std::chrono::high_resolution_clock::now();
 

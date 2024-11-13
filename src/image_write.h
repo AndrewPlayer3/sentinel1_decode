@@ -8,6 +8,7 @@
 #include "burst.h"
 #include "swath.h"
 #include "state_vectors.h"
+#include "s1_decoder.h"
 
 void _write_tif(
     std::vector<double>& img_data,
@@ -67,20 +68,20 @@ void write_range_compressed_burst(
     const std::string& scaling_mode
 );
 
-void write_range_doppler_swath(
-    const std::string& in_filename,
-    const std::string& out_filename,
-    const std::string& swath_name,
-    const std::string& scaling_mode
-);
+// void write_range_doppler_swath(
+//     const std::string& in_filename,
+//     const std::string& out_filename,
+//     const std::string& swath_name,
+//     const std::string& scaling_mode
+// );
 
-void write_range_doppler_burst(
-    const std::string& in_filename,
-    const std::string& out_filename,
-    const std::string& swath_name,
-    const int&         burst_num,
-    const std::string& scaling_mode
-);
+// void write_range_doppler_burst(
+//     const std::string& in_filename,
+//     const std::string& out_filename,
+//     const std::string& swath_name,
+//     const int&         burst_num,
+//     const std::string& scaling_mode
+// );
 
 void write_azimuth_compressed_burst(
     const std::string& in_filename,

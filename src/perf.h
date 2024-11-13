@@ -15,6 +15,7 @@ Description: Functions for evaluating the performance of packet decoding.
 #include "packet.h"
 #include "misc_types.h"
 #include "image_formation.h"
+#include "s1_decoder.h"
 
 double time_packet_generation(
     const std::string& filename,

@@ -55,9 +55,9 @@ void plot_range_compressed_burst(
     const int&         burst_num,
     const std::string& scaling_mode
 ) {
-    CF_VEC_2D compressed_burst = range_compress_burst(filename, swath, burst_num);
+    S1_Decoder s1(filename);
 
-    plot_complex_image(compressed_burst, scaling_mode);
+    plot_complex_image(s1.get_range_compressed_burst(swath, burst_num), scaling_mode);
 }
 
 
@@ -66,20 +66,20 @@ void plot_range_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    CF_VEC_2D compressed_swath = range_compress_swath(filename, swath_name);
+    S1_Decoder s1(filename);
 
-    plot_complex_image(compressed_swath, scaling_mode);
+    plot_complex_image(s1.get_range_compressed_swath(swath_name), scaling_mode);
 }
 
 
-void plot_range_doppler_swath(
-    const std::string& filename,
-    const std::string& swath_name,
-    const std::string& scaling_mode
-) {
-    CF_VEC_2D range_doppler = range_doppler_swath(filename, swath_name);
-    plot_complex_image(range_doppler, scaling_mode);
-}
+// void plot_range_doppler_swath(
+//     const std::string& filename,
+//     const std::string& swath_name,
+//     const std::string& scaling_mode
+// ) {
+//     CF_VEC_2D range_doppler = range_doppler_swath(filename, swath_name);
+//     plot_complex_image(range_doppler, scaling_mode);
+// }
 
 
 void plot_azimuth_compressed_burst(
@@ -88,16 +88,9 @@ void plot_azimuth_compressed_burst(
     const int&         burst_num,
     const std::string& scaling_mode
 ) {
-    PACKET_VEC_1D packets = L0Packet::get_packets(filename);
-    STATE_VECTORS state_vectors(packets);
+    S1_Decoder s1(filename); 
 
-    std::ifstream data = open_file(filename);
-
-    std::cout << "Azimuth Compressing Burst" << std::endl;
-    CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(data, swath_name, burst_num, state_vectors);
-
-    std::cout << "Plotting" << std::endl;
-    plot_complex_image(azimuth_compressed_burst, scaling_mode);
+    plot_complex_image(s1.get_azimuth_compressed_burst(swath_name, burst_num), scaling_mode);
 }
 
 
@@ -106,11 +99,9 @@ void plot_azimuth_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    std::cout << "Azimuth Compressing Swath" << std::endl;
-    CF_VEC_2D azimuth_compressed_swath = azimuth_compress_swath(filename, swath_name);
+    S1_Decoder s1(filename);
 
-    std::cout << "Plotting" << std::endl;
-    plot_complex_image(azimuth_compressed_swath, scaling_mode);
+    plot_complex_image(s1.get_azimuth_compressed_swath(swath_name), scaling_mode);
 }
 
 
@@ -127,29 +118,12 @@ void plot_complex_image(
 
     cv::Mat img(rows, cols, CV_32F, samples.data());
 
-    // std::vector<std::vector<double>> s(rows, std::vector<double>(cols));
-    // for (int i = 0; i < rows; i++)
-    // {
-    //     for (int j = 0; j < cols; j++)
-    //     {
-    //         s[i][j] = double(samples[i][j]);
-    //     }
-    // }
-
     std::cout << "Calling Plot" << std::endl;
 
-    // std::vector<std::vector<float>> F = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
-
-    cv::namedWindow("foo", cv::WINDOW_GUI_EXPANDED);
-    cv::setWindowProperty("foo", cv::WINDOW_OPENGL, cv::WINDOW_GUI_EXPANDED);
-    cv::imshow("foo", img);
-    // cv::selectROI("foo", img, true, true);
+    cv::namedWindow("Sentinel-1 Decoder", cv::WINDOW_GUI_EXPANDED);
+    cv::setWindowProperty("Sentinel-1 Decoder", cv::WINDOW_OPENGL, cv::WINDOW_GUI_EXPANDED);
+    cv::imshow("Sentinel-1 Decoder", img);
     cv::waitKey();
-    // matplot::image(s);
-    // matplot::show();
-    // matplotlibcpp::figure();
-    // matplotlibcpp::imshow(&samples[0], rows, cols, 1);
-    // matplotlibcpp::show();
 }
 
 
@@ -249,8 +223,24 @@ void plot_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    Swath swath(filename, swath_name);
-    plot_complex_image(swath.get_all_signals(), scaling_mode);
+    S1_Decoder s1(filename);
+    // s1.get_state_vectors().print();
+    // PACKET_VEC_2D packets = L0Packet::get_packets_in_bursts(filename, swath_name);
+    // std::cout << "Read Packets" << std::endl;
+    // CF_VEC_2D swath;
+    // for (int burst_num = 0; burst_num < packets.size(); burst_num++)
+    // {
+    //     Burst burst(packets[burst_num], swath_name, burst_num);
+    //     for (CF_VEC_1D line : burst.get_signals())
+    //     {
+    //         swath.push_back(line);
+    //     }
+    //     std::cout << "Finished Burst #" << burst_num << std::endl;
+    // }
+    // std::cout << "Finished Building Image - Calling Plot..." << std::endl;
+    // s1.get_azimuth_compressed_swath_sm(swath_name);
+    // s1.get_azimuth_compressed_swath_iw(swath_name);
+    plot_complex_image(s1.get_azimuth_compressed_swath_sm(swath_name), scaling_mode);
 }
 
 
@@ -265,9 +255,9 @@ void plot_signal(
 
     std::cout << "Plotting" << std::endl;
 
-    matplotlibcpp::figure();
-    matplotlibcpp::plot(scaled_signal);
-    matplotlibcpp::show();
+    // matplotlibcpp::figure();
+    // matplotlibcpp::plot(scaled_signal);
+    // matplotlibcpp::show();
 }
 
 

@@ -1,7 +1,7 @@
 #include "image_formation.h"
 
 
-CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp, const int& range_samples)
+CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
 {
     int num_samples = replica_chirp.size();
 
@@ -31,42 +31,40 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp, const int& rang
 
 CF_VEC_1D pulse_compression(
     const CF_VEC_1D& signal,
-    const CF_VEC_1D& replica_chirp
+    const CF_VEC_1D& reference
 ) {
-    int num_samples     = signal.size();
-    int replica_samples = replica_chirp.size();
+    int num_samples = signal.size();
 
-    CF_VEC_1D signal_ = signal;
-    CF_VEC_1D reference = get_reference_function(replica_chirp, signal.size());
+    CF_VEC_1D signal_    = signal;
 
     std::transform(
         reference.begin(), reference.end(),
             signal_.begin(), signal_.begin(),
-                [] (std::complex<double>& n, std::complex<double>& r) { return n * r;}
+                [] (const std::complex<double>& n, std::complex<double>& r) { return n * r;}
     );
 
     return CF_VEC_1D(signal_.begin(), signal_.begin() + num_samples);
 }
 
 
-CF_VEC_1D pulse_compression_in_place(
-    const CF_VEC_1D& signal,
-    const CF_VEC_1D& replica_chirp
-) {
-    int num_samples     = signal.size();
-    int replica_samples = replica_chirp.size();
+// CF_VEC_1D pulse_compression_in_place(
+//     const CF_VEC_1D& signal,
+//     const CF_VEC_1D& replica_chirp
+// ) {
+//     int num_samples     = signal.size();
+//     int replica_samples = replica_chirp.size();
 
-    CF_VEC_1D signal_fft = compute_1d_dft(signal,  0, false);
-    CF_VEC_1D reference  = get_reference_function(replica_chirp, num_samples);
+//     CF_VEC_1D signal_fft = compute_1d_dft(signal,  0, false);
+//     CF_VEC_1D reference  = get_reference_function(replica_chirp);
 
-    std::transform(
-        reference.begin(), reference.end(),
-            signal_fft.begin(), signal_fft.begin(),
-                [] (std::complex<double>& n, std::complex<double>& r) { return n * r;}
-    );
-    compute_1d_dft_in_place(signal_fft, num_samples, true);
-    return signal_fft;
-}
+//     std::transform(
+//         reference.begin(), reference.end(),
+//             signal_fft.begin(), signal_fft.begin(),
+//                 [] (std::complex<double>& n, std::complex<double>& r) { return n * r;}
+//     );
+//     compute_1d_dft_in_place(signal_fft, num_samples, true);
+//     return signal_fft;
+// }
 
 
 SIGNAL_PAIR get_signal_pairs_from_swath(
@@ -92,262 +90,262 @@ SIGNAL_PAIR get_signal_pairs_from_swath(
 }
 
 
-// TODO: These functions have quite a bit of duplication now.
-CF_VEC_2D range_compress_swath(
-    const std::string& filename,
-    const std::string& swath_name
-) {
-    Swath swath(filename, swath_name);
-    return range_compress_swath(swath);
-}
+// // TODO: These functions have quite a bit of duplication now.
+// CF_VEC_2D range_compress_swath(
+//     const std::string& filename,
+//     const std::string& swath_name
+// ) {
+//     Swath swath(filename, swath_name);
+//     return range_compress_swath(swath);
+// }
 
 
-CF_VEC_2D range_compress_swath(
-    std::ifstream&     data,
-    const std::string& swath_name
-) {
-    SIGNAL_PAIR signal_pair = get_signal_pairs_from_swath(data, swath_name);
+// CF_VEC_2D range_compress_swath(
+//     std::ifstream&     data,
+//     const std::string& swath_name
+// ) {
+//     SIGNAL_PAIR signal_pair = get_signal_pairs_from_swath(data, swath_name);
 
-    int num_signals = signal_pair.signals.size();
+//     int num_signals = signal_pair.signals.size();
 
-    CF_VEC_2D pulse_compressed(num_signals);
+//     CF_VEC_2D pulse_compressed(num_signals);
 
-    for (int i = 0; i < num_signals; i++)
-    {
-        CF_VEC_1D sig_fft = compute_1d_dft(signal_pair.signals[i], 0, false);
-        pulse_compressed[i] = pulse_compression(sig_fft, signal_pair.replica_chirps[i]);
-    }
-    return compute_axis_dft(pulse_compressed, 0, 1, true);
-}
-
-
-CF_VEC_2D range_compress_swath(
-    Swath& swath
-) {
-    CF_VEC_2D range_compressed_swath;
-
-    int num_bursts = swath.get_num_bursts();
-
-    for (int i = 0; i < num_bursts; i++)
-    {
-        Burst burst = swath.get_burst(i);
-        PACKET_VEC_1D packets = burst.get_packets();
-
-        std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
-
-        std::cout << "Adding Range Compressed Burst " << i << " of " << num_bursts 
-                  << " to the Output Vector."<< std::endl;
-        range_compressed_swath.insert(range_compressed_swath.end(), range_compressed_burst.begin(), range_compressed_burst.end());
-    }
-    return range_compressed_swath;
-}
+//     for (int i = 0; i < num_signals; i++)
+//     {
+//         CF_VEC_1D sig_fft = compute_1d_dft(signal_pair.signals[i], 0, false);
+//         pulse_compressed[i] = pulse_compression(sig_fft, signal_pair.replica_chirps[i]);
+//     }
+//     return compute_axis_dft(pulse_compressed, 0, 1, true);
+// }
 
 
-CF_VEC_2D range_compress_burst(
-    const std::string& filename,
-    const std::string& swath,
-    const int&         burst_num
-) {
-    std::ifstream data = open_file(filename);
+// CF_VEC_2D range_compress_swath(
+//     Swath& swath
+// ) {
+//     CF_VEC_2D range_compressed_swath;
 
-    return range_compress_burst(data, swath, burst_num);
-}
+//     int num_bursts = swath.get_num_bursts();
 
+//     for (int i = 0; i < num_bursts; i++)
+//     {
+//         Burst burst = swath.get_burst(i);
+//         PACKET_VEC_1D packets = burst.get_packets();
 
-CF_VEC_2D range_compress_burst(
-    std::ifstream&     data,
-    const std::string& swath,
-    const int&         burst_num
-) {
-    Burst burst(data, swath, burst_num);
+//         std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
+//         CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
 
-    int num_packets = burst.get_num_packets();
-
-    CF_VEC_2D range_compressed(num_packets);
-
-    CF_VEC_2D signals = burst.get_signals();
-              signals = compute_axis_dft(signals, 0, 1, false);
-
-    int num_range = signals[0].size();
-
-    for (int i = 0; i < num_packets; i++)
-    {
-        range_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
-    }
-
-    range_compressed = compute_axis_dft(range_compressed, 0, 1, true);
-
-    std::for_each(
-        range_compressed.begin(), range_compressed.end(),
-            [num_range] (CF_VEC_1D& row) { 
-                std::rotate(row.begin(), row.end()-(num_range / 2), row.end());
-             }
-    );
-
-    return range_compressed;
-}
+//         std::cout << "Adding Range Compressed Burst " << i << " of " << num_bursts 
+//                   << " to the Output Vector."<< std::endl;
+//         range_compressed_swath.insert(range_compressed_swath.end(), range_compressed_burst.begin(), range_compressed_burst.end());
+//     }
+//     return range_compressed_swath;
+// }
 
 
-CF_VEC_2D range_compress_burst(
-    Burst& burst
-) {
-    int num_packets = burst.get_num_packets();
+// CF_VEC_2D range_compress_burst(
+//     const std::string& filename,
+//     const std::string& swath,
+//     const int&         burst_num
+// ) {
+//     std::ifstream data = open_file(filename);
 
-    CF_VEC_2D pulse_compressed(num_packets);
-
-    CF_VEC_2D signals = burst.get_signals();
-              signals = compute_axis_dft(signals, 0, 1, false);
-
-    for (int i = 0; i < num_packets; i++)
-    {
-        pulse_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
-    }
-    return compute_axis_dft(pulse_compressed, 0, 1, true);
-}
+//     return range_compress_burst(data, swath, burst_num);
+// }
 
 
-CF_VEC_2D range_doppler_swath(
-    const std::string& filename,
-    const std::string& swath_name
-) {
-    std::ifstream data = open_file(filename);
-    return range_doppler_swath(data, swath_name);
-}
+// CF_VEC_2D range_compress_burst(
+//     std::ifstream&     data,
+//     const std::string& swath,
+//     const int&         burst_num
+// ) {
+//     Burst burst(data, swath, burst_num);
+
+//     int num_packets = burst.get_num_packets();
+
+//     CF_VEC_2D range_compressed(num_packets);
+
+//     CF_VEC_2D signals = burst.get_signals();
+//               signals = compute_axis_dft(signals, 0, 1, false);
+
+//     int num_range = signals[0].size();
+
+//     for (int i = 0; i < num_packets; i++)
+//     {
+//         range_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
+//     }
+
+//     range_compressed = compute_axis_dft(range_compressed, 0, 1, true);
+
+//     std::for_each(
+//         range_compressed.begin(), range_compressed.end(),
+//             [num_range] (CF_VEC_1D& row) { 
+//                 std::rotate(row.begin(), row.end()-(num_range / 2), row.end());
+//              }
+//     );
+
+//     return range_compressed;
+// }
 
 
-CF_VEC_2D range_doppler_swath(
-    std::ifstream&     data,
-    const std::string& swath_name
-) {
-    Swath swath(data, swath_name);
+// CF_VEC_2D range_compress_burst(
+//     Burst& burst
+// ) {
+//     int num_packets = burst.get_num_packets();
 
-    CF_VEC_2D range_doppler_swath;
+//     CF_VEC_2D pulse_compressed(num_packets);
 
-    int num_bursts = swath.get_num_bursts();
+//     CF_VEC_2D signals = burst.get_signals();
+//               signals = compute_axis_dft(signals, 0, 1, false);
 
-    for (int i = 0; i < num_bursts; i++)
-    {
-        Burst burst = swath.get_burst(i);
-
-        std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
-
-        CF_VEC_2D range_doppler_burst = range_compressed_burst;
-        int num_az_samples = range_compressed_burst.size();
-        int num_range_samples = range_compressed_burst[0].size();
-        int num_az_fft_samples = int(std::pow(2, std::ceil(std::log2(num_az_samples))));
-        int fft_pad_amount = num_az_fft_samples - num_az_samples;
-
-        //std::cout << "Num Samples Calculated: " << num_az_fft_samples << " " << num_range_samples << std::endl;
-
-        //std::cout << "Azimuth Padding and FFT - Burst " << i << " of " << num_bursts << std::endl;
-        range_doppler_burst.resize(num_az_fft_samples, CF_VEC_1D(num_range_samples));
-        //std::cout << "After Resize: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
-        range_doppler_burst = transpose(range_doppler_burst);
-        //std::cout << "After Transpose: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
-        range_doppler_burst = compute_axis_dft(range_doppler_burst, 0, 1, false);
-        //std::cout << "After FFT: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
-
-        std::for_each(
-            range_doppler_burst.begin(), range_doppler_burst.end(),
-                [] (CF_VEC_1D& row) { fftshift(row); }
-        );
-
-        range_doppler_burst = transpose(range_doppler_burst);
-
-        //std::cout << "After FFTSHIFT: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
-
-        std::cout << "Adding Range Doppler Burst " << i << " of " << num_bursts 
-                  << " to the Output Vector."<< std::endl;
-        range_doppler_swath.insert(
-            range_doppler_swath.end(), range_doppler_burst.begin(), range_doppler_burst.end()
-        );
-    }
-
-    return range_doppler_swath;
-}
+//     for (int i = 0; i < num_packets; i++)
+//     {
+//         pulse_compressed[i] = pulse_compression(signals[i], burst.get_replica_chirp(i));
+//     }
+//     return compute_axis_dft(pulse_compressed, 0, 1, true);
+// }
 
 
-CF_VEC_2D range_doppler_burst(
-    const std::string& filename,
-    const std::string& swath_name,
-    const int&         burst_num
-) {
-    std::ifstream data = open_file(filename);
-    return range_doppler_burst(data, swath_name, burst_num);
-}
+// CF_VEC_2D range_doppler_swath(
+//     const std::string& filename,
+//     const std::string& swath_name
+// ) {
+//     std::ifstream data = open_file(filename);
+//     return range_doppler_swath(data, swath_name);
+// }
 
 
-CF_VEC_2D range_doppler_burst(
-    std::ifstream&     data,
-    const std::string& swath_name,
-    const int&         burst_num
-) {
-    CF_VEC_2D range_compressed = range_compress_burst(data, swath_name, burst_num);
-    return compute_axis_dft(range_compressed, 0, 0, false);
-}
+// CF_VEC_2D range_doppler_swath(
+//     std::ifstream&     data,
+//     const std::string& swath_name
+// ) {
+//     Swath swath(data, swath_name);
+
+//     CF_VEC_2D range_doppler_swath;
+
+//     int num_bursts = swath.get_num_bursts();
+
+//     for (int i = 0; i < num_bursts; i++)
+//     {
+//         Burst burst = swath.get_burst(i);
+
+//         std::cout << "Range compressing Burst " << i << " of " << num_bursts << std::endl;
+//         CF_VEC_2D range_compressed_burst = range_compress_burst(burst);
+
+//         CF_VEC_2D range_doppler_burst = range_compressed_burst;
+//         int num_az_samples = range_compressed_burst.size();
+//         int num_range_samples = range_compressed_burst[0].size();
+//         int num_az_fft_samples = int(std::pow(2, std::ceil(std::log2(num_az_samples))));
+//         int fft_pad_amount = num_az_fft_samples - num_az_samples;
+
+//         //std::cout << "Num Samples Calculated: " << num_az_fft_samples << " " << num_range_samples << std::endl;
+
+//         //std::cout << "Azimuth Padding and FFT - Burst " << i << " of " << num_bursts << std::endl;
+//         range_doppler_burst.resize(num_az_fft_samples, CF_VEC_1D(num_range_samples));
+//         //std::cout << "After Resize: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
+//         range_doppler_burst = transpose(range_doppler_burst);
+//         //std::cout << "After Transpose: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
+//         range_doppler_burst = compute_axis_dft(range_doppler_burst, 0, 1, false);
+//         //std::cout << "After FFT: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
+
+//         std::for_each(
+//             range_doppler_burst.begin(), range_doppler_burst.end(),
+//                 [] (CF_VEC_1D& row) { fftshift(row); }
+//         );
+
+//         range_doppler_burst = transpose(range_doppler_burst);
+
+//         //std::cout << "After FFTSHIFT: " << range_doppler_burst.size() << " " << range_doppler_burst[0].size() << std::endl;
+
+//         std::cout << "Adding Range Doppler Burst " << i << " of " << num_bursts 
+//                   << " to the Output Vector."<< std::endl;
+//         range_doppler_swath.insert(
+//             range_doppler_swath.end(), range_doppler_burst.begin(), range_doppler_burst.end()
+//         );
+//     }
+
+//     return range_doppler_swath;
+// }
 
 
-CF_VEC_1D get_accc_range_blocks(
-    const CF_VEC_1D& avg_cross_corr,
-    const int&       num_azimuth
-) {
-    CF_VEC_2D accc_blocks;
-    CF_VEC_1D block;
-
-    int block_size = static_cast<int>(std::ceil(
-        static_cast<double>(avg_cross_corr.size()) / static_cast<double>(num_azimuth)
-    ));
-
-    for (int i = 0; i < avg_cross_corr.size(); i++)
-    {
-        if (i % block_size == 0 and i != 0)
-        {
-            accc_blocks.push_back(block);
-            block = {};
-        }
-        block.push_back(avg_cross_corr[i]);
-    }
-    accc_blocks.push_back(block);
-
-    std::cout << "Block Size: " << block_size << std::endl;
-    std::cout << "ACCC Blocks Size: " << accc_blocks.size() << std::endl;
-
-    CF_VEC_1D averaged_blocks(accc_blocks.size());
-
-    std::transform(
-        accc_blocks.begin(), accc_blocks.end(), averaged_blocks.begin(),
-            [] (const CF_VEC_1D& v) {
-                return std::accumulate(v.begin(), v.end(), std::complex<double>(0.0, 0.0)) / static_cast<double>(v.size());
-            }
-    );
-
-    return averaged_blocks;
-}
+// CF_VEC_2D range_doppler_burst(
+//     const std::string& filename,
+//     const std::string& swath_name,
+//     const int&         burst_num
+// ) {
+//     std::ifstream data = open_file(filename);
+//     return range_doppler_burst(data, swath_name, burst_num);
+// }
 
 
-CF_VEC_1D get_average_cross_correlation(
-    const CF_VEC_2D& signals
-) {
-    int num_azimuth = signals.size();
-    int num_range = signals[0].size();
+// CF_VEC_2D range_doppler_burst(
+//     std::ifstream&     data,
+//     const std::string& swath_name,
+//     const int&         burst_num
+// ) {
+//     CF_VEC_2D range_compressed = range_compress_burst(data, swath_name, burst_num);
+//     return compute_axis_dft(range_compressed, 0, 0, false);
+// }
 
-    std::vector<std::complex<double>> accc(num_range, std::complex<double>(0, 0));
 
-    for (int i = 0; i < num_azimuth - 1; i++)
-    {
-        const CF_VEC_1D& signal = signals[i];
-        const CF_VEC_1D& next_signal = signals[i + 1];
+// CF_VEC_1D get_accc_range_blocks(
+//     const CF_VEC_1D& avg_cross_corr,
+//     const int&       num_azimuth
+// ) {
+//     CF_VEC_2D accc_blocks;
+//     CF_VEC_1D block;
 
-        for (int j = 0; j < num_range; j++)
-        {
-            accc[j] += (signal[j] * std::conj(next_signal[j])) / (std::abs(signal[j]) * std::abs(next_signal[j]));
-        }
-    }
+//     int block_size = static_cast<int>(std::ceil(
+//         static_cast<double>(avg_cross_corr.size()) / static_cast<double>(num_azimuth)
+//     ));
 
-    return get_accc_range_blocks(accc, num_azimuth);
-};
+//     for (int i = 0; i < avg_cross_corr.size(); i++)
+//     {
+//         if (i % block_size == 0 and i != 0)
+//         {
+//             accc_blocks.push_back(block);
+//             block = {};
+//         }
+//         block.push_back(avg_cross_corr[i]);
+//     }
+//     accc_blocks.push_back(block);
+
+//     std::cout << "Block Size: " << block_size << std::endl;
+//     std::cout << "ACCC Blocks Size: " << accc_blocks.size() << std::endl;
+
+//     CF_VEC_1D averaged_blocks(accc_blocks.size());
+
+//     std::transform(
+//         accc_blocks.begin(), accc_blocks.end(), averaged_blocks.begin(),
+//             [] (const CF_VEC_1D& v) {
+//                 return std::accumulate(v.begin(), v.end(), std::complex<double>(0.0, 0.0)) / static_cast<double>(v.size());
+//             }
+//     );
+
+//     return averaged_blocks;
+// }
+
+
+// CF_VEC_1D get_average_cross_correlation(
+//     const CF_VEC_2D& signals
+// ) {
+//     int num_azimuth = signals.size();
+//     int num_range = signals[0].size();
+
+//     std::vector<std::complex<double>> accc(num_range, std::complex<double>(0, 0));
+
+//     for (int i = 0; i < num_azimuth - 1; i++)
+//     {
+//         const CF_VEC_1D& signal = signals[i];
+//         const CF_VEC_1D& next_signal = signals[i + 1];
+
+//         for (int j = 0; j < num_range; j++)
+//         {
+//             accc[j] += (signal[j] * std::conj(next_signal[j])) / (std::abs(signal[j]) * std::abs(next_signal[j]));
+//         }
+//     }
+
+//     return get_accc_range_blocks(accc, num_azimuth);
+// };
 
 
 // CF_VEC_1D unwrap_fine_dc_estimates(
@@ -398,237 +396,237 @@ CF_VEC_1D get_average_cross_correlation(
 // }
 
 
-CF_VEC_1D unwrap_fine_dc_estimates(
-    const CF_VEC_1D& fine_dcs,
-    const double&    burst_time,
-    const float&     pulse_length,
-    const float&     prf,
-    const int&       num_azimuth,
-    const int&       num_range
-) {
-    std::complex<double> imag(0.0, 1.0);
+// CF_VEC_1D unwrap_fine_dc_estimates(
+//     const CF_VEC_1D& fine_dcs,
+//     const double&    burst_time,
+//     const float&     pulse_length,
+//     const float&     prf,
+//     const int&       num_azimuth,
+//     const int&       num_range
+// ) {
+//     std::complex<double> imag(0.0, 1.0);
     
-    // Compute complex exponentials
-    CF_VEC_1D u(num_azimuth);
-    for (int i = 0; i < num_azimuth; i++) {
-        u[i] = std::exp(imag * 2.0 * PI * fine_dcs[i] / static_cast<double>(prf));
-    }
-    compute_1d_dft_in_place(u, 0, false);
+//     // Compute complex exponentials
+//     CF_VEC_1D u(num_azimuth);
+//     for (int i = 0; i < num_azimuth; i++) {
+//         u[i] = std::exp(imag * 2.0 * PI * fine_dcs[i] / static_cast<double>(prf));
+//     }
+//     compute_1d_dft_in_place(u, 0, false);
 
-    // Find the maximum phase (unwrap these phases first)
-    CF_VEC_1D unwrapped_phases(num_azimuth);
-    for (int i = 0; i < num_azimuth; i++) {
-        unwrapped_phases[i] = std::arg(u[i]); // Phase of the DFT result
-    }
+//     // Find the maximum phase (unwrap these phases first)
+//     CF_VEC_1D unwrapped_phases(num_azimuth);
+//     for (int i = 0; i < num_azimuth; i++) {
+//         unwrapped_phases[i] = std::arg(u[i]); // Phase of the DFT result
+//     }
 
-    // Calculate a (rate of phase change) and b (initial phase)
-    F_VEC_1D time = linspace(0.0, pulse_length, num_azimuth);
-    std::complex<double> a = (unwrapped_phases.back() - unwrapped_phases.front()) / (time.back() - time.front());
-    std::complex<double> b = unwrapped_phases[0];
+//     // Calculate a (rate of phase change) and b (initial phase)
+//     F_VEC_1D time = linspace(0.0, pulse_length, num_azimuth);
+//     std::complex<double> a = (unwrapped_phases.back() - unwrapped_phases.front()) / (time.back() - time.front());
+//     std::complex<double> b = unwrapped_phases[0];
 
-    // Compute residual (optional adjustment)
-    CF_VEC_1D residual(num_azimuth);
-    std::transform(
-        time.begin(), time.end(), unwrapped_phases.begin(),
-        residual.begin(),
-        [a, b] (const double& t, const std::complex<double>& phase) {
-            return phase - (a * t + b); // Compute residual
-        }
-    );
+//     // Compute residual (optional adjustment)
+//     CF_VEC_1D residual(num_azimuth);
+//     std::transform(
+//         time.begin(), time.end(), unwrapped_phases.begin(),
+//         residual.begin(),
+//         [a, b] (const double& t, const std::complex<double>& phase) {
+//             return phase - (a * t + b); // Compute residual
+//         }
+//     );
 
-    // Final unwrapped Doppler centroids
-    CF_VEC_1D unwrapped_fine_dcs(num_azimuth);
-    std::transform(
-        residual.begin(), residual.end(), time.begin(),
-        unwrapped_fine_dcs.begin(),
-        [a, b, prf] (const std::complex<double>& r, const double& t) {
-            return (a * t + b + r) / static_cast<double>(prf); // Adjust phase
-        }
-    );
+//     // Final unwrapped Doppler centroids
+//     CF_VEC_1D unwrapped_fine_dcs(num_azimuth);
+//     std::transform(
+//         residual.begin(), residual.end(), time.begin(),
+//         unwrapped_fine_dcs.begin(),
+//         [a, b, prf] (const std::complex<double>& r, const double& t) {
+//             return (a * t + b + r) / static_cast<double>(prf); // Adjust phase
+//         }
+//     );
 
-    return unwrapped_fine_dcs;
-}
-
-
-CF_VEC_1D get_fine_dcs_for_burst(
-    const CF_VEC_2D& signals,
-    const double& burst_time,
-    const double&  pulse_length,
-    const double&  prf,
-    const int&    num_azimuth,
-    const int&    num_range
-) {
-    CF_VEC_1D accc = get_average_cross_correlation(signals);
-
-    CF_VEC_1D fine_dcs(accc.size());
-    std::transform(
-        accc.begin(), accc.end(),
-            fine_dcs.begin(),
-                [prf] (std::complex<double>& c) { 
-                    return -1.0 * ( prf / (2.0 * PI)) * std::tan(c.imag() / c.real());
-                }
-    );
-
-    fine_dcs.resize(num_azimuth);
-
-    CF_VEC_1D unwrapped_fine_dcs = unwrap_fine_dc_estimates(
-        fine_dcs, burst_time, pulse_length,
-        prf, num_azimuth, num_range
-    );
-    return unwrapped_fine_dcs;
-}
+//     return unwrapped_fine_dcs;
+// }
 
 
-double get_velocity(
-    PACKET_VEC_1D& packets,
-    const int&     dict_index = 0
-) {
-    std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
+// CF_VEC_1D get_fine_dcs_for_burst(
+//     const CF_VEC_2D& signals,
+//     const double& burst_time,
+//     const double&  pulse_length,
+//     const double&  prf,
+//     const int&    num_azimuth,
+//     const int&    num_range
+// ) {
+//     CF_VEC_1D accc = get_average_cross_correlation(signals);
 
-    double v_x = dicts[dict_index].at("x_axis_velocity");
-    double v_y = dicts[dict_index].at("y_axis_velocity");
-    double v_z = dicts[dict_index].at("z_axis_velocity");
+//     CF_VEC_1D fine_dcs(accc.size());
+//     std::transform(
+//         accc.begin(), accc.end(),
+//             fine_dcs.begin(),
+//                 [prf] (std::complex<double>& c) { 
+//                     return -1.0 * ( prf / (2.0 * PI)) * std::tan(c.imag() / c.real());
+//                 }
+//     );
 
-    return std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
-}
+//     fine_dcs.resize(num_azimuth);
 
-
-std::vector<double> get_velocities(
-    PACKET_VEC_1D& packets
-) { 
-    std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
-
-    std::vector<double> velocities(dicts.size() - 1);
-
-    for (int i = 0; i < dicts.size() - 1; i++)
-    {
-        double v_x = dicts[i].at("x_axis_velocity");
-        double v_y = dicts[i].at("y_axis_velocity");
-        double v_z = dicts[i].at("z_axis_velocity");
-
-        velocities[i] = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
-    }
-
-    return velocities;
-}
+//     CF_VEC_1D unwrapped_fine_dcs = unwrap_fine_dc_estimates(
+//         fine_dcs, burst_time, pulse_length,
+//         prf, num_azimuth, num_range
+//     );
+//     return unwrapped_fine_dcs;
+// }
 
 
-CF_VEC_2D azimuth_compress_swath(
-    const std::string& filename,
-    const std::string& swath_name
-) {
-    PACKET_VEC_1D packets = L0Packet::get_packets(filename);
-    STATE_VECTORS state_vectors(packets);
+// double get_velocity(
+//     PACKET_VEC_1D& packets,
+//     const int&     dict_index = 0
+// ) {
+//     std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
+
+//     double v_x = dicts[dict_index].at("x_axis_velocity");
+//     double v_y = dicts[dict_index].at("y_axis_velocity");
+//     double v_z = dicts[dict_index].at("z_axis_velocity");
+
+//     return std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
+// }
+
+
+// std::vector<double> get_velocities(
+//     PACKET_VEC_1D& packets
+// ) { 
+//     std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
+
+//     std::vector<double> velocities(dicts.size() - 1);
+
+//     for (int i = 0; i < dicts.size() - 1; i++)
+//     {
+//         double v_x = dicts[i].at("x_axis_velocity");
+//         double v_y = dicts[i].at("y_axis_velocity");
+//         double v_z = dicts[i].at("z_axis_velocity");
+
+//         velocities[i] = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
+//     }
+
+//     return velocities;
+// }
+
+
+// CF_VEC_2D azimuth_compress_swath(
+//     const std::string& filename,
+//     const std::string& swath_name
+// ) {
+//     PACKET_VEC_1D packets = L0Packet::get_packets(filename);
+//     STATE_VECTORS state_vectors(packets);
     
-    Swath swath(filename, swath_name);
+//     Swath swath(filename, swath_name);
     
-    return azimuth_compress_swath(swath, state_vectors);
-}
+//     return azimuth_compress_swath(swath, state_vectors);
+// }
 
 
-CF_VEC_2D azimuth_compress_swath(
-    Swath& swath,
-    STATE_VECTORS& state_vectors
-) {
-    CF_VEC_2D azimuth_compressed_swath;
+// CF_VEC_2D azimuth_compress_swath(
+//     Swath& swath,
+//     STATE_VECTORS& state_vectors
+// ) {
+//     CF_VEC_2D azimuth_compressed_swath;
 
-    int num_bursts = swath.get_num_bursts();
+//     int num_bursts = swath.get_num_bursts();
 
-    for (int i = 0; i < num_bursts; i++)
-    {
-        std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
-        CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(swath[i], state_vectors);
+//     for (int i = 0; i < num_bursts; i++)
+//     {
+//         std::cout << "Azimuth Compressing Burst " << i << " of " << num_bursts << std::endl;
+//         CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(swath[i], state_vectors);
 
-        std::cout << "Adding Azimuth Compressed Burst " << i << " of " << num_bursts 
-                  << " to the Output Vector."<< std::endl;
-        azimuth_compressed_swath.insert(
-            azimuth_compressed_swath.end(), azimuth_compressed_burst.begin(), azimuth_compressed_burst.end()
-        );
-    }
-    return azimuth_compressed_swath;
-}
-
-
-CF_VEC_1D get_azimuth_matched_filter(
-    const int&   num_azimuth,
-    const double& doppler_centroid_est,
-    const double& prf,
-    const double& velocity, 
-    const double& slant_range
-) {
-    double sample_range_start = doppler_centroid_est - (prf);
-    double sample_range_end   = doppler_centroid_est + (prf);
-    F_VEC_1D azimuth_sample_range = linspace(sample_range_start, sample_range_end, num_azimuth);
-
-    CF_VEC_1D D(num_azimuth);
-
-    double denominator = (4.0 * velocity * velocity * doppler_centroid_est * doppler_centroid_est);
-
-    for (int i = 0; i < num_azimuth; i++)
-    {
-        double range_migration_factor = 1.0 - (
-            std::pow(SPEED_OF_LIGHT, 2) * std::pow(azimuth_sample_range[i], 2) / denominator
-        );
-        D[i] = std::sqrt(std::complex<double>(range_migration_factor, 0.0));
-    }
-    CF_VEC_1D azimuth_match_filter(num_azimuth);
-
-    std::complex<double> phase = I * 4.0 * PI * slant_range * doppler_centroid_est;
-    for (int i = 0; i < num_azimuth; i++)
-    {
-        azimuth_match_filter[i] = (1.0 / num_azimuth) * std::exp(
-            (phase * D[i] * D[i] * doppler_centroid_est) / SPEED_OF_LIGHT
-        );
-    }
-    // conjugate_in_place(azimuth_match_filter);
-    // apply_hanning_window_in_place(azimuth_match_filter);
-
-    return azimuth_match_filter; // compute_1d_dft(azimuth_match_filter, 0, false);
-}
+//         std::cout << "Adding Azimuth Compressed Burst " << i << " of " << num_bursts 
+//                   << " to the Output Vector."<< std::endl;
+//         azimuth_compressed_swath.insert(
+//             azimuth_compressed_swath.end(), azimuth_compressed_burst.begin(), azimuth_compressed_burst.end()
+//         );
+//     }
+//     return azimuth_compressed_swath;
+// }
 
 
-CF_VEC_2D get_azimuth_matched_filters(
-    const CF_VEC_1D& doppler_centroid_ests,
-    const double& velocity,
-    const double& pulse_length,
-    const double& pri,
-    const double& window_start_time,
-    const int&   rank,
-    const int&   num_azimuth,
-    const int&   num_range
-) {
-    double prf = 1 / pri;
+// CF_VEC_1D get_azimuth_matched_filter(
+//     const int&   num_azimuth,
+//     const double& doppler_centroid_est,
+//     const double& prf,
+//     const double& velocity, 
+//     const double& slant_range
+// ) {
+//     double sample_range_start = doppler_centroid_est - (prf);
+//     double sample_range_end   = doppler_centroid_est + (prf);
+//     F_VEC_1D azimuth_sample_range = linspace(sample_range_start, sample_range_end, num_azimuth);
 
-    double slant_range_time_near = rank * pri + window_start_time + DELTA_T_SUPPRESSED;
-    double slant_range_time_far  = slant_range_time_near + pulse_length;
-    double slant_range_near      = (slant_range_time_near * SPEED_OF_LIGHT) / 2;
-    double slant_range_far       = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
-    double slant_range           = (slant_range_near + slant_range_far) / 2;
+//     CF_VEC_1D D(num_azimuth);
 
-    int block_size = int(std::ceil(double(num_range) / double(num_azimuth)));
+//     double denominator = (4.0 * velocity * velocity * doppler_centroid_est * doppler_centroid_est);
 
-    CF_VEC_1D current_match_filter(num_azimuth);
-    CF_VEC_2D azimuth_match_filters(num_range, CF_VEC_1D(num_azimuth));
+//     for (int i = 0; i < num_azimuth; i++)
+//     {
+//         double range_migration_factor = 1.0 - (
+//             std::pow(SPEED_OF_LIGHT, 2) * std::pow(azimuth_sample_range[i], 2) / denominator
+//         );
+//         D[i] = std::sqrt(std::complex<double>(range_migration_factor, 0.0));
+//     }
+//     CF_VEC_1D azimuth_match_filter(num_azimuth);
 
-    int fine_dc_index = 0;
-    for (int i = 0; i < num_range; i++)
-    {
-        if (i % block_size == 0)
-        {
-            double fine_dc = std::abs(doppler_centroid_ests[fine_dc_index]);
-            current_match_filter = get_azimuth_matched_filter(
-                num_azimuth,
-                fine_dc,
-                prf,
-                velocity, 
-                slant_range
-            );
-            fine_dc_index++;
-        }
-        azimuth_match_filters[i] = current_match_filter;
-    }
-    return azimuth_match_filters;
-}
+//     std::complex<double> phase = I * 4.0 * PI * slant_range * doppler_centroid_est;
+//     for (int i = 0; i < num_azimuth; i++)
+//     {
+//         azimuth_match_filter[i] = (1.0 / num_azimuth) * std::exp(
+//             (phase * D[i] * D[i] * doppler_centroid_est) / SPEED_OF_LIGHT
+//         );
+//     }
+//     // conjugate_in_place(azimuth_match_filter);
+//     // apply_hanning_window_in_place(azimuth_match_filter);
+
+//     return azimuth_match_filter; // compute_1d_dft(azimuth_match_filter, 0, false);
+// }
+
+
+// CF_VEC_2D get_azimuth_matched_filters(
+//     const CF_VEC_1D& doppler_centroid_ests,
+//     const double& velocity,
+//     const double& pulse_length,
+//     const double& pri,
+//     const double& window_start_time,
+//     const int&   rank,
+//     const int&   num_azimuth,
+//     const int&   num_range
+// ) {
+//     double prf = 1 / pri;
+
+//     double slant_range_time_near = rank * pri + window_start_time + DELTA_T_SUPPRESSED;
+//     double slant_range_time_far  = slant_range_time_near + pulse_length;
+//     double slant_range_near      = (slant_range_time_near * SPEED_OF_LIGHT) / 2;
+//     double slant_range_far       = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
+//     double slant_range           = (slant_range_near + slant_range_far) / 2;
+
+//     int block_size = int(std::ceil(double(num_range) / double(num_azimuth)));
+
+//     CF_VEC_1D current_match_filter(num_azimuth);
+//     CF_VEC_2D azimuth_match_filters(num_range, CF_VEC_1D(num_azimuth));
+
+//     int fine_dc_index = 0;
+//     for (int i = 0; i < num_range; i++)
+//     {
+//         if (i % block_size == 0)
+//         {
+//             double fine_dc = std::abs(doppler_centroid_ests[fine_dc_index]);
+//             current_match_filter = get_azimuth_matched_filter(
+//                 num_azimuth,
+//                 fine_dc,
+//                 prf,
+//                 velocity, 
+//                 slant_range
+//             );
+//             fine_dc_index++;
+//         }
+//         azimuth_match_filters[i] = current_match_filter;
+//     }
+//     return azimuth_match_filters;
+// }
 
 
 double gps_time_to_seconds_since_midnight(double gps_time_seconds) {
@@ -671,221 +669,210 @@ void fftshift(std::vector<std::complex<double>>& data) {
 }
 
 
-CF_VEC_2D azimuth_compress_wip(
-    PACKET_VEC_1D& packets,
-    CF_VEC_2D& signals
-) {
-    const int& num_azimuth = signals.size();
-    const int& num_range = signals[0].size();
+// CF_VEC_2D azimuth_compress_wip(
+//     PACKET_VEC_1D& packets,
+//     CF_VEC_2D& signals
+// ) {
+//     const int& num_azimuth = signals.size();
+//     const int& num_range = signals[0].size();
 
-    std::cout << "Getting Azimuth FM Descriptors from Header Information" << std::endl;
-    int num_packets = packets.size();
+//     std::cout << "Getting Azimuth FM Descriptors from Header Information" << std::endl;
+//     int num_packets = packets.size();
 
-    L0Packet initial_packet = packets[0];
+//     L0Packet initial_packet = packets[0];
 
-    int   rank = initial_packet.secondary_header("rank");
-    double pl   = initial_packet.get_pulse_length() * 0.000001;
-    double pri  = initial_packet.get_pri() * 0.000001;
-    double prf  = 1 / pri;
-    double swst = initial_packet.get_swst() * 0.000001;
+//     int   rank = initial_packet.secondary_header("rank");
+//     double pl   = initial_packet.get_pulse_length() * 0.000001;
+//     double pri  = initial_packet.get_pri() * 0.000001;
+//     double prf  = 1 / pri;
+//     double swst = initial_packet.get_swst() * 0.000001;
 
-    double burst_time = initial_packet.get_time();
+//     double burst_time = initial_packet.get_time();
 
-    burst_time = gps_time_to_seconds_since_midnight(burst_time);
+//     burst_time = gps_time_to_seconds_since_midnight(burst_time);
 
-    std::cout << "Converting to Range Doppler Domain" << std::endl;
-    CF_VEC_2D signals_rd = compute_axis_dft(signals, 0, 0, false);
+//     std::cout << "Converting to Range Doppler Domain" << std::endl;
+//     CF_VEC_2D signals_rd = compute_axis_dft(signals, 0, 0, false);
 
-    std::cout << "Computing Fine DC" << std::endl;
-    CF_VEC_1D fine_dcs = get_fine_dcs_for_burst(
-        signals_rd,
-        burst_time,
-        pl,
-        prf,
-        num_azimuth,
-        num_range
-    );
+//     std::cout << "Computing Fine DC" << std::endl;
+//     CF_VEC_1D fine_dcs = get_fine_dcs_for_burst(
+//         signals_rd,
+//         burst_time,
+//         pl,
+//         prf,
+//         num_azimuth,
+//         num_range
+//     );
 
-    double V = get_velocity(packets);
-    std::cout << "Velocity: " << V << std::endl;
+//     double V = get_velocity(packets);
+//     std::cout << "Velocity: " << V << std::endl;
 
-    std::cout << "Computing the Azimuth Match Filters" << std::endl;
-    CF_VEC_2D reference_functions = get_azimuth_matched_filters(
-        fine_dcs, V, pl, pri, swst, rank, num_azimuth, num_range
-    );
+//     std::cout << "Computing the Azimuth Match Filters" << std::endl;
+//     CF_VEC_2D reference_functions = get_azimuth_matched_filters(
+//         fine_dcs, V, pl, pri, swst, rank, num_azimuth, num_range
+//     );
 
-    std::cout << "First 10 AZMFs: " << std::endl;
-    for (int i = 0; i < 10; i++) std::cout << reference_functions[0][i] << " ";
-    std::cout << std::endl;
+//     std::cout << "First 10 AZMFs: " << std::endl;
+//     for (int i = 0; i < 10; i++) std::cout << reference_functions[0][i] << " ";
+//     std::cout << std::endl;
 
-    std::cout << "Reference Functions Rows: " << reference_functions.size() << std::endl;
-    std::cout << "Reference Functions Cols: " << reference_functions[0].size() << std::endl;
+//     std::cout << "Reference Functions Rows: " << reference_functions.size() << std::endl;
+//     std::cout << "Reference Functions Cols: " << reference_functions[0].size() << std::endl;
 
-    std::cout << "Transposing and Computing Range (Azimuth) DFT" << std::endl;
-    CF_VEC_2D range_azimuth = transpose(signals);
+//     std::cout << "Transposing and Computing Range (Azimuth) DFT" << std::endl;
+//     CF_VEC_2D range_azimuth = transpose(signals);
 
-    std::cout << "Applying Match Filter" << std::endl;    
-    for (int row = 0; row < num_range; row++)
-    {
-        CF_VEC_1D& azimuth_row = range_azimuth[row];
-        CF_VEC_1D& reference_function = reference_functions[row];
+//     std::cout << "Applying Match Filter" << std::endl;    
+//     for (int row = 0; row < num_range; row++)
+//     {
+//         CF_VEC_1D& azimuth_row = range_azimuth[row];
+//         CF_VEC_1D& reference_function = reference_functions[row];
 
-        compute_1d_dft_in_place(azimuth_row, 0, false);
+//         compute_1d_dft_in_place(azimuth_row, 0, false);
 
-        std::transform(
-            azimuth_row.begin(), azimuth_row.end(),
-                reference_function.begin(), azimuth_row.begin(),
-                    [] (std::complex<double>& signal, std::complex<double>& match) { return signal * match; }
-        );
+//         std::transform(
+//             azimuth_row.begin(), azimuth_row.end(),
+//                 reference_function.begin(), azimuth_row.begin(),
+//                     [] (std::complex<double>& signal, std::complex<double>& match) { return signal * match; }
+//         );
 
-        compute_1d_dft_in_place(azimuth_row, 0, true);
-        fftshift(azimuth_row);
-        compute_1d_dft_in_place(azimuth_row, 0, true);
-        fftshift(azimuth_row);
-    }
+//         compute_1d_dft_in_place(azimuth_row, 0, true);
+//         fftshift(azimuth_row);
+//         compute_1d_dft_in_place(azimuth_row, 0, true);
+//         fftshift(azimuth_row);
+//     }
 
-    std::cout << "Transposing after Azimuth Match Filtering" << std::endl;
-    return transpose(range_azimuth);
-}
-
-
-CF_VEC_2D azimuth_compress_burst_mvp(
-    std::ifstream&     data,
-    const std::string& swath,
-    const int&         burst_num,
-    STATE_VECTORS&     state_vectors
-) {
-    Burst burst(data, swath, burst_num);
-    return azimuth_compress_burst_mvp(burst, state_vectors);
-}
+//     std::cout << "Transposing after Azimuth Match Filtering" << std::endl;
+//     return transpose(range_azimuth);
+// }
 
 
+// CF_VEC_2D azimuth_compress_burst_mvp(
+//     std::ifstream&     data,
+//     const std::string& swath,
+//     const int&         burst_num,
+//     STATE_VECTORS&     state_vectors
+// ) {
+//     Burst burst(data, swath, burst_num);
+//     return azimuth_compress_burst_mvp(burst, state_vectors);
+// }
 
-CF_VEC_2D azimuth_compress_burst_mvp(
-    Burst& burst,
-    STATE_VECTORS&     state_vectors
-) {
-    //std::cout << std::fixed << std::setprecision(5) << "Failing Time: " << burst[32681].get_time() << std::endl;
-    //burst[32681].print_modes();
-    //burst[32681].print_pulse_info();
 
-    int num_packets = burst.get_num_packets();
 
-    CF_VEC_2D range_compressed = compute_2d_dft(burst.get_signals(), false, 0, 0);
-    int num_az    = range_compressed.size();
-    int num_range = range_compressed[0].size();
-  
-    range_compressed = transpose(range_compressed);
+// CF_VEC_2D azimuth_compress_burst_mvp(
+//     Burst& burst,
+//     STATE_VECTORS& state_vectors
+// ) {
+//     int num_packets = burst.get_num_packets();
 
-    std::for_each(
-        range_compressed.begin(), range_compressed.end(),
-            [num_packets] (CF_VEC_1D& row) { 
-                std::rotate(row.begin(), row.end()-(num_packets / 2), row.end());
-             }
-    );
+//     CF_VEC_2D range_compressed = compute_2d_dft(burst.get_signals(), false, 0, 0);
+//     int num_az    = range_compressed.size();
+//     int num_range = range_compressed[0].size();
 
-    range_compressed = transpose(range_compressed);
+//     range_compressed = transpose(range_compressed);
 
-    for (int i = 0; i < num_packets; i++)
-    {
-        range_compressed[i] = pulse_compression(range_compressed[i], burst.get_replica_chirp(i));
-    }
+//     std::for_each(
+//         range_compressed.begin(), range_compressed.end(),
+//             [num_packets] (CF_VEC_1D& row) { 
+//                 std::rotate(row.begin(), row.end()-(num_packets / 2), row.end());
+//              }
+//     );
 
-    double burst_length_seconds = burst[-1].get_time() - burst[0].get_time();
+//     range_compressed = transpose(range_compressed);
 
-    D_VEC_1D times(num_az);
-    D_VEC_2D positions(num_az, D_VEC_1D(3));
-    D_VEC_1D velocities_norm(num_az);
+//     for (int i = 0; i < num_packets; i++)
+//     {
+//         range_compressed[i] = pulse_compression(range_compressed[i], burst.get_replica_chirp(i));
+//     }
 
-    for (int i = 0; i < num_az; i++)
-    {
-        times[i] = burst[i].get_time();
+//     double burst_length_seconds = burst[-1].get_time() - burst[0].get_time();
 
-        STATE_VECTOR state_vector = state_vectors.interpolate(times[i]);
+//     D_VEC_1D times(num_az);
+//     D_VEC_2D positions(num_az, D_VEC_1D(3));
+//     D_VEC_1D velocities_norm(num_az);
 
-        D_VEC_1D v = state_vector.velocity;
-        D_VEC_1D p = state_vector.position;
+//     for (int i = 0; i < num_az; i++)
+//     {
+//         times[i] = burst[i].get_time();
 
-        positions[i]  = p;
-        velocities_norm[i] = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-    }
+//         STATE_VECTOR state_vector = state_vectors.interpolate(times[i]);
 
-    double a = 6378137.0;     // WGS84 Semi-Major
-    double b = 6356752.3142;  // WGS84 Semi-Minor
-    double e = 0.0067395;     // WGS84 Eccentricity
+//         D_VEC_1D v = state_vector.velocity;
+//         D_VEC_1D p = state_vector.position;
 
-    D_VEC_1D slant_ranges = burst[0].get_slant_ranges();
+//         positions[i]  = p;
+//         velocities_norm[i] = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+//     }
 
-    double range_sample_rate = burst[0].get_range_sample_rate();
-    double pulse_length = burst[0].get_pulse_length() * 1e-6;
-    double pri = burst[0].get_pri() * 1e-6;
-    double prf = 1 / pri;
+//     double a = 6378137.0;     // WGS84 Semi-Major
+//     double b = 6356752.3142;  // WGS84 Semi-Minor
+//     double e = 0.0067395;     // WGS84 Eccentricity
 
-    D_VEC_1D range_freqs = linspace(-range_sample_rate/2, range_sample_rate/2, num_range);
-    D_VEC_1D az_freqs = linspace(-prf/2, prf/2, num_packets);
+//     D_VEC_1D slant_ranges = burst[0].get_slant_ranges();
 
-    D_VEC_2D rcmc_factor_D(num_packets, D_VEC_1D(num_range));
+//     double range_sample_rate = burst[0].get_range_sample_rate();
+//     double pulse_length = burst[0].get_pulse_length() * 1e-6;
+//     double pri = burst[0].get_pri() * 1e-6;
+//     double prf = 1 / pri;
 
-    for (int i = 0; i < num_packets; i++)
-    {
-        double latitude = positions[i][2] / positions[i][0];
+//     D_VEC_1D range_freqs = linspace(-range_sample_rate/2, range_sample_rate/2, num_range);
+//     D_VEC_1D az_freqs = linspace(-prf/2, prf/2, num_packets);
 
-        double earth_radius = sqrt(
-            (pow(a*a*cos(latitude), 2) + pow(b*b*sin(latitude), 2))
-            /
-            (pow(a*cos(latitude), 2) + pow(b*sin(latitude), 2))
-        );
+//     D_VEC_2D rcmc_factor_D(num_packets, D_VEC_1D(num_range));
 
-        D_VEC_1D p = positions[i];
-        double pos = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
-        double v_sat = velocities_norm[i];
+//     for (int i = 0; i < num_packets; i++)
+//     {
+//         double latitude = positions[i][2] / positions[i][0];
 
-        for (int j = 0; j < num_range; j++)
-        {
-            double numerator = pow(earth_radius, 2) + pow(pos, 2) - pow(slant_ranges[j], 2);
-            double denominator = 2 * earth_radius * pos;
-            double beta = numerator / denominator;
-            double v_ground = earth_radius * v_sat * beta / pos;
+//         double earth_radius = sqrt(
+//             (pow(a*a*cos(latitude), 2) + pow(b*b*sin(latitude), 2))
+//             /
+//             (pow(a*cos(latitude), 2) + pow(b*sin(latitude), 2))
+//         );
 
-            double v_rel = sqrt(v_sat * v_ground);
+//         D_VEC_1D p = positions[i];
+//         double pos = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
+//         double v_sat = velocities_norm[i];
 
-            double rcmc_factor = sqrt(1 - 
-                (pow(WAVELENGTH, 2) * pow(az_freqs[i], 2)) / (4 * pow(v_rel, 2))
-            );
-            double rcmc_shift  = slant_ranges[0] * ((1 / rcmc_factor) - 1);
+//         for (int j = 0; j < num_range; j++)
+//         {
+//             double numerator = pow(earth_radius, 2) + pow(pos, 2) - pow(slant_ranges[j], 2);
+//             double denominator = 2 * earth_radius * pos;
+//             double beta = numerator / denominator;
+//             double v_ground = earth_radius * v_sat * beta / pos;
 
-            std::complex<double> rcmc_filter = exp(4.0 * I * PI * range_freqs[j] * rcmc_shift / SPEED_OF_LIGHT);
+//             double v_rel = sqrt(v_sat * v_ground);
 
-            rcmc_factor_D[i][j] = rcmc_factor;
-            range_compressed[i][j] *= rcmc_filter;
-        }
-    }
+//             double rcmc_factor = sqrt(1 - 
+//                 (pow(WAVELENGTH, 2) * pow(az_freqs[i], 2)) / (4 * pow(v_rel, 2))
+//             );
+//             double rcmc_shift  = slant_ranges[0] * ((1 / rcmc_factor) - 1);
 
-    // std::cout << velocities_norm[0] << " | " << velocities_norm[num_packets - 1] << std::endl;
-    // std::cout << positions[0][0] << " | " << positions[num_packets - 1][0] << std::endl;
-    // std::cout << slant_ranges[0] << " | " << slant_ranges[num_packets - 1] << std::endl;
-    // std::cout << rcmc_factor_D[0][0] << " | " << rcmc_factor_D[num_packets - 1][num_range - 1] << std::endl;
-    // std::cout << range_compressed[0][0] << " | " << range_compressed[num_packets - 1][num_range - 1] << std::endl;
+//             std::complex<double> rcmc_filter = exp(4.0 * I * PI * range_freqs[j] * rcmc_shift / SPEED_OF_LIGHT);
 
-    compute_axis_dft_in_place(range_compressed, 0, 1, true);
+//             rcmc_factor_D[i][j] = rcmc_factor;
+//             range_compressed[i][j] *= rcmc_filter;
+//         }
+//     }
 
-    std::for_each(
-        range_compressed.begin(), range_compressed.end(),
-            [num_range] (CF_VEC_1D& row) { 
-                std::rotate(row.begin(), row.end()-(num_range / 2), row.end());
-             }
-    );
+//     compute_axis_dft_in_place(range_compressed, 0, 1, true);
 
-    for (int i = 0; i < num_packets; i++)
-    {
-        for (int j = 0; j < num_range; j++)
-        {
-            std::complex<double> az_matched_filter = exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor_D[i][j] / WAVELENGTH);
-            range_compressed[i][j] *= az_matched_filter;
-        }
-    }
+//     std::for_each(
+//         range_compressed.begin(), range_compressed.end(),
+//             [num_range] (CF_VEC_1D& row) { 
+//                 std::rotate(row.begin(), row.end()-(num_range / 2), row.end());
+//              }
+//     );
 
-    compute_axis_dft_in_place(range_compressed, 0, 0, true);
+//     for (int i = 0; i < num_packets; i++)
+//     {
+//         for (int j = 0; j < num_range; j++)
+//         {
+//             range_compressed[i][j] *= exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor_D[i][j] / WAVELENGTH);
+//         }
+//     }
 
-    return range_compressed;
-}
+//     compute_axis_dft_in_place(range_compressed, 0, 0, true);
+
+//     return range_compressed;
+// }

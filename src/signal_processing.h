@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <execution>
 #include <iostream>
 #include <vector>
 #include <complex>
@@ -124,3 +125,17 @@ std::vector<float> scale(
 );
 
 std::vector<std::vector<float>> scale_2d(const CF_VEC_2D& signal, const std::string& scaling_mode);
+
+CF_VEC_2D compute_2d_dft_in_place(
+    CF_VEC_2D& signal,
+    const bool& inverse = false,
+    int fft_rows = 0,
+    int fft_cols = 0
+);
+
+std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals);
+
+void destroy_fftw_plans(std::vector<fftw_plan>& plans);
+
+void fftshift_in_place(CF_VEC_1D& signal);
+void fftshift_in_place(CF_VEC_2D& signals);

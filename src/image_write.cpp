@@ -1,7 +1,7 @@
 #include "image_write.h"
 
 void _write_tif(
-    std::vector<float>& img_data,
+          std::vector<float>& img_data,
     const int& rows,
     const int& cols,
     const std::string out_filename
@@ -96,8 +96,9 @@ void write_range_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    CF_VEC_2D compressed_swath = range_compress_swath(in_filename, swath_name);
-    write_tif(compressed_swath, out_filename, scaling_mode);
+    S1_Decoder s1(in_filename);
+    CF_VEC_2D range_compressed_swath = s1.get_range_compressed_swath(swath_name);
+    write_tif(range_compressed_swath, out_filename, scaling_mode);
 }
 
 
@@ -108,33 +109,34 @@ void write_range_compressed_burst(
     const int&         burst_num,
     const std::string& scaling_mode
 ) {
-    CF_VEC_2D compressed_burst = range_compress_burst(in_filename, swath_name, burst_num);
-    write_tif(compressed_burst, out_filename, scaling_mode);
+    S1_Decoder s1(in_filename);
+    CF_VEC_2D range_compressed_burst = s1.get_range_compressed_burst(swath_name, burst_num);
+    write_tif(range_compressed_burst, out_filename, scaling_mode);
 }
 
 
-void write_range_doppler_swath(
-    const std::string& in_filename,
-    const std::string& out_filename,
-    const std::string& swath_name,
-    const std::string& scaling_mode
-) {
-    CF_VEC_2D range_doppler = range_doppler_swath(in_filename, swath_name);
-    write_tif(range_doppler, out_filename, scaling_mode);
-}
+// void write_range_doppler_swath(
+//     const std::string& in_filename,
+//     const std::string& out_filename,
+//     const std::string& swath_name,
+//     const std::string& scaling_mode
+// ) {
+//     CF_VEC_2D range_doppler = range_doppler_swath(in_filename, swath_name);
+//     write_tif(range_doppler, out_filename, scaling_mode);
+// }
 
 
-void write_range_doppler_burst(
-    const std::string& in_filename,
-    const std::string& out_filename,
-    const std::string& swath_name,
-    const int&         burst_num,
-    const std::string& scaling_mode
-) {
+// void write_range_doppler_burst(
+//     const std::string& in_filename,
+//     const std::string& out_filename,
+//     const std::string& swath_name,
+//     const int&         burst_num,
+//     const std::string& scaling_mode
+// ) {
     
-    CF_VEC_2D range_doppler = range_doppler_burst(in_filename, swath_name, burst_num);
-    write_tif(range_doppler, out_filename, scaling_mode);
-}
+//     CF_VEC_2D range_doppler = range_doppler_burst(in_filename, swath_name, burst_num);
+//     write_tif(range_doppler, out_filename, scaling_mode);
+// }
 
 
 void write_azimuth_compressed_burst(
@@ -144,15 +146,8 @@ void write_azimuth_compressed_burst(
     const int&         burst_num,
     const std::string& scaling_mode
 ) {
-    PACKET_VEC_1D packets = L0Packet::get_packets(in_filename);
-    STATE_VECTORS state_vectors(packets);
-
-    std::ifstream data = open_file(in_filename);
-
-    std::cout << "Azimuth Compressing Burst" << std::endl;
-    CF_VEC_2D azimuth_compressed_burst = azimuth_compress_burst_mvp(data, swath_name, burst_num, state_vectors);
-
-    std::cout << "Calling write_tif" << std::endl;
+    S1_Decoder s1(in_filename);
+    CF_VEC_2D azimuth_compressed_burst = s1.get_azimuth_compressed_burst(swath_name, burst_num);
     write_tif(azimuth_compressed_burst, out_filename, scaling_mode);
 }
 
@@ -163,9 +158,7 @@ void write_azimuth_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    std::cout << "Azimuth Compressing Swath" << std::endl;
-    CF_VEC_2D azimuth_compressed = azimuth_compress_swath(in_filename, swath_name);
-
-    std::cout << "Calling write_tif" <<  std::endl;
-    write_tif(azimuth_compressed, out_filename, scaling_mode);
+    S1_Decoder s1(in_filename);
+    CF_VEC_2D azimuth_compressed_swath = s1.get_azimuth_compressed_swath(swath_name);
+    write_tif(azimuth_compressed_swath, out_filename, scaling_mode);
 }

@@ -1,6 +1,6 @@
 #include <set>
 
-#include <matplot/matplot.h>
+// #include <matplot/matplot.h>
 // #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 
@@ -12,8 +12,9 @@
 #include "signal_processing.h"
 #include "image_formation.h"
 #include "cli.h"
+#include "s1_decoder.h"
 
-#include "../include/matplotlibcpp.h"
+// #include "../include/matplotlibcpp.h"
 
 
 void plot_pulse(
@@ -48,11 +49,11 @@ void plot_range_compressed_swath(
     const std::string& scaling_mode
 );
 
-void plot_range_doppler_swath(
-    const std::string& filename,
-    const std::string& swath_name,
-    const std::string& scaling_mode
-);
+// void plot_range_doppler_swath(
+//     const std::string& filename,
+//     const std::string& swath_name,
+//     const std::string& scaling_mode
+// );
 
 void plot_azimuth_compressed_burst(
     const std::string& filename,
