@@ -30,6 +30,52 @@ STATE_VECTORS S1_Decoder::get_state_vectors()
     return _state_vectors;
 }
 
+CF_VEC_2D S1_Decoder::get_burst(const std::string& swath, const int& burst)
+{
+    PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
+
+    int num_packets = burst_packets.size();
+    int num_samples = 2 * burst_packets[0].get_num_quads();
+
+    CF_VEC_2D signals(num_packets, CF_VEC_1D(num_samples));
+
+    #pragma omp parallel for 
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = burst_packets[i];
+        signals[i] = packet.get_signal();
+    }
+
+    return signals;
+}
+
+CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
+{
+    PACKET_VEC_2D swath_packets = _echo_packets[swath];
+
+    int num_bursts = swath_packets.size();
+
+    int num_packets = 0;
+
+    std::for_each(
+        swath_packets.begin(), swath_packets.end(),
+            [&num_packets] (const PACKET_VEC_1D& packets) { num_packets += packets.size(); }
+    );
+
+    CF_VEC_2D signals(num_packets);
+
+    #pragma omp parallel for 
+    for (int i = 0; i < num_bursts; i++)
+    {
+        for (int j = 0; j < num_packets; j++)
+        {
+            L0Packet packet = swath_packets[i][j];
+            signals[i] = packet.get_signal();
+        }
+    }
+
+    return signals;
+}
 
 std::pair<PACKET_VEC_2D, int> S1_Decoder::get_azimuth_blocks(PACKET_VEC_1D& packets)
 {

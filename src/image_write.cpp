@@ -47,9 +47,11 @@ void write_burst(
     const int&         burst_num,
     const std::string& scaling_mode
 ) {
-    Burst burst(in_filename, swath_name, burst_num);
-    CF_VEC_2D signals = burst.get_signals();
-    write_tif(signals, out_filename, scaling_mode);
+    S1_Decoder s1(in_filename);
+
+    CF_VEC_2D burst = s1.get_burst(swath_name, burst_num);
+
+    write_tif(burst, out_filename, scaling_mode);
 }
 
 
@@ -59,9 +61,11 @@ void write_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 ) {
-    Swath swath(in_filename, swath_name);
-    CF_VEC_2D signals = swath.get_all_signals();
-    write_tif(signals, out_filename, scaling_mode);
+    S1_Decoder s1(in_filename);
+
+    CF_VEC_2D swath = s1.get_swath(swath_name);
+
+    write_tif(swath, out_filename, scaling_mode);
 }
 
 

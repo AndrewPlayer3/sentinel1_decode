@@ -213,8 +213,9 @@ void plot_burst(
     const int&         burst_num,
     const std::string& scaling_mode
 ) {
-    Burst burst(filename, swath, burst_num);
-    plot_complex_image(burst.get_signals(), scaling_mode);
+    S1_Decoder s1(filename);
+
+    plot_complex_image(s1.get_burst(swath, burst_num), scaling_mode);
 }
 
 
@@ -224,23 +225,10 @@ void plot_swath(
     const std::string& scaling_mode
 ) {
     S1_Decoder s1(filename);
-    // s1.get_state_vectors().print();
-    // PACKET_VEC_2D packets = L0Packet::get_packets_in_bursts(filename, swath_name);
-    // std::cout << "Read Packets" << std::endl;
-    // CF_VEC_2D swath;
-    // for (int burst_num = 0; burst_num < packets.size(); burst_num++)
-    // {
-    //     Burst burst(packets[burst_num], swath_name, burst_num);
-    //     for (CF_VEC_1D line : burst.get_signals())
-    //     {
-    //         swath.push_back(line);
-    //     }
-    //     std::cout << "Finished Burst #" << burst_num << std::endl;
-    // }
-    // std::cout << "Finished Building Image - Calling Plot..." << std::endl;
-    // s1.get_azimuth_compressed_swath_sm(swath_name);
-    // s1.get_azimuth_compressed_swath_iw(swath_name);
-    plot_complex_image(s1.get_azimuth_compressed_swath_sm(swath_name), scaling_mode);
+
+    CF_VEC_2D swath = s1.get_swath(swath_name);
+
+    plot_complex_image(swath, scaling_mode);
 }
 
 

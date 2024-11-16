@@ -101,6 +101,7 @@ std::vector<float> flatten(const std::vector<std::vector<float>>& values)
 
     std::vector<float> flat(rows * cols);
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const std::vector<float>& value_row = values[i];
@@ -121,6 +122,7 @@ F_VEC_1D flatten(const F_VEC_2D& values)
 
     F_VEC_1D flat(rows * cols);
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const F_VEC_1D& value_row = values[i];
@@ -140,6 +142,7 @@ CF_VEC_1D flatten(const CF_VEC_2D& values)
 
     CF_VEC_1D flat(rows * cols);
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& value_row = values[i];
@@ -164,6 +167,7 @@ std::vector<std::vector<float>> norm_2d(
 
     std::vector<std::vector<float>> norm(rows, std::vector<float>(cols));
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& complex_value_row = complex_values[i];
@@ -228,6 +232,7 @@ std::vector<std::vector<float>> magnitude_2d(const CF_VEC_2D& complex_values)
 
     std::vector<std::vector<float>> magnitude(rows, std::vector<float>(cols));
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& complex_values_row = complex_values[i];
