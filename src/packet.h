@@ -224,7 +224,6 @@ public:
     static PACKET_VEC_2D get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets = false);
     static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
     static void decode_packets_in_place(PACKET_VEC_1D& packets);
-    static void get_state_vectors(PACKET_VEC_1D& packets);
 };
 
 

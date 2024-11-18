@@ -1,6 +1,30 @@
 #include "s1_decoder.h"
 
 
+void S1_Decoder::_set_packets()
+{
+    _flat_packets = L0Packet::get_packets(_filename, 0);
+
+    for (L0Packet packet : _flat_packets) 
+    {
+        _swath_counts[packet.get_swath()]++;
+    }
+
+    for (std::pair<std::string, int> swath_count : _swath_counts)
+    {
+        std::string name = swath_count.first;
+        if (ECHO_SWATHS.contains(name))  
+        {
+            _echo_packets[name] = L0Packet::get_packets_in_bursts(_flat_packets, name);
+        }
+        else if (CAL_SWATHS.contains(name))
+        {
+            _cal_packets[name] = L0Packet::get_packets_in_bursts(_flat_packets, name, true);
+        }
+    }
+}
+
+
 bool is_sm(const std::string& swath)
 {
     return STRIPMAP_SWATHS.contains(swath);
@@ -30,6 +54,7 @@ STATE_VECTORS S1_Decoder::get_state_vectors()
     return _state_vectors;
 }
 
+
 CF_VEC_2D S1_Decoder::get_burst(const std::string& swath, const int& burst)
 {
     PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
@@ -48,6 +73,7 @@ CF_VEC_2D S1_Decoder::get_burst(const std::string& swath, const int& burst)
 
     return signals;
 }
+
 
 CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
 {
@@ -97,6 +123,7 @@ CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
     return signals;
 }
 
+
 std::pair<PACKET_VEC_2D, int> S1_Decoder::get_azimuth_blocks(PACKET_VEC_1D& packets)
 {
     PACKET_VEC_2D azimuth_blocks;
@@ -127,11 +154,11 @@ CF_VEC_2D S1_Decoder::get_range_compressed_burst(const std::string& swath, const
 {
     PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
 
-    return range_compress(burst_packets);
+    return _range_compress(burst_packets);
 }
 
 
-CF_VEC_2D S1_Decoder::get_range_compressed_swath_sm(const std::string& swath)
+CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(const std::string& swath)
 {
     PACKET_VEC_1D burst_packets = _echo_packets[swath][0];
 
@@ -143,14 +170,14 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath_sm(const std::string& swath)
 
     if (azimuth_blocks.size() == 1)
     {
-        return range_compress(azimuth_blocks[0]);
+        return _range_compress(azimuth_blocks[0]);
     }
 
     CF_VEC_2D range_compressed;
 
     for (int i = 0; i < azimuth_blocks.size(); i++)
     {
-        CF_VEC_2D range_compressed_az_block = range_compress(azimuth_blocks[i]);
+        CF_VEC_2D range_compressed_az_block = _range_compress(azimuth_blocks[i]);
 
         int rows = range_compressed_az_block.size();
         int size = range_compressed_az_block[0].size();
@@ -172,7 +199,7 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath_sm(const std::string& swath)
 }
 
 
-CF_VEC_2D S1_Decoder::get_range_compressed_swath_iw(const std::string& swath)
+CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath)
 {
     PACKET_VEC_2D packets = _echo_packets[swath];
 
@@ -183,7 +210,7 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath_iw(const std::string& swath)
     for (int i = 0; i < num_bursts; i++)
     {
         std::cout << "Range Compressing Burst #" << i << std::endl;
-        CF_VEC_2D range_compressed_burst = range_compress(packets[i]);
+        CF_VEC_2D range_compressed_burst = _range_compress(packets[i]);
         int num_azimuth_lines = range_compressed_burst.size();
         for (int i = 0; i < num_azimuth_lines; i++)
         {
@@ -201,11 +228,11 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath(const std::string& swath)
 {
     if (is_sm(swath))
     {
-        return get_range_compressed_swath_sm(swath);
+        return _get_range_compressed_swath_sm(swath);
     }
     else if (is_iw(swath))
     {
-        return get_range_compressed_swath_iw(swath);
+        return _get_range_compressed_swath_iw(swath);
     }
     else
     {
@@ -218,11 +245,11 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath(const std::string& swath)
 CF_VEC_2D S1_Decoder::get_azimuth_compressed_burst(const std::string& swath, const int& burst)
 {
     PACKET_VEC_1D packets = _echo_packets[swath][burst];
-    return azimuth_compress(packets);
+    return _azimuth_compress(packets);
 }
 
 
-CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath_iw(const std::string& swath)
+CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_iw(const std::string& swath)
 {
     PACKET_VEC_2D packets = _echo_packets[swath];
 
@@ -233,7 +260,7 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath_iw(const std::string& swath)
     for (int i = 0; i < num_bursts; i++)
     {
         std::cout << "Azimuth Compressing Burst #" << i << std::endl;
-        CF_VEC_2D azimuth_compressed_burst = azimuth_compress(packets[i]);
+        CF_VEC_2D azimuth_compressed_burst = _azimuth_compress(packets[i]);
         int num_lines = azimuth_compressed_burst.size();
         for (int i = 0; i < num_lines; i++)
         {
@@ -247,7 +274,7 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath_iw(const std::string& swath)
 }
 
 
-CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath_sm(const std::string& swath)
+CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
 {
     PACKET_VEC_1D burst_packets = _echo_packets[swath][0];
 
@@ -259,14 +286,14 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath_sm(const std::string& swath)
 
     if (azimuth_blocks.size() == 1)
     {
-        return azimuth_compress(azimuth_blocks[0]);
+        return _azimuth_compress(azimuth_blocks[0]);
     }
 
     CF_VEC_2D azimuth_compressed;
 
     for (int i = 0; i < azimuth_blocks.size(); i++)
     {
-        CF_VEC_2D azimuth_compressed_az_block = azimuth_compress(azimuth_blocks[i]);
+        CF_VEC_2D azimuth_compressed_az_block = _azimuth_compress(azimuth_blocks[i]);
 
         int rows = azimuth_compressed_az_block.size();
         int size = azimuth_compressed_az_block[0].size();
@@ -292,11 +319,11 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 {
     if (is_sm(swath))
     {
-        return get_azimuth_compressed_swath_sm(swath);
+        return _get_azimuth_compressed_swath_sm(swath);
     }
     else if (is_iw(swath))
     {
-        return get_azimuth_compressed_swath_iw(swath);
+        return _get_azimuth_compressed_swath_iw(swath);
     }
     else
     {
@@ -306,7 +333,7 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 }
 
 
-CF_VEC_2D S1_Decoder::range_compress(PACKET_VEC_1D& packets)
+CF_VEC_2D S1_Decoder::_range_compress(PACKET_VEC_1D& packets)
 {
     L0Packet first_packet = packets[0];
 
@@ -355,7 +382,7 @@ CF_VEC_2D S1_Decoder::range_compress(PACKET_VEC_1D& packets)
 }
 
 
-CF_VEC_2D S1_Decoder::azimuth_compress(PACKET_VEC_1D& packets)
+CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
 {
     L0Packet first_packet = packets[0];
 

@@ -29,18 +29,6 @@ F_VEC_1D linspace(const double& start, const double& end, const int& size)
 }
 
 
-CF_VEC_1D conjugate(const CF_VEC_1D& complex_samples)
-{
-    int num_samples = complex_samples.size();
-
-    CF_VEC_1D complex_conj = complex_samples;
-
-    conjugate_in_place(complex_conj);
-
-    return complex_conj;
-}   
-
-
 void conjugate_in_place(CF_VEC_1D& complex_samples)
 {
     std::for_each(
@@ -50,46 +38,19 @@ void conjugate_in_place(CF_VEC_1D& complex_samples)
 }  
 
 
-F_VEC_1D hanning_window(const int& num_samples)
-{
-    F_VEC_1D window(num_samples);
-
-    std::iota(window.begin(), window.end(), 0.0);
-
-    std::for_each(
-        window.begin(), window.end(),
-            [num_samples] (double& n) { n = sin(PI * n / num_samples) * sin(PI * n / num_samples); }
-    );
-    return window;
-}
-
-
-CF_VEC_1D apply_hanning_window(const CF_VEC_1D& complex_samples)
-{
-    int num_samples = complex_samples.size();
-
-    F_VEC_1D  window = hanning_window(num_samples);
-    CF_VEC_1D filtered_samples(num_samples);
-
-    std::transform(
-        complex_samples.begin(), complex_samples.end(), window.begin(), 
-            filtered_samples.begin(),
-                [] (const std::complex<double>& n, const double& m) { return n * m; }
-    );
-    return filtered_samples;
-}
-
 
 void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
 
-    F_VEC_1D window = hanning_window(num_samples);
+    F_VEC_1D window(num_samples);
+
+    std::iota(window.begin(), window.end(), 0.0);
 
     std::transform(
         window.begin(), window.end(), 
             complex_samples.begin(), complex_samples.begin(),
-                [] (double& w, std::complex<double>& n) { return n * w; }
+                [num_samples] (double& w, std::complex<double>& n) { return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n; }
     );
 }
 
@@ -551,68 +512,6 @@ CF_VEC_2D compute_2d_dft(
 }
 
 
-CF_VEC_2D compute_2d_dft_in_place(
-    CF_VEC_2D& signal,
-    const bool& inverse,
-    int fft_rows,
-    int fft_cols
-) {
-    std::cout << "Initializing 1D Complex Vector for FFTW" << std::endl;
-    if (fft_rows == 0) fft_rows = signal.size();
-    if (fft_cols == 0) fft_cols = signal[0].size();
-
-    bool rows_out_of_lims = fft_rows < 0 or fft_rows > signal.size();
-    bool cols_out_of_lims = fft_cols < 0 or fft_cols > signal[0].size();
-
-    if (rows_out_of_lims or cols_out_of_lims)
-    {
-        throw std::invalid_argument("Invalid FFT size for signal.");
-    }
-
-    CF_VEC_1D signal_fftw(fft_rows * fft_cols);
-
-    for (int i = 0; i < fft_rows; i++)
-    {
-        for (int j = 0; j < fft_cols; j++)
-        {
-            signal_fftw[i*fft_cols+j] = signal[i][j];
-        }
-    }
-
-    fftw_plan plan;
-
-    if (inverse) std::cout << "Executing 2D IFFT Plan" << std::endl;
-    else         std::cout << "Executing 2D FFT Plan"  << std::endl;
-
-    double norm_factor = inverse ? 1.0 / (fft_rows * fft_cols) : 1.0;
-    int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
-
-    plan = fftw_plan_dft_2d(
-        fft_rows, fft_cols, 
-        reinterpret_cast<fftw_complex*>(signal_fftw.data()),
-        reinterpret_cast<fftw_complex*>(signal_fftw.data()),
-        fft_direction, FFTW_ESTIMATE
-    );
-
-    fftw_execute(plan);
-
-    std::cout << "Destroying DFT Plan" << std::endl;
-
-    fftw_destroy_plan(plan);
-
-    std::cout << "Copying Complex Data into 2D Vector" << std::endl;
-
-    for (int i = 0; i < fft_rows; i++)
-    {
-        for (int j = 0; j < fft_cols; j++)
-        {
-            signal[i][j] = signal_fftw[i*fft_cols+j] * norm_factor;
-        }
-    }
-    return signal;
-}
-
-
 F_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
 {
     F_VEC_1D samples(signal.size());
@@ -675,50 +574,6 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
     for (int i = 0; i < 5; i++) std::cout << samples[i] << " ";
     std::cout << std::endl;
     for (int i = 5; i > 0; i--) std::cout << samples[cols*rows-i] << " ";
-    std::cout << std::endl;
-
-    return samples;
-}
-
-
-std::vector<std::vector<float>> scale_2d(const CF_VEC_2D& signal, const std::string& scaling_mode)
-{
-    int rows = signal.size();
-    int cols = signal[0].size();
-
-    std::vector<std::vector<float>> samples;
-
-    std::cout << "First and Last 5 Before Scaling: " << std::endl;
-    for (int i = 0; i < 5; i++) std::cout << signal[0][i] << " ";
-    std::cout << std::endl;
-    for (int i = 5; i > 0; i--) std::cout << signal[rows-1][cols-i] << " ";
-    std::cout << std::endl;
-
-    if      (scaling_mode == "norm_log") samples = norm_2d(signal, true);
-    else if (scaling_mode == "norm"    ) samples = norm_2d(signal, false);
-    else if (scaling_mode == "mag"     ) samples = magnitude_2d(signal);    
-    else if (scaling_mode == "real" or scaling_mode == "imag")
-    {
-        bool real = scaling_mode == "real";
-        int  size = signal.size() * signal[0].size();
-        
-        for (int i = 0; i < rows; i++)
-        {
-            for (int j = 0; j < cols; j++)
-            {
-                samples[i][j] = real ? signal[i][j].real() : signal[i][j].imag();
-            }
-        }
-    }
-    else
-    {
-        throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
-    }
-
-    std::cout << "First and Last 5 After Scaling: " << std::endl;
-    for (int i = 0; i < 5; i++) std::cout << samples[0][i] << " ";
-    std::cout << std::endl;
-    for (int i = 5; i > 0; i--) std::cout << samples[rows-1][cols-i] << " ";
     std::cout << std::endl;
 
     return samples;

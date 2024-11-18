@@ -775,9 +775,6 @@ std::unordered_map<std::string, int> L0Packet::_parse_header(
 
     std::unordered_map<std::string, int> header;
 
-    // F_VEC_1D doubles;
-    // D_VEC_1D doubles;
-
     for (int i = 0; i < num_fields; i++) 
     {   
         header[field_names[i]] = read_n_bits(bytes, bit_index, bit_lengths[i]);

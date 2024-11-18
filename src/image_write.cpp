@@ -119,30 +119,6 @@ void write_range_compressed_burst(
 }
 
 
-// void write_range_doppler_swath(
-//     const std::string& in_filename,
-//     const std::string& out_filename,
-//     const std::string& swath_name,
-//     const std::string& scaling_mode
-// ) {
-//     CF_VEC_2D range_doppler = range_doppler_swath(in_filename, swath_name);
-//     write_tif(range_doppler, out_filename, scaling_mode);
-// }
-
-
-// void write_range_doppler_burst(
-//     const std::string& in_filename,
-//     const std::string& out_filename,
-//     const std::string& swath_name,
-//     const int&         burst_num,
-//     const std::string& scaling_mode
-// ) {
-    
-//     CF_VEC_2D range_doppler = range_doppler_burst(in_filename, swath_name, burst_num);
-//     write_tif(range_doppler, out_filename, scaling_mode);
-// }
-
-
 void write_azimuth_compressed_burst(
     const std::string& in_filename,
     const std::string& out_filename,

@@ -35,25 +35,14 @@ CF_VEC_1D flatten(
     const CF_VEC_2D& values
 );
 
-CF_VEC_1D conjugate(
-    const CF_VEC_1D& complex_samples
-);
-
 void conjugate_in_place(
     CF_VEC_1D& complex_samples
-);
-
-F_VEC_1D hanning_window(
-    const int& num_samples
 );
 
 void apply_hanning_window_in_place(
     CF_VEC_1D& complex_samples
 );
 
-CF_VEC_1D apply_hanning_window(
-    const CF_VEC_1D& complex_samples
-);
 
 F_VEC_1D norm_1d(
     const CF_VEC_1D& complex_values,
@@ -122,15 +111,6 @@ F_VEC_1D scale(
 std::vector<float> scale(
     const CF_VEC_2D& signal,
     const std::string& scaling_mode
-);
-
-std::vector<std::vector<float>> scale_2d(const CF_VEC_2D& signal, const std::string& scaling_mode);
-
-CF_VEC_2D compute_2d_dft_in_place(
-    CF_VEC_2D& signal,
-    const bool& inverse = false,
-    int fft_rows = 0,
-    int fft_cols = 0
 );
 
 std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals);
