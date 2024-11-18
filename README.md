@@ -12,65 +12,41 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
    * [Build Script](#build-script)
    * [Dependencies](#dependencies)
 ## Introduction
-**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite. I am also working on implementing most of the [Level-1 Algorithm](#results-with-point-targets). I am creating this as an education experience for myself, and because there isn't a public fast, simple, and robust program for decoding this data. Currently, I can decode the complex samples for all packets in a data file in approximately 30 seconds (on a Ryzen 5800). 
+**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite. I am also working on implementing most of the [Level-1 Algorithm](#results-with-point-targets). I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals. Currently, azimuth compression of a full stripmap image takes ~2 minutes, including the time it takes to decode the raw data.
 
 ## Commands
 ### Writing Images
 ```bash
-$ bin/write --help
+$ bin/s1_write --help
 burst [swath] [burst_num] [in_path] [out_path]
 swath [swath] [in_path] [out_path]
 burst_replica_chirps [swath] [burst_num] [in_path] [out_path]
 swath_replica_chirps [swath] [in_path] [out_path]
 range_compressed_burst [swath] [burst_num] [in_path] [out_path]
 range_compressed_swath [swath] [in_path] [out_path]
+azimuth_compressed_burst [swath] [burst_num] [in_path] [out_path]
+azimuth_compressed_swath [swath] [in_path] [out_path]
 Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
 ```
 #### Examples
 The sample image *data/points/point.dat* is the VV data from [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW). The colors were added via *Singleband psuedocolor* with *Cumulative cut count* in QGIS.
 ```bash
-$ bin/write swath IW2 data/points/point.dat IW2.tif --norm
+$ bin/s1_write azimuth_compressed_swath S1 data/sm_sample/sample.dat AZ_S1.tif --norm
 ```
-![swath_write_example](imgs/swath_write_example.png)
+![az_sm_write_example](imgs/az_sm.png)
+
 ```bash
-$ bin/write range_compressed_swath IW2 data/points/point.dat point_targets.tif --norm
+$ bin/s1_write swath IW2 data/points/point.dat IW2.tif --norm
 ```
-![swath_rc_write_example](imgs/swath_rc_write_examples.png)
+![swath_write_example](imgs/raw_points.png)
 ```bash
-$ bin/write burst_replica_chirps IW2 5 data/points/point.dat burst_replica_chirps.tif
+$ bin/s1_write range_compressed_swath IW2 data/points/point.dat RC_IW2.tif --norm
 ```
-![burst_replica_chirps_example](imgs/burst_replica_chirp_example.png)
-### Plotting
+![swath_rc_write_example](imgs/rc_points.png)
 ```bash
-$ bin/plot --help
-signal [packet_index] [mode] [path]
-swath [swath] [path]
-burst [swath] [burst_num] [path]
-fft [packet_index] [fft_size] [path] [--inverse]
-fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]
-fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]
-range_compressed_burst [swath] [burst_num] [path]
-range_compressed_swath [swath] [path]
-Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
+$ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --norm
 ```
-#### Examples
-The sample image *data/sample/sample.dat* is the VV data from [S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41-RAW)
-```
-$ bin/plot signal 0 sample_data/sample.dat
-```
-![plot_command_example](imgs/complex_sample_plot_example.png)
-```bash
-$ bin/plot swath IW3 data/sample/sample.dat --norm
-```
-![plot_swath_example](imgs/iw3_swath.png)
-```bash
-$ bin/plot range_compressed_burst IW1 2 data/sample/sample.dat --norm
-```
-![range_compression_example](imgs/range_compressed.png)
-```bash
-$ bin/plot range_compressed_swath IW1 data/sample/sample.dat --norm
-```
-![range_compression_example](imgs/range_compressed_swath.png)
+![swath_az_write_example](imgs/az_points.png)
 
 #### Packet Information and Performance Testing
 ```bash
@@ -182,27 +158,14 @@ $ bin/main print_complex_samples 0 data/sample/sample.dat
 (1.59988,-4.80058)
 ```
 
-## Results with Point Targets
-Currently, basic range compression is the maximum level of processing that I have implemented. Although, I am working on implementing much of the [Level-1 Algorithm](https://sentinel.esa.int/documents/247904/1877131/Sentinel-1-Level-1-Detailed-Algorithm-Definition). Here is an example of range compression using some ships, outside of Shanghai, as point targets:
-![shanghai_ships](imgs/shanghai_ships_v2.png)
-```bash
-$ bin/write range_compressed_swath IW2 data/points/point.dat point_targets.tif --norm
-```
-![shanghai_range_compression](imgs/shanghai_range_compression_v2.png)
-The data is from the VV portion of this product: [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW).
-
 ## Compiling
-### Build Script
-At the moment, compiling is done via *build.sh*. You may have to edit include paths to match your system. To run it, run the following commands:
+Using `cmake`:
 ```bash
-$ chmod +x build.sh
-$ ./build.sh
+cd build
+cmake ..
+cmake --build .
 ```
-Currently, there are three basic CLI utilities that get compiled:
- * **bin/main** for printing packet, index, and annotation info, and for performance timing.
- * **bin/write** for writing *tiff* images from raw and processed data.
- * **bin/plot** for plotting raw and processed data.
 
 ### Dependencies
 
-My goal is to not involve too many external dependancies; however, some are necessary. For image writing and plotting, *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*. The plotting functionality also uses *[matplotlib-cpp](https://github.com/lava/matplotlib-cpp)*, which is included in the *include* directory. It is dependant on being linked to Python and Numpy. For me, they are located in my conda (miniforge3) environment. The *build.sh* file handles this for me on my MacOS and Linux setups, but may need to be modified to match your installs. 
+My goal is to not involve too many external dependancies; however, some are necessary. *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*. The plotting functionality also uses *[OpenCV](https://opencv.org/)*.
