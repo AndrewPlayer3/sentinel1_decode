@@ -46,8 +46,6 @@ u_int16_t huffman_decode(
     const int& brc, 
           int& bit_index
 ) {
-    std::unordered_map<u_int16_t, u_int8_t> huffman_coding = HUFFMAN_CODINGS[brc];
-
     u_int16_t bits     = -1;
     u_int8_t  bit_len  = BRC_TO_HUFFMAN_START_BIT_LEN[brc];
     u_int8_t  max_bits = 10;
@@ -65,7 +63,7 @@ u_int16_t huffman_decode(
     {
         bits = read_n_bits(data, bit_index, bit_len);
 
-        if (!huffman_coding.contains(bits)) bit_len += 1;
+        if (!HUFFMAN_CODINGS[brc].contains(bits)) bit_len += 1;
         else break;
 
         if (bit_len > 10) 
@@ -75,7 +73,7 @@ u_int16_t huffman_decode(
     }
     bit_index += bit_len;
 
-    return huffman_coding[bits];
+    return HUFFMAN_CODINGS[brc].at(bits);
 }
 
 

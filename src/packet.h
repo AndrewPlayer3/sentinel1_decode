@@ -28,14 +28,14 @@ struct H_CODE {
     UINT16_VEC_1D m_codes;
 
     H_CODE() {
-        signs.reserve(128);
-        m_codes.reserve(128);
+        signs.resize(128);
+        m_codes.resize(128);
     }
 
     H_CODE(const int& num_codes)
     {
-        signs.reserve(num_codes);
-        m_codes.reserve(num_codes);
+        signs.resize(num_codes);
+        m_codes.resize(num_codes);
     }
 };
 
@@ -53,7 +53,7 @@ struct QUAD {
     QUAD(const std::string& component_key, const int& num_blocks)
     {
         key = component_key;
-        blocks.reserve(num_blocks);
+        blocks.resize(num_blocks);
     }
 };
 
@@ -221,9 +221,9 @@ public:
     static PACKET_VEC_1D get_packets_in_swath(std::ifstream& data, const std::string& swath);
     static PACKET_VEC_2D get_packets_in_bursts(const std::string& filename, const std::string& swath);
     static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath);
+    static PACKET_VEC_2D get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets = false);
     static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
     static void decode_packets_in_place(PACKET_VEC_1D& packets);
-    static void get_state_vectors(PACKET_VEC_1D& packets);
 };
 
 

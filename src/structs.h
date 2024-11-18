@@ -404,6 +404,84 @@ const STRING_VEC_1D ECC_CODE_TO_SENSOR_MODE = {
 };
 
 
+const std::set<std::string> STRIPMAP_SWATHS = {
+    "S1", "S2", "S3", "S4", "S5", "S6", "S5_N", "S5_S"
+};
+
+
+const std::set<std::string> IW_SWATHS = {
+    "IW1", "IW2", "IW3"
+};
+
+const std::set<std::string> EW_SWATHS = {
+    "EW1", "EW2", "EW3", "EW4", "EW5"
+};
+
+const std::set<std::string> WV_SWATHS = {
+    "WV1", "WV2"
+};
+
+const std::set<std::string> ECHO_SWATHS = {
+    "S1", "S2", "S3", "S4", "S5", "S6", "S5_N", "S5_S",
+    "IW1", "IW2", "IW3",
+    "EW1", "EW2", "EW3", "EW4", "EW5",
+    "WV1", "WV2"
+};
+
+const std::set<std::string> CAL_SWATHS = {
+    "EW1_100MHz_CAL",
+    "EW2_100MHz_CAL",
+    "EW3_100MHz_CAL",
+    "EW4_100MHz_CAL",
+    "EW5_100MHz_CAL",
+    "WV1_100MHz_CAL",
+    "WV2_100MHz_CAL",
+    "S1_100MHz_CAL",
+    "S2_100MHz_CAL",
+    "S3_100MHz_CAL",
+    "S4_100MHz_CAL",
+    "S5_100MHz_N_CAL",
+    "S5_100MHz_S_CAL",
+    "S6_100MHz_CAL",
+    "IW1_100MHz_CAL",
+    "IW2_100MHz_CAL",
+    "IW3_100MHz_CAL",
+    "S1_TXCAL",
+    "S2_TXCAL",
+    "S3_TXCAL",
+    "S4_TXCAL",
+    "S5_N_TXCAL",
+    "S5_S_TXCAL",
+    "S6_TXCAL",
+    "IW1_TXCAL",
+    "IW2_TXCAL",
+    "IW3_TXCAL",
+    "EW1_TXCAL",
+    "EW2_TXCAL",
+    "EW3_TXCAL",
+    "EW4_TXCAL",
+    "EW5_TXCAL",
+    "EW1_100MHz_TXCAL",
+    "EW2_100MHz_TXCAL",
+    "EW3_100MHz_TXCAL",
+    "EW4_100MHz_TXCAL",
+    "EW5_100MHz_TXCAL",
+    "WV1_TXCAL",
+    "WV2_TXCAL",
+    "WV1_100MHz_TXCAL",
+    "WV2_100MHz_TXCAL",
+    "S1_100MHz_TXCAL",
+    "S2_100MHz_TXCAL",
+    "S3_100MHz_TXCAL",
+    "S4_100MHz_TXCAL",
+    "S5_100MHz_N_TXCAL",
+    "S5_100MHz_S_TXCAL",
+    "S6_100MHz_TXCAL",
+    "IW1_100MHz_TXCAL",
+    "IW2_100MHz_TXCAL",
+    "IW3_100MHz_TXCAL",
+};
+
 // Table 3.2-4 from Page 19
 const std::unordered_map<int, std::string> SWATH_NUM_TO_STRING = {
     {0, "S1"},

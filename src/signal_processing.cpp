@@ -29,18 +29,6 @@ F_VEC_1D linspace(const double& start, const double& end, const int& size)
 }
 
 
-CF_VEC_1D conjugate(const CF_VEC_1D& complex_samples)
-{
-    int num_samples = complex_samples.size();
-
-    CF_VEC_1D complex_conj = complex_samples;
-
-    conjugate_in_place(complex_conj);
-
-    return complex_conj;
-}   
-
-
 void conjugate_in_place(CF_VEC_1D& complex_samples)
 {
     std::for_each(
@@ -50,46 +38,19 @@ void conjugate_in_place(CF_VEC_1D& complex_samples)
 }  
 
 
-F_VEC_1D hanning_window(const int& num_samples)
-{
-    F_VEC_1D window(num_samples);
-
-    std::iota(window.begin(), window.end(), 0.0);
-
-    std::for_each(
-        window.begin(), window.end(),
-            [num_samples] (double& n) { n = sin(PI * n / num_samples) * sin(PI * n / num_samples); }
-    );
-    return window;
-}
-
-
-CF_VEC_1D apply_hanning_window(const CF_VEC_1D& complex_samples)
-{
-    int num_samples = complex_samples.size();
-
-    F_VEC_1D  window = hanning_window(num_samples);
-    CF_VEC_1D filtered_samples(num_samples);
-
-    std::transform(
-        complex_samples.begin(), complex_samples.end(), window.begin(), 
-            filtered_samples.begin(),
-                [] (const std::complex<double>& n, const double& m) { return n * m; }
-    );
-    return filtered_samples;
-}
-
 
 void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
 
-    F_VEC_1D window = hanning_window(num_samples);
+    F_VEC_1D window(num_samples);
+
+    std::iota(window.begin(), window.end(), 0.0);
 
     std::transform(
         window.begin(), window.end(), 
             complex_samples.begin(), complex_samples.begin(),
-                [] (double& w, std::complex<double>& n) { return n * w; }
+                [num_samples] (double& w, std::complex<double>& n) { return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n; }
     );
 }
 
@@ -101,6 +62,7 @@ std::vector<float> flatten(const std::vector<std::vector<float>>& values)
 
     std::vector<float> flat(rows * cols);
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const std::vector<float>& value_row = values[i];
@@ -121,6 +83,7 @@ F_VEC_1D flatten(const F_VEC_2D& values)
 
     F_VEC_1D flat(rows * cols);
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const F_VEC_1D& value_row = values[i];
@@ -140,6 +103,7 @@ CF_VEC_1D flatten(const CF_VEC_2D& values)
 
     CF_VEC_1D flat(rows * cols);
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& value_row = values[i];
@@ -164,6 +128,7 @@ std::vector<std::vector<float>> norm_2d(
 
     std::vector<std::vector<float>> norm(rows, std::vector<float>(cols));
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& complex_value_row = complex_values[i];
@@ -171,8 +136,8 @@ std::vector<std::vector<float>> norm_2d(
 
         for (int j = 0; j < cols; j++)
         {
-            norm_row[j] = std::abs(complex_value_row[j]) / scale_factor;
-
+            if (log_scale) norm_row[j] = 10.0 * log10(std::abs(complex_value_row[j]) / scale_factor);
+            else           norm_row[j] = std::abs(complex_value_row[j]) / scale_factor;
         }
     }
 
@@ -201,7 +166,7 @@ F_VEC_1D norm_1d(
         norm.begin(), norm.end(), 
             [log_scale, max_value](double &n) 
             { 
-                log_scale ? 20 * log10(n / max_value) : n / max_value;
+                return log_scale ? 20 * log10(n / max_value) : n / max_value;
             }
     );
     return norm;
@@ -228,6 +193,7 @@ std::vector<std::vector<float>> magnitude_2d(const CF_VEC_2D& complex_values)
 
     std::vector<std::vector<float>> magnitude(rows, std::vector<float>(cols));
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         const CF_VEC_1D& complex_values_row = complex_values[i];
@@ -250,6 +216,7 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 
     CF_VEC_2D arr_t(cols, CF_VEC_1D(rows));
 
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < cols; i++)
     {
         CF_VEC_1D& arr_t_row = arr_t[i];
@@ -391,24 +358,39 @@ void _compute_axis_dft(
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
     std::cout << "Initializing Plans and Excecuting Axis FFTs" << std::endl;
-    for (int row = 0; row < signal_rows; row++)
+    std::vector<fftw_plan> plans(signal_rows);
+
+    std::transform(
+        signals.begin(), signals.end(),
+            plans.begin(),
+                [fft_size, fft_direction] (CF_VEC_1D& row) {
+                    return fftw_plan_dft_1d(
+                        fft_size,
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        fft_direction,
+                        FFTW_ESTIMATE
+                    );
+                }
+    );
+
+    #pragma omp parallel for
+    for (int i = 0; i < signal_rows; i++)
     {
-        CF_VEC_1D& signal_row = signals[row];
-        fftw_plan plan = fftw_plan_dft_1d(
-            fft_size,
-            reinterpret_cast<fftw_complex*>(signal_row.data()),
-            reinterpret_cast<fftw_complex*>(signal_row.data()),
-            fft_direction,
-            FFTW_ESTIMATE
-        );
-        fftw_execute(plan);
-        fftw_destroy_plan(plan);
+        fftw_execute(plans[i]);
     }
+
+    std::for_each(
+        plans.begin(), plans.end(),
+            [] (fftw_plan& plan) { fftw_destroy_plan(plan); }
+    );
+
     double norm_factor = inverse ? 1.0 / (fft_size) : 1.0;
 
     if (inverse)
     {
         std::cout << "Normalizing Inverse Axis FFT Output" << std::endl;
+        #pragma omp parallel for num_threads(4)
         for (int i = 0; i < signal_rows; i++)
         {
             std::for_each(
@@ -417,6 +399,52 @@ void _compute_axis_dft(
             );
         }
     }
+}
+
+
+std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals)
+{
+    std::vector<fftw_plan> plans(signals.size());
+    std::transform(
+        signals.begin(), signals.end(),
+            plans.begin(),
+                [] (CF_VEC_1D& row) {
+                    return fftw_plan_dft_1d(
+                        row.size(),
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        reinterpret_cast<fftw_complex*>(row.data()),
+                        FFTW_FORWARD,
+                        FFTW_ESTIMATE
+                    );
+                }
+    );
+    return plans;
+}
+
+
+void destroy_fftw_plans(std::vector<fftw_plan>& plans)
+{
+    std::for_each(
+        plans.begin(), plans.end(),
+            [] (fftw_plan& plan) { fftw_destroy_plan(plan); }
+    );
+}
+
+
+void fftshift_in_place(CF_VEC_1D& signal)
+{
+    std::rotate(signal.begin(), signal.end()-(signal.size() / 2), signal.end());
+}
+
+
+void fftshift_in_place(CF_VEC_2D& signals)
+{
+    std::for_each(
+        signals.begin(), signals.end(),
+            [] (CF_VEC_1D& row) { 
+                std::rotate(row.begin(), row.end()-(row.size() / 2), row.end());
+            }
+    );
 }
 
 
@@ -515,10 +543,12 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
 
     std::vector<float> samples(rows*cols);
 
-    std::cout << "Before: " << std::endl;
-    for (int i = 0; i < 100; i++) std::cout << signal[0][i] << " ";
+    std::cout << "First and Last 5 Before Scaling: " << std::endl;
+    for (int i = 0; i < 5; i++) std::cout << signal[0][i] << " ";
     std::cout << std::endl;
-    
+    for (int i = 5; i > 0; i--) std::cout << signal[rows-1][cols-i] << " ";
+    std::cout << std::endl;
+
     if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
     else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));
     else if (scaling_mode == "mag"     ) samples = flatten(magnitude_2d(signal));    
@@ -540,8 +570,10 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
         throw std::invalid_argument(scaling_mode + " is not a valid scaling mode.");
     }
 
-    std::cout << "After: " << std::endl;
-    for (int i = 0; i < 100; i++) std::cout << samples[i] << " ";
+    std::cout << "First and Last 5 After Scaling: " << std::endl;
+    for (int i = 0; i < 5; i++) std::cout << samples[i] << " ";
+    std::cout << std::endl;
+    for (int i = 5; i > 0; i--) std::cout << samples[cols*rows-i] << " ";
     std::cout << std::endl;
 
     return samples;

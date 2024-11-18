@@ -213,6 +213,7 @@ void L0Packet::print_modes()
     std::cout << "Data Format: "      << get_data_format()      << std::endl;
     std::cout << "BAQ Mode: "         << get_baq_mode()         << std::endl;
     std::cout << "BAQ Block Length: " << get_baq_block_length() << std::endl;
+    std::cout << "Num BAQ Blocks: "   << _num_baq_blocks        << std::endl;
     std::cout << "Test Mode: "        << get_test_mode()        << std::endl;
     std::cout << "Sensor Mode: "      << get_sensor_mode()      << std::endl;
     std::cout << "Signal Type: "      << get_signal_type()      << std::endl;
@@ -288,12 +289,7 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
 
 CF_VEC_1D L0Packet::get_replica_chirp()
 {
-    if (!_signal_set_flag)
-    {
-        _set_signal();
-    }
-
-    int num_range = _signal.size();
+    int num_range = 2 * _num_quads;
 
     double txpsf = get_start_frequency();
     double txprr = get_tx_ramp_rate();
@@ -382,8 +378,9 @@ void L0Packet::_decode()
     }
     else if (_data_format == 'D')
     {
-        _brc.reserve(_num_baq_blocks);
-        
+        _brc.resize(_num_baq_blocks);
+        _thresholds.resize(_num_baq_blocks);
+
         _set_quad_type_d(IE, bit_index);
         _set_quad_type_d(IO, bit_index);
         _set_quad_type_d(QE, bit_index);
@@ -643,8 +640,7 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
     QUAD& QE,
     QUAD& QO
 ) {
-    D_VEC_2D s_values;
-    s_values.reserve(_num_quads);
+    D_VEC_2D s_values(_num_quads, D_VEC_1D(4));
 
     for (int block_id = 0; block_id < _num_baq_blocks; block_id++)
     {
@@ -655,7 +651,7 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
 
         for (int s_id = 0; s_id < block_length; s_id++)
         {
-            s_values.push_back({
+            s_values[block_id*block_length+s_id] = D_VEC_1D({
                 _get_s_values_type_d(
                     brc, threshold_id, 
                     IE.blocks[block_id].signs[s_id],
@@ -675,19 +671,20 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
                     brc, threshold_id,
                     QO.blocks[block_id].signs[s_id],
                     QO.blocks[block_id].m_codes[s_id]
-                ),
+                )
             });
         }
     }
-    CF_VEC_1D complex_samples;
-    complex_samples.reserve(_num_quads * 4);
+    CF_VEC_1D complex_samples(_num_quads * 2);
 
-    for (int i = 1; i <= _num_quads; i++)
+    for (int i = 1; i <= _num_quads*2; i+=2)
     {
-        D_VEC_1D components = s_values[i-1];
+        int s_index = ceil((i-1)/2);
+        
+        D_VEC_1D components = s_values[s_index];
 
-        complex_samples.push_back(std::complex<double>(components[0], components[2]));
-        complex_samples.push_back(std::complex<double>(components[1], components[3]));
+        complex_samples[i-1] = std::complex<double>(components[0], components[2]);
+        complex_samples[i] = std::complex<double>(components[1], components[3]);
     }
     return complex_samples;
 }
@@ -711,8 +708,8 @@ H_CODE L0Packet::_get_h_code_type_d(
 
         u_int16_t m_code = huffman_decode(_raw_user_data, brc, bit_index);
 
-        h_code.signs.push_back(sign);
-        h_code.m_codes.push_back(m_code);
+        h_code.signs[i] = sign;
+        h_code.m_codes[i] = m_code;
     }
     return h_code;
 }
@@ -738,7 +735,7 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
             {
                 throw std::runtime_error("BRC value is invalid.");
             }
-            _brc.push_back(brc);
+            _brc[i] = brc;
             bit_index += brc_bits;
         }
         else if (is_qe)
@@ -749,12 +746,12 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
             {
                 throw std::runtime_error("Threshold Index is invalid.");
             }
-            _thresholds.push_back(threshold);
+            _thresholds[i] = threshold;
             bit_index += threshold_bits;
         }
         brc = _brc[i];
 
-        component.blocks.push_back(_get_h_code_type_d(brc, bit_index, is_last_block));
+        component.blocks[i] = _get_h_code_type_d(brc, bit_index, is_last_block);
     }
     bit_index = _get_next_word_boundary(bit_index);
 }
@@ -777,9 +774,6 @@ std::unordered_map<std::string, int> L0Packet::_parse_header(
     int bit_index = 0;
 
     std::unordered_map<std::string, int> header;
-
-    // F_VEC_1D doubles;
-    // D_VEC_1D doubles;
 
     for (int i = 0; i < num_fields; i++) 
     {   
@@ -827,7 +821,7 @@ L0Packet L0Packet::get_next_packet(std::ifstream& data)
 PACKET_VEC_1D L0Packet::get_packets(const std::string& filename, const int& num_packets)
 {
     std::ifstream data = open_file(filename);
-    return get_packets(data);
+    return get_packets(data, num_packets);
 }
 
 
@@ -940,6 +934,41 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::st
             previous_az = az;
         }
         if (i == num_packets - 1) bursts.push_back(burst_packets);
+    }
+
+    return bursts;
+}
+
+
+/* Returns all packets in the provided swath, with each burst in its own vector. */
+PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets)
+{
+    int num_packets = packets.size();
+
+    PACKET_VEC_2D bursts; 
+    PACKET_VEC_1D burst_packets;
+    int previous_az = -1;
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        L0Packet packet = packets[i];
+        bool type_check = get_cal_packets ? packet.get_data_format() != 'D' : packet.get_data_format() == 'D';
+        if (type_check and packet.get_swath() == swath)
+        {
+            int az = packet.secondary_header("azimuth_beam_address");
+
+            if (previous_az == -1) previous_az = az;
+
+            if (az != previous_az and az != previous_az + 1 and burst_packets.size() > 0)
+            {
+                bursts.push_back(burst_packets);
+                burst_packets = PACKET_VEC_1D();
+            }
+            burst_packets.push_back(packet);
+
+            previous_az = az;
+        }
+        if (i == num_packets - 1 && burst_packets.size() > 0) bursts.push_back(burst_packets);
     }
 
     return bursts;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <execution>
 #include <iostream>
 #include <vector>
 #include <complex>
@@ -34,25 +35,14 @@ CF_VEC_1D flatten(
     const CF_VEC_2D& values
 );
 
-CF_VEC_1D conjugate(
-    const CF_VEC_1D& complex_samples
-);
-
 void conjugate_in_place(
     CF_VEC_1D& complex_samples
-);
-
-F_VEC_1D hanning_window(
-    const int& num_samples
 );
 
 void apply_hanning_window_in_place(
     CF_VEC_1D& complex_samples
 );
 
-CF_VEC_1D apply_hanning_window(
-    const CF_VEC_1D& complex_samples
-);
 
 F_VEC_1D norm_1d(
     const CF_VEC_1D& complex_values,
@@ -122,3 +112,10 @@ std::vector<float> scale(
     const CF_VEC_2D& signal,
     const std::string& scaling_mode
 );
+
+std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals);
+
+void destroy_fftw_plans(std::vector<fftw_plan>& plans);
+
+void fftshift_in_place(CF_VEC_1D& signal);
+void fftshift_in_place(CF_VEC_2D& signals);
