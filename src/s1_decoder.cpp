@@ -1,7 +1,7 @@
 #include "s1_decoder.h"
 
 
-bool is_stripmap(const std::string& swath)
+bool is_sm(const std::string& swath)
 {
     return STRIPMAP_SWATHS.contains(swath);
 }
@@ -51,26 +51,46 @@ CF_VEC_2D S1_Decoder::get_burst(const std::string& swath, const int& burst)
 
 CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
 {
-    PACKET_VEC_2D swath_packets = _echo_packets[swath];
+    PACKET_VEC_2D swath_packets;
+    if (is_iw(swath)) swath_packets = _echo_packets[swath];
+    else if (is_sm(swath)) swath_packets = get_azimuth_blocks(_echo_packets[swath][0]).first;
 
     int num_bursts = swath_packets.size();
+    int num_packets_total = 0;
+    INT_VEC_1D first_packet_index(num_bursts);
+    int max_samples = 0;
 
-    int num_packets = 0;
+    std::cout << "Initializing Values" << std::endl;
 
-    std::for_each(
-        swath_packets.begin(), swath_packets.end(),
-            [&num_packets] (const PACKET_VEC_1D& packets) { num_packets += packets.size(); }
-    );
-
-    CF_VEC_2D signals(num_packets);
-
-    #pragma omp parallel for 
     for (int i = 0; i < num_bursts; i++)
     {
+        int num_packets = swath_packets[i].size();
+        num_packets_total += num_packets;
+        L0Packet packet = swath_packets[i][0];
+        int num_samples = 2 * packet.get_num_quads();
+        first_packet_index[i] = i == 0 ? 0 : first_packet_index[i-1] + swath_packets[i-1].size();
+        if (num_samples > max_samples) max_samples = num_samples;
+    }
+
+    std::cout << "Number of Bursts: " << num_bursts << std::endl;
+    std::cout << "Number of Samples: " << max_samples << std::endl;
+
+    int signals_index = 0;
+    CF_VEC_2D signals(num_packets_total, CF_VEC_1D(max_samples));
+
+    for (int i = 0; i < num_bursts; i++)
+    {
+        std::cout << "Decoding Burst #" << i << " of " << num_bursts << "." << std::endl;
+        PACKET_VEC_1D& burst = swath_packets[i];
+        int num_packets = burst.size();
+
+        #pragma omp parallel for
         for (int j = 0; j < num_packets; j++)
         {
-            L0Packet packet = swath_packets[i][j];
-            signals[i] = packet.get_signal();
+            L0Packet packet = burst[j];
+            CF_VEC_1D signal = packet.get_signal();
+            int index = first_packet_index[i] + j;
+            signals[index] = signal;
         }
     }
 
@@ -179,7 +199,7 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath_iw(const std::string& swath)
 
 CF_VEC_2D S1_Decoder::get_range_compressed_swath(const std::string& swath)
 {
-    if (is_stripmap(swath))
+    if (is_sm(swath))
     {
         return get_range_compressed_swath_sm(swath);
     }
@@ -270,7 +290,7 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath_sm(const std::string& swath)
 
 CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 {
-    if (is_stripmap(swath))
+    if (is_sm(swath))
     {
         return get_azimuth_compressed_swath_sm(swath);
     }
