@@ -56,12 +56,12 @@ void print_packet_at_index(
 int main(int argc, char* argv[]) 
 {
     STRING_VEC_1D help_strings = {
-        "print_packet_info [packet_index] [path]",
-        "print_complex_samples [packet_index] [path]",
-        "print_swath_names [path]",
-        "print_index_records [path]",
-        "print_annotation_record [record_index] [path]",
-        "print_state_vectors [path]"
+        "packet_info [packet_index] [path]",
+        "complex_samples [packet_index] [path]",
+        "swath_names [path]",
+        "index_records [path]",
+        "annotation_record [record_index] [path]",
+        "state_vectors [path]"
     };
 
     if(argv[1] == __null) 
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
     }
     std::string command = std::string(argv[1]);
 
-    if (command == "print_packet_info")
+    if (command == "packet_info")
     {
         STRING_VEC_1D args  = {"packet_index", "path"};
         STRING_VEC_1D types = {"int", "path"};
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
         print_packet_at_index(std::string(argv[3]), std::stoi(argv[2]));
     }
 
-    else if (command == "print_swath_names")
+    else if (command == "swath_names")
     {
         STRING_VEC_1D args  = {"path"};
         STRING_VEC_1D types = {"path"};
@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    else if (command == "print_complex_samples")
+    else if (command == "complex_samples")
     {
         STRING_VEC_1D args  = {"packet_index", "path"};
         STRING_VEC_1D types = {"int", "path"};
@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    else if (command == "print_index_records")
+    else if (command == "index_records")
     {
         STRING_VEC_1D args  = {"path"};
         STRING_VEC_1D types = {"path"};
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
         print_index_records(std::string(argv[2]));
     }
 
-    else if (command == "print_annotation_record")
+    else if (command == "annotation_record")
     {
         STRING_VEC_1D args  = {"record_index", "path"};
         STRING_VEC_1D types = {"int", "path"};
@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
         print_annotation_record(std::string(argv[3]), std::stoi(argv[2]));
     }
 
-    else if (command == "print_state_vectors")
+    else if (command == "state_vectors")
     {
         STRING_VEC_1D args  = {"path"};
         STRING_VEC_1D types = {"path"};

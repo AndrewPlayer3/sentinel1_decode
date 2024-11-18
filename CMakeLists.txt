@@ -26,7 +26,7 @@ else()
 endif()
 
 # Executable: main
-add_executable(s1_print src/main.cpp src/cli.cpp src/packet.cpp src/signal_processing.cpp src/image_formation.cpp src/perf.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/state_vectors.cpp src/s1_decoder.cpp)
+add_executable(s1_print src/print_main.cpp src/cli.cpp src/packet.cpp src/signal_processing.cpp src/image_formation.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/state_vectors.cpp src/s1_decoder.cpp)
 set_target_properties(s1_print PROPERTIES OUTPUT_NAME "../bin/s1_print")
 set_target_properties(s1_print PROPERTIES CXX_COMPILER "${CLANG_COMPILER}")
 target_link_libraries(s1_print PRIVATE fftw3 m)
