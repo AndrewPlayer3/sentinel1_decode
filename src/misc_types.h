@@ -8,7 +8,12 @@ Description: Some typedefs/structs for convinience.
 
 #include <complex>
 #include <vector>
+#include <stdint.h>
 
+typedef std::uint8_t u_int8_t;
+typedef std::uint16_t u_int16_t;
+typedef std::uint32_t u_int32_t;
+typedef std::uint64_t u_int64_t;
 
 typedef struct std::vector<double>                    F_VEC_1D;
 typedef struct std::vector<std::vector<double>>       F_VEC_2D;
