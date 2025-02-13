@@ -80,6 +80,7 @@ CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
     PACKET_VEC_2D swath_packets;
     if (is_iw(swath)) swath_packets = _echo_packets[swath];
     else if (is_sm(swath)) swath_packets = get_azimuth_blocks(_echo_packets[swath][0]).first;
+    else throw(std::domain_error("Only IW and SM modes are currently supported."));
 
     int num_bursts = swath_packets.size();
     int num_packets_total = 0;
@@ -150,15 +151,15 @@ std::pair<PACKET_VEC_2D, int> S1_Decoder::get_azimuth_blocks(PACKET_VEC_1D& pack
 }
 
 
-CF_VEC_2D S1_Decoder::get_range_compressed_burst(const std::string& swath, const int& burst)
+CF_VEC_2D S1_Decoder::get_range_compressed_burst(const std::string& swath, const int& burst, bool range_doppler)
 {
     PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
 
-    return _range_compress(burst_packets);
+    return _range_compress(burst_packets, true, range_doppler);
 }
 
 
-CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(const std::string& swath)
+CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(const std::string& swath, bool range_doppler)
 {
     PACKET_VEC_1D burst_packets = _echo_packets[swath][0];
 
@@ -170,14 +171,14 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(const std::string& swath)
 
     if (azimuth_blocks.size() == 1)
     {
-        return _range_compress(azimuth_blocks[0]);
+        return _range_compress(azimuth_blocks[0], true, range_doppler);
     }
 
     CF_VEC_2D range_compressed;
 
     for (int i = 0; i < azimuth_blocks.size(); i++)
     {
-        CF_VEC_2D range_compressed_az_block = _range_compress(azimuth_blocks[i]);
+        CF_VEC_2D range_compressed_az_block = _range_compress(azimuth_blocks[i], true, range_doppler);
 
         int rows = range_compressed_az_block.size();
         int size = range_compressed_az_block[0].size();
@@ -199,7 +200,7 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(const std::string& swath)
 }
 
 
-CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath)
+CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath, bool range_doppler)
 {
     PACKET_VEC_2D packets = _echo_packets[swath];
 
@@ -210,7 +211,7 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath)
     for (int i = 0; i < num_bursts; i++)
     {
         std::cout << "Range Compressing Burst #" << i << std::endl;
-        CF_VEC_2D range_compressed_burst = _range_compress(packets[i]);
+        CF_VEC_2D range_compressed_burst = _range_compress(packets[i], true, range_doppler);
         int num_azimuth_lines = range_compressed_burst.size();
         for (int i = 0; i < num_azimuth_lines; i++)
         {
@@ -224,15 +225,15 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath)
 }
 
 
-CF_VEC_2D S1_Decoder::get_range_compressed_swath(const std::string& swath)
+CF_VEC_2D S1_Decoder::get_range_compressed_swath(const std::string& swath, bool range_doppler)
 {
     if (is_sm(swath))
     {
-        return _get_range_compressed_swath_sm(swath);
+        return _get_range_compressed_swath_sm(swath, range_doppler);
     }
     else if (is_iw(swath))
     {
-        return _get_range_compressed_swath_iw(swath);
+        return _get_range_compressed_swath_iw(swath, range_doppler);
     }
     else
     {
@@ -333,7 +334,7 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 }
 
 
-CF_VEC_2D S1_Decoder::_range_compress(PACKET_VEC_1D& packets)
+CF_VEC_2D S1_Decoder::_range_compress(PACKET_VEC_1D& packets, bool do_ifft, bool do_azimuth_fft)
 {
     L0Packet first_packet = packets[0];
 
@@ -367,7 +368,10 @@ CF_VEC_2D S1_Decoder::_range_compress(PACKET_VEC_1D& packets)
 
     std::cout << "Inverse FFT" << std::endl;
 
-    compute_axis_dft_in_place(range_compressed, 0, 1, true);
+    if (do_ifft)
+    {
+        compute_axis_dft_in_place(range_compressed, 0, 1, true);
+    }
 
     std::cout << "FFT Shift" << std::endl;
 
@@ -378,6 +382,14 @@ CF_VEC_2D S1_Decoder::_range_compress(PACKET_VEC_1D& packets)
             }
     );
 
+    if (do_azimuth_fft)
+    {
+        range_compressed = transpose(range_compressed);
+        compute_axis_dft_in_place(range_compressed, 0, 1, false);
+        fftshift_in_place(range_compressed);
+        range_compressed = transpose(range_compressed);
+    }
+
     return range_compressed;
 }
 
@@ -385,53 +397,10 @@ CF_VEC_2D S1_Decoder::_range_compress(PACKET_VEC_1D& packets)
 CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
 {
     L0Packet first_packet = packets[0];
-
     int num_packets = packets.size();
     int num_samples = 2 * packets[0].get_num_quads();
 
-    CF_VEC_2D range_compressed(num_packets, CF_VEC_1D(num_samples));
-
-    std::cout << "Reading Complex Data" << std::endl;
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        L0Packet packet = packets[i];
-        CF_VEC_1D signal = packet.get_signal();
-        range_compressed[i] = signal;
-    }
-
-    std::cout << "Converting Domains" << std::endl;
-
-    range_compressed = transpose(range_compressed);
-
-    compute_axis_dft_in_place(range_compressed, 0, 1, false);
-
-    fftshift_in_place(range_compressed);
-
-    range_compressed = transpose(range_compressed);
-
-    std::cout << "Range Compressing" << std::endl;
-
-    CF_VEC_1D replica = get_reference_function(packets[0].get_replica_chirp());
-
-    std::vector<fftw_plan> plans = get_fftw_plans(range_compressed);
-
-    #pragma omp parallel for
-    for (int i = 0; i < num_packets; i++)
-    {
-        CF_VEC_1D& signal = range_compressed[i];
-
-        fftw_execute(plans[i]);
-
-        std::transform(
-            replica.begin(), replica.end(),
-                signal.begin(), signal.begin(),
-                    [] (std::complex<double>& n, std::complex<double>& r) { return n * r;}
-        );
-    }
-
-    destroy_fftw_plans(plans);
+    CF_VEC_2D range_compressed = _range_compress(packets, false, true);
 
     std::cout << "Getting Auxillary Data" << std::endl;
 
@@ -511,7 +480,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
         }
     }
 
-    plans = get_fftw_plans(range_compressed);
+    std::vector<fftw_plan> plans = get_fftw_plans(range_compressed);
 
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)

@@ -16,6 +16,7 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 #include <unordered_set>
 #include <set>
 #include <complex>
+#include <iomanip>
 
 #include "decoding_utils.h"
 #include "misc_types.h"

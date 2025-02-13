@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Sentinel1Decode)
+project(s1_decode)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,6 +10,14 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CLANG_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(CLANG_COMPILER "/bin/g++")
+endif()
+# Finding all only seems to matter on Windows
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    find_package( OpenCV CONFIG REQUIRED )
+    find_package( FFTW3 CONFIG REQUIRED )
+    find_package( TIFF CONFIG REQUIRED )
+else()
+    find_package( OpenCV REQUIRED )
 endif()
 
 # CMake attempts to find the dependencies automatically. If it can't, setting the environment
@@ -49,16 +57,52 @@ include_directories(${OpenCV_INCLUDE_DIRS} ${FFTW3_INCLUDE_DIRS} ${TIFF_INCLUDE_
 link_libraries(${OpenCV_LIBS} ${FFTW3_LIBS} ${TIFF_LIBS})
 
 # Executable: main
-add_executable(s1_print src/print_main.cpp src/cli.cpp src/packet.cpp src/signal_processing.cpp src/image_formation.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/state_vectors.cpp src/s1_decoder.cpp)
+add_executable(
+    s1_print
+    src/print_main.cpp
+    src/cli.cpp
+    src/packet.cpp
+    src/signal_processing.cpp
+    src/image_formation.cpp
+    src/decoding_utils.cpp
+    src/aux_decoding.cpp
+    src/state_vectors.cpp
+    src/s1_decoder.cpp
+)
 set_target_properties(s1_print PROPERTIES OUTPUT_NAME "../bin/s1_print")
 target_link_libraries(s1_print PRIVATE fftw3 m)
 
 # Executable: write
-add_executable(s1_write_tiff src/write_main.cpp src/cli.cpp src/image_write.cpp src/image_formation.cpp src/packet.cpp src/decoding_utils.cpp src/aux_decoding.cpp src/signal_processing.cpp src/state_vectors.cpp src/s1_decoder.cpp)
+add_executable(
+    s1_write_tiff
+    src/write_main.cpp
+    src/cli.cpp
+    src/image_write.cpp
+    src/image_formation.cpp
+    src/packet.cpp
+    src/decoding_utils.cpp
+    src/aux_decoding.cpp
+    src/signal_processing.cpp
+    src/state_vectors.cpp
+    src/s1_decoder.cpp
+)
 set_target_properties(s1_write_tiff PROPERTIES OUTPUT_NAME "../bin/s1_write")
-target_link_libraries(s1_write_tiff PRIVATE fftw3 m tiff )
+target_link_libraries(s1_write_tiff PRIVATE fftw3 tiff )
 
 # Executable: plot
-add_executable(s1_plot src/plot_main.cpp src/cli.cpp src/plot.cpp src/image_formation.cpp src/aux_decoding.cpp src/packet.cpp src/decoding_utils.cpp src/signal_processing.cpp src/state_vectors.cpp src/s1_decoder.cpp)
+add_executable(
+    s1_plot
+    src/plot_main.cpp
+    src/cli.cpp
+    src/plot.cpp
+    src/image_formation.cpp
+    src/aux_decoding.cpp
+    src/packet.cpp
+    src/decoding_utils.cpp
+    src/signal_processing.cpp
+    src/state_vectors.cpp
+    src/s1_decoder.cpp
+)
 set_target_properties(s1_plot PROPERTIES OUTPUT_NAME "../bin/s1_plot")
-target_link_libraries(s1_plot PRIVATE fftw3 m)
+target_link_libraries(s1_plot PUBLIC ${OpenCV_LIBS})
+target_link_libraries(s1_plot PRIVATE fftw3)
