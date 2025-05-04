@@ -287,6 +287,27 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
 }
 
 
+
+D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
+{
+    if (num_ranges <= 0) num_ranges = 4 * _num_quads;
+
+    double txpsf = get_start_frequency();
+    double txprr = get_tx_ramp_rate();
+    double txpl  = get_pulse_length() * 1e-6;
+
+    double start_time = get_swst() * 1e-6;
+    double pri = get_pri() *1e-6;
+    double rank = _secondary_header.at("rank");
+
+    double delta_t = (320 / (8 * F_REF)) * 1e-6;
+
+    double delay = rank * pri + start_time + delta_t;
+
+    return linspace(delay, delay + txpl, num_ranges);
+}
+
+
 CF_VEC_1D L0Packet::get_replica_chirp()
 {
     int num_range = 2 * _num_quads;

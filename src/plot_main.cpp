@@ -217,7 +217,6 @@ int main(int argc, char* argv[])
         "fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]",
         "range_compressed_burst [swath] [burst_num] [path]",
         "range_compressed_swath [swath] [path]",
-        "range_doppler_swath [swath] [path]"
         "azimuth_compressed_burst [swath] [burst_num] [path]",
         "azimuth_compressed_swath [swath] [path]",
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"

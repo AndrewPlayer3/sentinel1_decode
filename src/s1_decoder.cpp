@@ -48,6 +48,10 @@ bool is_wv(const std::string& swath)
     return WV_SWATHS.contains(swath);
 }
 
+bool is_cal(const std::string& swath)
+{
+    return CAL_SWATHS.contains(swath);
+}
 
 STATE_VECTORS S1_Decoder::get_state_vectors()
 {
@@ -80,12 +84,31 @@ CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
     PACKET_VEC_2D swath_packets;
     if (is_iw(swath)) swath_packets = _echo_packets[swath];
     else if (is_sm(swath)) swath_packets = get_azimuth_blocks(_echo_packets[swath][0]).first;
+    else if (is_cal(swath)) swath_packets = _cal_packets[swath];
     else throw(std::domain_error("Only IW and SM modes are currently supported."));
 
     int num_bursts = swath_packets.size();
     int num_packets_total = 0;
     INT_VEC_1D first_packet_index(num_bursts);
     int max_samples = 0;
+
+    if (is_cal(swath))
+    {
+        int num_packets = swath_packets.size();
+        int num_samples = 2 * swath_packets[0][0].get_num_quads();
+        int signals_index = 0;
+        CF_VEC_2D signals(num_packets, CF_VEC_1D(num_samples));
+
+        #pragma omp parallel for
+        for (int i = 0; i < num_packets; i++)
+        {
+            L0Packet packet = swath_packets[i][0];
+            CF_VEC_1D signal = packet.get_signal();
+            signals[i] = signal;
+        }
+
+        return signals;
+    }
 
     std::cout << "Initializing Values" << std::endl;
 
@@ -428,7 +451,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
     double e = 0.0067395;     // WGS84 Eccentricity
 
     D_VEC_1D slant_ranges = packets[0].get_slant_ranges();
-
     double range_sample_rate = packets[0].get_range_sample_rate();
     double pulse_length = packets[0].get_pulse_length() * 1e-6;
     double pri = packets[0].get_pri() * 1e-6;

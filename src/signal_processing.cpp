@@ -229,6 +229,21 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 }
 
 
+F_VEC_1D fftfreq(int n, double d = 1.0) {
+    std::vector<double> freqs(n);
+    double val = 1.0 / (n * d);
+    int N = (n - 1) / 2 + 1;
+
+    for (int i = 0; i < N; ++i)
+        freqs[i] = i * val;
+
+    for (int i = N; i < n; ++i)
+        freqs[i] = (i - n) * val;
+
+    return freqs;
+}
+
+
 CF_VEC_1D compute_1d_dft(
     const CF_VEC_1D& signal,
           int   fft_size = 0,

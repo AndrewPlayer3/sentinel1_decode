@@ -7,6 +7,7 @@
 #include "misc_types.h"
 #include "state_vectors.h"
 #include "structs.h"
+#include "doppler.h"
 
 
 class S1_Decoder {

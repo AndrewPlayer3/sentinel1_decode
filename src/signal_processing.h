@@ -64,6 +64,11 @@ std::vector<std::vector<float>> magnitude_2d(
 
 CF_VEC_2D transpose(const CF_VEC_2D& arr);
 
+F_VEC_1D fftfreq(
+    int n,
+    double d
+);
+
 CF_VEC_1D compute_1d_dft(
     const CF_VEC_1D& complex_signal,
           int   fft_size,

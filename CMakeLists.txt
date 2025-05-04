@@ -68,6 +68,7 @@ add_executable(
     src/aux_decoding.cpp
     src/state_vectors.cpp
     src/s1_decoder.cpp
+    src/doppler.cpp
 )
 set_target_properties(s1_print PROPERTIES OUTPUT_NAME "../bin/s1_print")
 target_link_libraries(s1_print PRIVATE fftw3 m)
@@ -85,6 +86,7 @@ add_executable(
     src/signal_processing.cpp
     src/state_vectors.cpp
     src/s1_decoder.cpp
+    src/doppler.cpp
 )
 set_target_properties(s1_write_tiff PROPERTIES OUTPUT_NAME "../bin/s1_write")
 target_link_libraries(s1_write_tiff PRIVATE fftw3 tiff )
@@ -102,6 +104,7 @@ add_executable(
     src/signal_processing.cpp
     src/state_vectors.cpp
     src/s1_decoder.cpp
+    src/doppler.cpp
 )
 set_target_properties(s1_plot PROPERTIES OUTPUT_NAME "../bin/s1_plot")
 target_link_libraries(s1_plot PUBLIC ${OpenCV_LIBS})

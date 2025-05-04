@@ -209,6 +209,7 @@ public:
 
     double get_range_sample_rate();
     D_VEC_1D get_slant_ranges(int num_ranges=0);
+    D_VEC_1D get_slant_range_times(int num_times=0);
     CF_VEC_1D get_signal();
     CF_VEC_1D get_replica_chirp();
 
