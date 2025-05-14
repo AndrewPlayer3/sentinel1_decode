@@ -424,7 +424,6 @@ CF_VEC_2D azimuth_frequency_ufr(
 }
 
 
-// TODO:
 CF_VEC_2D azimuth_time_ufr(
     CF_VEC_2D& azimuth_compressed,
     F_VEC_1D&  dc_estimates,
@@ -445,7 +444,7 @@ CF_VEC_2D azimuth_time_ufr(
     double num_replicas = std::abs(dc_rate * burst_duration / prf);
     double bandwidth = num_replicas * prf / 2.0;
 
-    int output_shape = num_tiles * num_az;
+    int output_shape = std::floor(prf * burst_duration);
     int processing_bandwidth = std::floor(prf * burst_duration * 2.0);
     int shape = num_tiles * num_az;
     int mid = shape / 2;
@@ -476,29 +475,25 @@ CF_VEC_2D azimuth_time_ufr(
         ufr_intermediate[rng_line] = get_tiled_signal(azimuth_compressed[rng_line], num_tiles);
 
         //Apply De-ramping
-        int ka_index = 0;
         double f_dc = dc_estimates[rng_line];
-        F_VEC_1D& ka_row = ka[rng_line];
-     
+        F_VEC_1D ka_row = linear_resample(ka[rng_line], shape);
+
         for (int az_line = 0; az_line < shape; az_line++)
         {
-            double kt = -ka_row[ka_index] * dc_rate / (dc_rate - ka_row[ka_index]);
+            double kt = -ka_row[az_line] * dc_rate / (dc_rate - ka_row[az_line]);
 
             std::complex<double> sample = ufr_intermediate[rng_line][az_line];
             std::complex<double> phase_term_1 = 1.0 * I * PI * std::pow(az_freqs[az_line], 2.0) / kt;
-            std::complex<double> phase_term_2 = 2.0 * I * PI * (kt + ka_row[ka_index]) * (-f_dc / ka_row[ka_index]) * (az_freqs[az_line] / kt);
+            std::complex<double> phase_term_2 = 2.0 * I * PI * (kt + ka_row[az_line]) * (-f_dc / ka_row[az_line]) * (az_freqs[az_line] / kt);
             std::complex<double> deramp = std::exp(-phase_term_1 + phase_term_2);
 
             ufr_intermediate[rng_line][az_line] = deramp * sample;
-
-            ka_index += az_line % 2; 
         }
     }
 
     // Low-pass Filter
     compute_axis_dft_in_place(ufr_intermediate, 0, 1, false);
 
-    // TODO: Should probably be ufr_output[start:end] = ufr_intermediate[start:end], depends on fftshifts
     #pragma omp parallel for collapse(2)
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
@@ -517,32 +512,39 @@ CF_VEC_2D azimuth_time_ufr(
 
     compute_axis_dft_in_place(ufr_intermediate, 0, 1, true);
 
-    // TODO:
-    // Interpolate `ufr_output` to `output_shape`, where `output_shape`
-    // should be the original number of azimuth samples.
+    // Resample
+    CF_VEC_2D ufr_output(num_rng, CF_VEC_1D(output_shape));
 
+    std::transform(
+        ufr_intermediate.begin(), ufr_intermediate.end(),
+            ufr_output.begin(),
+                [output_shape] (CF_VEC_1D& ufr_row) {
+                    return linear_resample(ufr_row, output_shape);
+                }
+    );
+
+    ufr_intermediate.clear();
+    ufr_intermediate.shrink_to_fit();
+
+    // Apply Re-ramping
     #pragma omp parallel for
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
-        // Apply Re-ramping
-        int ka_index = 0;
         double f_dc = dc_estimates[rng_line];
-        F_VEC_1D& ka_row = ka[rng_line];
+        F_VEC_1D ka_row = linear_resample(ka[rng_line], output_shape);
 
         for (int az_line = 0; az_line < output_shape; az_line++)
         {
-            double kt = -ka_row[ka_index] * dc_rate / (dc_rate - ka_row[ka_index]);
+            double kt = -ka_row[az_line] * dc_rate / (dc_rate - ka_row[az_line]);
 
-            std::complex<double> sample = ufr_intermediate[rng_line][az_line];
+            std::complex<double> sample = ufr_output[rng_line][az_line];
             std::complex<double> phase_term_1 = 1.0 * I * PI * std::pow(az_freqs[az_line], 2.0) / kt;
-            std::complex<double> phase_term_2 = 2.0 * I * PI * (kt + ka_row[ka_index]) * (-f_dc / ka_row[ka_index]) * (az_freqs[az_line] / kt);
+            std::complex<double> phase_term_2 = 2.0 * I * PI * (kt + ka_row[az_line]) * (-f_dc / ka_row[az_line]) * (az_freqs[az_line] / kt);
             std::complex<double> reramp = std::exp(phase_term_1 - phase_term_2);
 
-            ufr_intermediate[rng_line][az_line] = reramp * sample;
-
-            ka_index += az_line % 2; // int(std::floor(num_replicas * num_tiles)); 
+            ufr_output[rng_line][az_line] = reramp * sample;
         }
     }
 
-    return transpose(ufr_intermediate);
+    return transpose(ufr_output);
 }

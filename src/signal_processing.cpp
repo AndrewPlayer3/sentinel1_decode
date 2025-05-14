@@ -29,6 +29,83 @@ F_VEC_1D linspace(const double& start, const double& end, const int& size)
 }
 
 
+F_VEC_1D linear_resample(const F_VEC_1D& arr, const int& num_output_samples)
+{
+    int num_input_samples = arr.size();
+
+    if (num_input_samples == num_output_samples)
+    {
+        return arr;
+    }
+
+    F_VEC_1D out(num_output_samples);
+
+    double x = 0.0;
+    double dx_in = 1.0 / (num_input_samples - 1);
+    double dx_out = 1.0 / (num_output_samples - 1);
+
+    int index = 0;
+
+    for (int i = 0; i < num_input_samples; i++)
+    {
+        double x0 = i * dx_in;
+        double x1 = (i + 1) * dx_in;
+        double y0 = arr[i];
+        double y1 = arr[i+1];
+
+        while (x < x1 and index < num_output_samples)
+        {
+            out[index] = y0 + ((x - x0) * (y1 - y0) / (x1 - x0));
+            x += dx_out;
+            index += 1;
+        }
+    }
+
+    out[-1] = out[-1];
+ 
+    return out;
+}
+
+
+CF_VEC_1D linear_resample(const CF_VEC_1D& arr, const int& num_output_samples)
+{
+    int num_input_samples = arr.size();
+
+    if (num_input_samples == num_output_samples)
+    {
+        return arr;
+    }
+
+    CF_VEC_1D out(num_output_samples);
+
+    double x = 0.0;
+    double dx_in = 1.0 / (num_input_samples - 1);
+    double dx_out = 1.0 / (num_output_samples - 1);
+
+    int index = 0;
+
+    for (int i = 0; i < num_input_samples; i++)
+    {
+        double x0 = i * dx_in;
+        double x1 = (i + 1) * dx_in;
+
+        std::complex<double> y0 = arr[i];
+        std::complex<double> y1 = arr[i+1];
+
+        while (x < x1 and index < num_output_samples)
+        {
+            out[index] = y0 + ((x - x0) * (y1 - y0) / (x1 - x0));
+            x += dx_out;
+            index += 1;
+        }
+    }
+
+    out[-1] = out[-1];
+ 
+    return out;
+}
+
+
 void conjugate_in_place(CF_VEC_1D& complex_samples)
 {
     std::for_each(

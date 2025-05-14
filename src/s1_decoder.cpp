@@ -423,31 +423,38 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
     int num_packets = packets.size();
     int num_samples = 2 * packets[0].get_num_quads();
 
-    double a = 6378137.0;     // WGS84 Semi-Major
-    double b = 6356752.3142;  // WGS84 Semi-Minor
-    double e = 0.0067395;     // WGS84 Eccentricity
-
-    double range_sample_rate = packets[0].get_range_sample_rate();
-    double pulse_length = packets[0].get_pulse_length() * 1e-6;
-    double pri = packets[0].get_pri() * 1e-6;
-    double prf = 1 / pri;
+    CF_VEC_2D range_compressed = _range_compress(packets, true, false);
 
     D_VEC_1D slant_ranges = packets[0].get_slant_ranges();
 
     F_VEC_1D v_0 = _state_vectors.velocities[0];
 
     double v_norm = std::sqrt(std::pow(v_0[0], 2.0) + std::pow(v_0[1], 2.0) + std::pow(v_0[2], 2.0));
+    double range_sample_rate = packets[0].get_range_sample_rate();
+    double pulse_length = packets[0].get_pulse_length() * 1e-6;
+    double pri = packets[0].get_pri() * 1e-6;
+    double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
     double dc_rate = get_doppler_centroid_rate(packets, v_norm);
 
-    CF_VEC_2D range_compressed = _range_compress(packets, true, false);
-    F_VEC_1D doppler_centroid = get_doppler_centroid(range_compressed, dc_rate, burst_length_seconds, first_packet);
-    range_compressed = azimuth_frequency_ufr(range_compressed, doppler_centroid, first_packet, dc_rate, burst_length_seconds, prf);
+    F_VEC_1D doppler_centroid = get_doppler_centroid(
+        range_compressed,
+        dc_rate,
+        burst_length_seconds,
+        first_packet
+    );
 
+    range_compressed = azimuth_frequency_ufr(
+        range_compressed,
+        doppler_centroid,
+        first_packet,
+        dc_rate,
+        burst_length_seconds,
+        prf
+    );
     num_packets = range_compressed.size();
 
     double oversample_factor = double(num_packets) / double(packets.size());
-
     double t0 = packets[0].get_time();
     double t1 = packets[1].get_time();
     double time_delta = (t1 - t0) / oversample_factor;
@@ -476,23 +483,27 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
 
     std::cout << "Azimuth Compressing" << std::endl;
 
+    double a = 6378137.0;     // WGS84 Semi-Major
+    double b = 6356752.3142;  // WGS84 Semi-Minor
+    double e = 0.0067395;     // WGS84 Eccentricity
+
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
-        double latitude = positions[i][2] / positions[i][0];
+        D_VEC_1D& position = positions[i];
+        F_VEC_1D& ka_row = ka[i];
+        CF_VEC_1D& range_compressed_row = range_compressed[i];
+
+        double latitude = position[2] / position[0];
 
         double earth_radius = sqrt(
-            (pow(a*a*cos(latitude), 2) + pow(b*b*sin(latitude), 2))
+            (pow(a*a*cos(latitude), 2) + pow(b*b*sin(latitude), 2)) 
             /
             (pow(a*cos(latitude), 2) + pow(b*sin(latitude), 2))
         );
 
-        D_VEC_1D& p = positions[i];
-        double pos = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
+        double pos = sqrt(position[0]*position[0] + position[1]*position[1] + position[2]*position[2]);
         double v_sat = velocities_norm[i];
-
-        F_VEC_1D& ka_row = ka[i];
-        CF_VEC_1D& range_compressed_row = range_compressed[i];
 
         for (int j = 0; j < num_samples; j++)
         {
@@ -500,12 +511,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
             double denominator = 2 * earth_radius * pos;
             double beta = numerator / denominator;
             double v_ground = earth_radius * v_sat * beta / pos;
-
             double v_rel = sqrt(v_sat * v_ground);
-
-            double rcmc_factor = sqrt(1 - 
-                (WAVELENGTH*WAVELENGTH * az_freqs[i]*az_freqs[i]) / (4 * v_rel*v_rel)
-            );
+            double rcmc_factor = sqrt(1 - (WAVELENGTH*WAVELENGTH * az_freqs[i]*az_freqs[i]) / (4 * v_rel*v_rel));
 
             range_compressed_row[j] *= (1 / double(num_samples)) * exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor * CENTER_FREQ / SPEED_OF_LIGHT);
             ka_row[j] = -(2 * std::pow(v_rel, 2.0) * std::pow(rcmc_factor, 3.0)) / (WAVELENGTH * slant_ranges[j]); 
