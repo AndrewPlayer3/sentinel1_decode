@@ -29,30 +29,6 @@ void print_state_vectors(
 }
 
 
-// void print_packet_at_index(
-//     std::string filename,
-//     int  index
-// ) {
-//     std::ifstream data = open_file(filename);
-//     PACKET_VEC_1D packets = L0Packet::get_packets(data, index + 1);
-
-//     if (index >= packets.size())
-//     {
-//         throw std::out_of_range("Index is greater than the number of packets.");
-//     }
-//     L0Packet packet = packets[index];
-
-//     std::cout << "Primary Header:" << std::endl;
-//     packet.print_primary_header();
-//     std::cout << "\nSecondary Header: " << std::endl;
-//     packet.print_secondary_header();
-//     std::cout << "\nOperating Mode Info:" << std::endl;
-//     packet.print_modes();
-//     std::cout << "\nPulse Info:" << std::endl;
-//     packet.print_pulse_info();
-// }
-
-
 void print_packet_at_index(
     std::string filename,
     int  index
@@ -60,17 +36,11 @@ void print_packet_at_index(
     std::ifstream data = open_file(filename);
     PACKET_VEC_1D packets = L0Packet::get_packets(data, index + 1);
 
-    // if (index >= packets.size())
-    // {
-    //     throw std::out_of_range("Index is greater than the number of packets.");
-    // }
-    index = 0;
-    L0Packet packet = packets[index];
-
-    while(packet.get_data_format() != 'C')
+    if (index >= packets.size())
     {
-        packet = packets[++index];
+        throw std::out_of_range("Index is greater than the number of packets.");
     }
+    L0Packet packet = packets[index];
 
     std::cout << "Primary Header:" << std::endl;
     packet.print_primary_header();

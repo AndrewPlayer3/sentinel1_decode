@@ -28,12 +28,9 @@ const double WAVELENGTH = SPEED_OF_LIGHT / CENTER_FREQ;
 const double F_REF = 37.53472224;
 const double DELTA_T_SUPPRESSED = (320 / (8 * F_REF)) * 1e-6;
 
-
 const u_int8_t PRIMARY_HEADER_SIZE   = 6;
 const u_int8_t SECONDARY_HEADER_SIZE = 62;
 const u_int8_t WORD_SIZE             = 16;
-
-
 
 
 // Table 2.4-1 from Page 13
@@ -166,6 +163,7 @@ const STRING_VEC_1D SECONDARY_HEADER_FIELDS = {
 
 // Figures 4-7 -> 4-11 from Pages 71 -> 73
 const INT_VEC_1D BRC_TO_HUFFMAN_START_BIT_LEN = {1, 1, 1, 2, 2};
+
 
 // Figures 4-7 -> 4-11 from Pages 71 -> 73
 const std::vector<std::unordered_map<u_int16_t, u_int8_t>> HUFFMAN_CODINGS = {

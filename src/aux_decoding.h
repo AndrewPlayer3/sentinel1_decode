@@ -34,6 +34,14 @@ VEC_UNSORTEDMAP annotation_decoder(
     std::ifstream& data
 );
 
+F_VEC_1D annotation_time_decoder(
+    std::ifstream& data
+);
+
+F_VEC_1D annotation_time_decoder(
+    const std::string& filename
+);
+
 VEC_UNSORTEDMAP index_decoder(
     const std::string& filename
 );

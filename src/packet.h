@@ -68,6 +68,7 @@ private:
 
     UINT8_VEC_1D _raw_user_data;
 
+    int _packet_index;
     int _num_quads;
     int _test_mode;
     int _baq_mode;
@@ -86,7 +87,6 @@ private:
         const INT_VEC_1D&    bit_lengths,
         const STRING_VEC_1D& field_names
     );
-
 
     /**********************************/
     /* DECODING COMPLEX SAMPLES       */
@@ -148,12 +148,14 @@ public:
     L0Packet(
         std::unordered_map<std::string, int> primary_header,
         std::unordered_map<std::string, int> secondary_header,
-        UINT8_VEC_1D raw_user_data
+        UINT8_VEC_1D raw_user_data,
+        int packet_index
     ) {
         _primary_header   = primary_header;
         _secondary_header = secondary_header;
         _raw_user_data    = raw_user_data;
 
+        _packet_index     = packet_index;
         _num_quads        = secondary_header["num_quadratures"];
         _test_mode        = secondary_header["test_mode"];
         _baq_mode         = secondary_header["baq_mode"];
@@ -181,19 +183,21 @@ public:
     const int primary_header(const std::string& key) {return _primary_header.at(key);}
     const int secondary_header(const std::string& key) {return _secondary_header.at(key);}
 
-    int get_baq_block_length();
+    const int get_packet_index();
+    const int get_baq_block_length();
 
-    double get_time();
-    double get_pulse_length();
-    double get_tx_ramp_rate();
-    double get_start_frequency();
-    double get_pri();
-    double get_swl();
-    double get_swst();
-    double get_rx_gain();
+    const double get_time();
+    const double get_pulse_length();
+    const double get_tx_ramp_rate();
+    const double get_start_frequency();
+    const double get_pri();
+    const double get_swl();
+    const double get_swst();
+    const double get_rx_gain();
+    const double get_azimuth_beam_angle();
 
-    char get_rx_polarization();
-    char get_tx_polarization();
+    const char get_rx_polarization();
+    const char get_tx_polarization();
 
     std::string get_baq_mode();
     std::string get_test_mode();
@@ -216,7 +220,7 @@ public:
     typedef struct std::vector<L0Packet>              PACKET_VEC_1D;
     typedef struct std::vector<std::vector<L0Packet>> PACKET_VEC_2D;
 
-    static L0Packet get_next_packet(std::ifstream& data);
+    static L0Packet get_next_packet(std::ifstream& data, int& packet_index);
     static PACKET_VEC_1D get_packets(std::ifstream& data, const int& num_packets = 0);
     static PACKET_VEC_1D get_packets(const std::string& filename, const int& num_packets = 0);
     static PACKET_VEC_1D get_packets_in_swath(const std::string& filename, const std::string& swath);

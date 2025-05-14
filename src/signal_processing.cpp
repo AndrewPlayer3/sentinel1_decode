@@ -229,6 +229,26 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 }
 
 
+F_VEC_2D transpose(const F_VEC_2D& arr)
+{
+    int rows = arr.size();
+    int cols = arr[0].size();
+
+    F_VEC_2D arr_t(cols, F_VEC_1D(rows));
+
+    #pragma omp parallel for num_threads(4)
+    for (int i = 0; i < cols; i++)
+    {
+        F_VEC_1D& arr_t_row = arr_t[i];
+        for (int j = 0; j < rows; j++)
+        {
+            arr_t_row[j] = arr[j][i];
+        }
+    }
+    return arr_t;
+}
+
+
 F_VEC_1D fftfreq(int n, double d = 1.0) {
     std::vector<double> freqs(n);
     double val = 1.0 / (n * d);

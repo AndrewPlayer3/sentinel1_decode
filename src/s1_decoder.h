@@ -17,6 +17,8 @@ private:
 
     PACKET_VEC_1D _flat_packets;
 
+    D_VEC_1D _times;
+
     std::unordered_map<std::string, int> _swath_counts;
 
     std::unordered_map<std::string, PACKET_VEC_2D> _echo_packets;
@@ -42,6 +44,7 @@ public:
         _filename = filename;
         _set_packets();
         _set_state_vectors();
+        _times = annotation_time_decoder("/home/andrew/Repos/sentinel1_decode/data/san_fran/san_fran_annot.dat");
     }
 
     void _set_state_vectors()

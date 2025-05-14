@@ -35,7 +35,7 @@ CF_VEC_1D pulse_compression(
 ) {
     int num_samples = signal.size();
 
-    CF_VEC_1D signal_    = signal;
+    CF_VEC_1D signal_ = signal;
 
     std::transform(
         reference.begin(), reference.end(),
