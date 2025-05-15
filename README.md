@@ -35,7 +35,8 @@ range_doppler_burst [swath] [burst_num] [in_path] [out_path]
 range_doppler_swath [swath] [in_path] [out_path]
 azimuth_compressed_burst [swath] [burst_num] [in_path] [out_path]
 azimuth_compressed_swath [swath] [in_path] [out_path]
-save_swath_as_cf32 [swath] [in_path] [out_path]Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
+save_swath_as_cf32 [swath] [in_path] [out_path]
+Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
 ```
 #### Image Formation Examples
 The sample image *data/points/point.dat* is the VV data from [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW).
