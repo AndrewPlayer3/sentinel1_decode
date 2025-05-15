@@ -19,7 +19,8 @@ CF_VEC_2D azimuth_frequency_ufr(
     L0Packet&  initial_packet,
     const double& dc_rate,
     const double& burst_duration,
-    const double& prf
+    const double& prf,
+    const double& processing_bandwidth  // B_d
 );
 
 CF_VEC_2D azimuth_time_ufr(
@@ -29,5 +30,6 @@ CF_VEC_2D azimuth_time_ufr(
     L0Packet&  initial_packet,
     const double& dc_rate,
     const double& burst_duration,
-    const double& prf
+    const double& prf,
+    const double& processing_bandwidth  // B_d
 );

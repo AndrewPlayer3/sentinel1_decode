@@ -436,6 +436,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
     double dc_rate = get_doppler_centroid_rate(packets, v_norm);
+    double doppler_bandwidth = prf * 0.4;
 
     F_VEC_1D doppler_centroid = get_doppler_centroid(
         range_compressed,
@@ -450,7 +451,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
         first_packet,
         dc_rate,
         burst_length_seconds,
-        prf
+        prf,
+        doppler_bandwidth
     );
     num_packets = range_compressed.size();
 
@@ -521,7 +523,14 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets)
 
     compute_axis_dft_in_place(range_compressed, 0, 0, true);
 
-    range_compressed = azimuth_time_ufr(range_compressed, doppler_centroid, ka, first_packet, dc_rate, burst_length_seconds, prf);
-
-    return range_compressed;
+    return azimuth_time_ufr(
+        range_compressed,
+        doppler_centroid,
+        ka,
+        first_packet,
+        dc_rate,
+        burst_length_seconds,
+        prf,
+        doppler_bandwidth
+    );
 }

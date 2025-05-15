@@ -46,7 +46,7 @@ $ bin/s1_write range_compressed_swath IW2 data/points/point.dat RC_IW2.tif --nor
 ```bash
 $ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --norm
 ```
-![swath_az_write_example](imgs/az_points.png)
+![swath_az_write_example](imgs/points_iw_mode.png)
 
 #### Packet Information and Performance Testing
 ```bash
