@@ -20,12 +20,6 @@ void print_state_vectors(
     PACKET_VEC_1D packets = L0Packet::get_packets(filename, 0);
     STATE_VECTORS state_vectors(packets);
     state_vectors.print();
-    double time = 1406987559.0;
-    STATE_VECTOR sv = state_vectors.interpolate(time);
-    std::for_each(
-        sv.velocity.begin(), sv.velocity.end(),
-            [] (double v) { std::cout << v << std::endl; }
-    );
 }
 
 

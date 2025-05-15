@@ -12,7 +12,10 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
    * [Build Script](#build-script)
    * [Dependencies](#dependencies)
 ## Introduction
-**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite. I am also working on implementing most of the [Level-1 Algorithm](#results-with-point-targets). I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals. Currently, azimuth compression of a full stripmap image takes ~2 minutes, including the time it takes to decode the raw data.
+**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite. I am also working on implementing most of the [Level-1 Algorithm](#results-with-point-targets). I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals. 
+
+I'm still working on Optimization, but on my PC, azimuth compressing a full stripmap image takes around 1 minute, and uses ~52GB of RAM. Azimuth compressing an IW mode swath takes approximately 2 minutes, and uses ~27GB of RAM. A burst takes about 30 seconds and uses ~20GB of RAM. Memory usage will go down as I move from `double` to `float` where possible.
+
 
 ## Commands
 ### Writing Images
@@ -30,10 +33,6 @@ Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
 ```
 #### Examples
 The sample image *data/points/point.dat* is the VV data from [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW). The colors were added via *Singleband psuedocolor* with *Cumulative cut count* in QGIS.
-```bash
-$ bin/s1_write azimuth_compressed_swath S1 data/sm_sample/sample.dat AZ_S1.tif --norm
-```
-![az_sm_write_example](imgs/az_sm.png)
 
 ```bash
 $ bin/s1_write swath IW2 data/points/point.dat IW2.tif --norm
@@ -47,18 +46,20 @@ $ bin/s1_write range_compressed_swath IW2 data/points/point.dat RC_IW2.tif --nor
 $ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --norm
 ```
 ![swath_az_write_example](imgs/points_iw_mode.png)
+```bash
+$ bin/s1_write azimuth_compressed_swath S1 data/sm_sample/sample.dat AZ_S1.tif --norm
+```
+![az_sm_write_example](imgs/az_sm.png)
 
 #### Packet Information and Performance Testing
 ```bash
 $ bin/main --help
-print_packet_info [packet_index] [path]
-print_complex_samples [packet_index] [path]
-print_swath_names [path]
-print_index_records [path]
-print_annotation_record [record_index] [path]
-time [num_packets] [path]
-thread_test [path]
-omp_test [path]
+packet_info [packet_index] [path]
+complex_samples [packet_index] [path]
+swath_names [path]
+index_records [path]
+annotation_record [record_index] [path]
+state_vectors [path]
 ```
 #### Examples
 The sample image *data/sample/sample.dat* is the VV data from [S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41-RAW)
@@ -136,6 +137,20 @@ RX Gain: -4
 Range Decimation: 8
 TX Pulse Number: 6
 ```
+
+```bash
+$ bin/s1_print swath_names data/sm_sample/sample.dat
+S1_100MHz_TXCAL: 80
+S1_TXCAL: 250
+S1_100MHz_CAL: 20
+S1: 60701
+```
+
+
+```bash
+$ bin/main print_state_vectors 0 data/sample/sample.dat
+```
+![state_vectors_example](imgs/state_vectors.png)
 
 ```bash
 $ bin/main print_complex_samples 0 data/sample/sample.dat
