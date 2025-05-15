@@ -201,8 +201,9 @@ $ bin/s1_print print_complex_samples 0 data/sample/sample.dat
 
 ## Compiling
 
-Using `cmake`:
+For now `cmake` is used. Although, I will likely switch to a Conda based install/compilation for simplicity later. 
 
+Once the [dependencies](#dependencies) are installed, simply run:
 ```bash
 cd build
 cmake ..
