@@ -35,7 +35,7 @@ CF_VEC_1D pulse_compression(
 ) {
     int num_samples = signal.size();
 
-    CF_VEC_1D signal_    = signal;
+    CF_VEC_1D signal_ = signal;
 
     std::transform(
         reference.begin(), reference.end(),
@@ -47,329 +47,305 @@ CF_VEC_1D pulse_compression(
 }
 
 
-SIGNAL_PAIR get_signal_pairs_from_swath(
-    const std::string& filename,
-    const std::string& swath_name
-) {
-    std::ifstream data = open_file(filename);
-    return get_signal_pairs_from_swath(data, swath_name);
-}
-
-
-SIGNAL_PAIR get_signal_pairs_from_swath(
-    std::ifstream&     data,
-    const std::string& swath_name
-) {
-    Swath swath(data, swath_name);
-
-    SIGNAL_PAIR signal_pair;
-    signal_pair.signals = std::move(swath.get_all_signals());
-    signal_pair.replica_chirps = std::move(swath.get_all_replica_chirps());
-
-    return signal_pair;
-}
-
-
-double gps_time_to_seconds_since_midnight(double gps_time_seconds) {
-    std::chrono::system_clock::time_point gps_epoch = 
-        std::chrono::system_clock::from_time_t(315964800); // Unix timestamp for Jan 6, 1980
-
-    long long whole_seconds = static_cast<long long>(gps_time_seconds);
-    double fractional_seconds = gps_time_seconds - whole_seconds;
-
-    std::chrono::system_clock::time_point current_time = gps_epoch + std::chrono::seconds(whole_seconds);
-
-    std::time_t current_time_t = std::chrono::system_clock::to_time_t(current_time);
-    std::tm* current_time_tm = std::gmtime(&current_time_t);
-
-    double seconds_since_midnight = 
-        current_time_tm->tm_hour * 3600 +
-        current_time_tm->tm_min * 60 +
-        current_time_tm->tm_sec;
-
-    seconds_since_midnight += fractional_seconds;
-
-    return seconds_since_midnight;
-}
-
-
-// FFT shift function
-void fftshift(std::vector<std::complex<double>>& data) {
+std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets)
+{
+    PACKET_VEC_2D azimuth_blocks;
+    PACKET_VEC_1D azimuth_block;
     
-    size_t N = data.size();
-    
-    if (N % 2 == 0) {
-        std::rotate(data.begin(), data.begin() + N / 2, data.end());
+    int previous_size = 2 * packets[0].get_num_quads();
+    int max_size = previous_size;
+
+    for (int i = 0; i < packets.size(); i++)
+    {
+        L0Packet packet = packets[i];
+        int size = 2 * packet.get_num_quads();
+        if (size != previous_size or i == packets.size() - 1)
+        {
+            if (size > max_size) max_size = size;
+            previous_size = size;
+            azimuth_blocks.push_back(azimuth_block);
+            azimuth_block = {};
+        }
+        azimuth_block.push_back(packet);
     }
-    else {
-        std::rotate(data.begin(), data.begin() + (N + 1) / 2, data.end());
-    }
+
+    return std::pair<PACKET_VEC_2D, int>(azimuth_blocks, max_size);
 }
 
 
-// CF_VEC_1D get_average_cross_correlation(
-//     const CF_VEC_2D& signals
-// ) {
-//     int num_azimuth = signals.size();
-//     int num_range = signals[0].size();
+// Mosaic a Signal for UFR
+CF_VEC_1D get_tiled_signal(CF_VEC_1D& signal, const double& num_replicas)
+{
+    int num_az = signal.size();
+    int shape = std::floor(num_replicas * num_az);
+    int offset = std::floor(num_replicas);
 
-//     std::vector<std::complex<double>> accc(num_range, std::complex<double>(0, 0));
+    CF_VEC_1D tiled_signal(shape);
 
-//     for (int i = 0; i < num_azimuth - 1; i++)
-//     {
-//         const CF_VEC_1D& signal = signals[i];
-//         const CF_VEC_1D& next_signal = signals[i + 1];
+    // Mosaic `floor(num_replicas)` times
+    for (int i = 0; i < offset; i++)
+    {
+        std::transform(
+            signal.begin(), signal.end(),
+                tiled_signal.begin() + i * num_az,
+                    [] (std::complex<double>& sample) {
+                        return sample;
+                    }
+        );
+    }
 
-//         for (int j = 0; j < num_range; j++)
-//         {
-//             accc[j] += (signal[j] * std::conj(next_signal[j])) / (std::abs(signal[j]) * std::abs(next_signal[j]));
-//         }
-//     }
+    // If `num_replicas` isn't a whole number, tile the remaining percentage after `floor(num_replicas)`
+    if (std::floor(num_replicas) != num_replicas)
+    {
+        int num_samples = std::floor((num_replicas - std::floor(num_replicas)) * num_az);
 
-//     return get_accc_range_blocks(accc, num_azimuth);
-// };
+        std::transform(
+            signal.begin(), signal.begin() + num_samples,
+                tiled_signal.begin() + offset * num_az,
+                    [] (std::complex<double>& sample) {
+                        return sample;
+                    }
+        );
+    }
 
-
-// CF_VEC_1D unwrap_fine_dc_estimates(
-//     const CF_VEC_1D& fine_dcs,
-//     const double&    burst_time,
-//     const double&     pulse_length,
-//     const double&     prf,
-//     const int&       num_azimuth,
-//     const int&       num_range
-// ) {
-//     CF_VEC_1D u(num_azimuth);
-//     for (int i = 0; i < num_azimuth; i++)
-//     {
-//         u[i] = std::exp(I * 2.0 * PI * fine_dcs[i] / prf);
-//     }
-//     compute_1d_dft_in_place(u, 0, false);
-
-//     double u_max = 0.0;
-//     for (const std::complex<double>& u_val : u)
-//     {
-//         if (std::norm(u_val) > u_max) u_max = std::norm(u_val);
-//     }
-//     double a = u_max / burst_time;
-//     double b = std::tan(u_max / (2.0 * PI));
-
-//     F_VEC_1D time = linspace(0.0, pulse_length, num_azimuth);
-
-//     CF_VEC_1D residual(num_azimuth);
-//     std::transform(
-//         time.begin(), time.end(), u.begin(),
-//             residual.begin(),
-//                 [a, b] (const double& t, const std::complex<double>& n) 
-//                 { 
-//                     return std::atan(n * std::exp(-1.0 * I * (a * t + b)) / (2 * PI));
-//                 }
-//     );
-
-//     CF_VEC_1D unwrapped_fine_dcs(num_azimuth);
-//     std::transform(
-//         residual.begin(), residual.end(), time.begin(),
-//             unwrapped_fine_dcs.begin(),
-//                 [a, b, prf] (const std::complex<double>& r, const double& t) 
-//                 { 
-//                     return (a * t + b + r) / prf;
-//                 }
-//     );
-//     return unwrapped_fine_dcs;
-// }
+    return tiled_signal;
+}
 
 
-// CF_VEC_1D unwrap_fine_dc_estimates(
-//     const CF_VEC_1D& fine_dcs,
-//     const double&    burst_time,
-//     const float&     pulse_length,
-//     const float&     prf,
-//     const int&       num_azimuth,
-//     const int&       num_range
-// ) {
-//     std::complex<double> imag(0.0, 1.0);
-    
-//     // Compute complex exponentials
-//     CF_VEC_1D u(num_azimuth);
-//     for (int i = 0; i < num_azimuth; i++) {
-//         u[i] = std::exp(imag * 2.0 * PI * fine_dcs[i] / static_cast<double>(prf));
-//     }
-//     compute_1d_dft_in_place(u, 0, false);
+CF_VEC_2D azimuth_frequency_ufr(
+    CF_VEC_2D& range_compressed,
+    F_VEC_1D&  dc_estimates,
+    L0Packet&  initial_packet,
+    const double& dc_rate,
+    const double& burst_duration,
+    const double& prf,
+    const double& processing_bandwidth  // B_d
+) {
+    int num_az = range_compressed.size();
+    int num_rng = range_compressed[0].size();
 
-//     // Find the maximum phase (unwrap these phases first)
-//     CF_VEC_1D unwrapped_phases(num_azimuth);
-//     for (int i = 0; i < num_azimuth; i++) {
-//         unwrapped_phases[i] = std::arg(u[i]); // Phase of the DFT result
-//     }
+    range_compressed = transpose(range_compressed);
 
-//     // Calculate a (rate of phase change) and b (initial phase)
-//     F_VEC_1D time = linspace(0.0, pulse_length, num_azimuth);
-//     std::complex<double> a = (unwrapped_phases.back() - unwrapped_phases.front()) / (time.back() - time.front());
-//     std::complex<double> b = unwrapped_phases[0];
+    compute_axis_dft_in_place(range_compressed, 0, 1, false);
+    fftshift_in_place(range_compressed);
 
-//     // Compute residual (optional adjustment)
-//     CF_VEC_1D residual(num_azimuth);
-//     std::transform(
-//         time.begin(), time.end(), unwrapped_phases.begin(),
-//         residual.begin(),
-//         [a, b] (const double& t, const std::complex<double>& phase) {
-//             return phase - (a * t + b); // Compute residual
-//         }
-//     );
+    double num_replicas = std::abs(dc_rate * burst_duration / prf);
+    double bandwidth = num_replicas * prf / 2.0;  // B_s
 
-//     // Final unwrapped Doppler centroids
-//     CF_VEC_1D unwrapped_fine_dcs(num_azimuth);
-//     std::transform(
-//         residual.begin(), residual.end(), time.begin(),
-//         unwrapped_fine_dcs.begin(),
-//         [a, b, prf] (const std::complex<double>& r, const double& t) {
-//             return (a * t + b + r) / static_cast<double>(prf); // Adjust phase
-//         }
-//     );
+    int shape = std::floor(num_replicas * num_az);
+    int mid = shape / 2;
+    int start = mid - (std::floor(processing_bandwidth) / 2);
+    int end = mid + (std::floor(processing_bandwidth) / 2);
 
-//     return unwrapped_fine_dcs;
-// }
+    std::cout << "-------------------------------------------------" << std::endl;
+    std::cout << "Computing Azimuth Frequency UFR with Parameters: " << std::endl;
+    std::cout << "PRF: " << prf << std::endl;
+    std::cout << "DC Rate: " << dc_rate << std::endl;
+    std::cout << "Burst Duration: " << burst_duration << std::endl;
+    std::cout << "Number of Spectral Replicas: " << num_replicas << std::endl;
+    std::cout << "Ramp Signal Bandwidth: " << bandwidth << std::endl;
+    std::cout << "Output Shape: " << shape << std::endl;
+    std::cout << "Low Pass Filter Center: " << mid << std::endl;
+    std::cout << "Low Pass Filter Start Index: " << start << std::endl;
+    std::cout << "Low Pass Filter End Index: " << end << std::endl;
+    std::cout << "-------------------------------------------------" << std::endl;
 
+    F_VEC_1D az_freqs = linspace(-bandwidth, bandwidth, shape);
 
-// CF_VEC_1D get_fine_dcs_for_burst(
-//     const CF_VEC_2D& signals,
-//     const double& burst_time,
-//     const double&  pulse_length,
-//     const double&  prf,
-//     const int&    num_azimuth,
-//     const int&    num_range
-// ) {
-//     CF_VEC_1D accc = get_average_cross_correlation(signals);
+    CF_VEC_2D ufr_output(num_rng, CF_VEC_1D(shape));
 
-//     CF_VEC_1D fine_dcs(accc.size());
-//     std::transform(
-//         accc.begin(), accc.end(),
-//             fine_dcs.begin(),
-//                 [prf] (std::complex<double>& c) { 
-//                     return -1.0 * ( prf / (2.0 * PI)) * std::tan(c.imag() / c.real());
-//                 }
-//     );
+    #pragma omp parallel for
+    for (int rng_line = 0; rng_line < num_rng; rng_line++)
+    {
+        // Mosaic Signal
+        ufr_output[rng_line] = get_tiled_signal(range_compressed[rng_line], num_replicas);
 
-//     fine_dcs.resize(num_azimuth);
+        //Apply De-ramping
+        for (int az_line = 0; az_line < shape; az_line++)
+        {
+            std::complex<double> sample = ufr_output[rng_line][az_line];
+            std::complex<double> deramp = std::exp(-I * PI * (1 / dc_rate) * std::pow(az_freqs[az_line], 2.0));
 
-//     CF_VEC_1D unwrapped_fine_dcs = unwrap_fine_dc_estimates(
-//         fine_dcs, burst_time, pulse_length,
-//         prf, num_azimuth, num_range
-//     );
-//     return unwrapped_fine_dcs;
-// }
+            ufr_output[rng_line][az_line] = deramp * sample;
+        }
+    }
 
+    // Low-pass Filter
+    compute_axis_dft_in_place(ufr_output, 0, 1, false);
 
-// double get_velocity(
-//     PACKET_VEC_1D& packets,
-//     const int&     dict_index = 0
-// ) {
-//     std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
+    #pragma omp parallel for collapse(2)
+    for (int rng_line = 0; rng_line < num_rng; rng_line++)
+    {
+        for (int az_line = 0; az_line < shape; az_line++)
+        {
+            if (az_line < end-start)
+            {
+                ufr_output[rng_line][az_line] = ufr_output[rng_line][start + az_line];
+            }
+            else
+            {
+                ufr_output[rng_line][az_line] = 0.0;
+            }
+        }
+    }
 
-//     double v_x = dicts[dict_index].at("x_axis_velocity");
-//     double v_y = dicts[dict_index].at("y_axis_velocity");
-//     double v_z = dicts[dict_index].at("z_axis_velocity");
+    compute_axis_dft_in_place(ufr_output, 0, 1, true);
 
-//     return std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
-// }
+    #pragma omp parallel for collapse(2)
+    for (int rng_line = 0; rng_line < num_rng; rng_line++)
+    {
+        // Apply Re-ramping
+        for (int az_line = 0; az_line < shape; az_line++)
+        {
+            std::complex<double> sample = ufr_output[rng_line][az_line];
+            std::complex<double> reramp = std::exp(I * PI * (1 / dc_rate) * std::pow(az_freqs[az_line], 2.0));
 
+            ufr_output[rng_line][az_line] = reramp * sample;
+        }
+    }
 
-// std::vector<double> get_velocities(
-//     PACKET_VEC_1D& packets
-// ) { 
-//     std::vector<std::unordered_map<std::string, double>> dicts = build_data_word_dicts(packets);
-
-//     std::vector<double> velocities(dicts.size() - 1);
-
-//     for (int i = 0; i < dicts.size() - 1; i++)
-//     {
-//         double v_x = dicts[i].at("x_axis_velocity");
-//         double v_y = dicts[i].at("y_axis_velocity");
-//         double v_z = dicts[i].at("z_axis_velocity");
-
-//         velocities[i] = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
-//     }
-
-//     return velocities;
-// }
+    return transpose(ufr_output);
+}
 
 
-// CF_VEC_1D get_azimuth_matched_filter(
-//     const int&   num_azimuth,
-//     const double& doppler_centroid_est,
-//     const double& prf,
-//     const double& velocity, 
-//     const double& slant_range
-// ) {
-//     double sample_range_start = doppler_centroid_est - (prf);
-//     double sample_range_end   = doppler_centroid_est + (prf);
-//     F_VEC_1D azimuth_sample_range = linspace(sample_range_start, sample_range_end, num_azimuth);
+CF_VEC_2D azimuth_time_ufr(
+    CF_VEC_2D& azimuth_compressed,
+    F_VEC_1D&  dc_estimates,
+    F_VEC_2D& ka,
+    L0Packet&  initial_packet,
+    const double& dc_rate,
+    const double& burst_duration,
+    const double& prf,
+    const double& processing_bandwidth  // B_d
+) {
+    ka = transpose(ka);
+    azimuth_compressed = transpose(azimuth_compressed);
 
-//     CF_VEC_1D D(num_azimuth);
+    int num_az = azimuth_compressed[0].size();
+    int num_rng = azimuth_compressed.size();
 
-//     double denominator = (4.0 * velocity * velocity * doppler_centroid_est * doppler_centroid_est);
+    double num_replicas = std::abs(dc_rate * burst_duration / prf);
+    double bandwidth = num_replicas * prf;
 
-//     for (int i = 0; i < num_azimuth; i++)
-//     {
-//         double range_migration_factor = 1.0 - (
-//             std::pow(SPEED_OF_LIGHT, 2) * std::pow(azimuth_sample_range[i], 2) / denominator
-//         );
-//         D[i] = std::sqrt(std::complex<double>(range_migration_factor, 0.0));
-//     }
-//     CF_VEC_1D azimuth_match_filter(num_azimuth);
+    double ka_mean = std::abs(std::accumulate(ka[0].begin(), ka[0].end(), 0.0)) / num_az;
+    double focused_time = burst_duration + ((bandwidth - (2 * processing_bandwidth)) / ka_mean);
 
-//     std::complex<double> phase = I * 4.0 * PI * slant_range * doppler_centroid_est;
-//     for (int i = 0; i < num_azimuth; i++)
-//     {
-//         azimuth_match_filter[i] = (1.0 / num_azimuth) * std::exp(
-//             (phase * D[i] * D[i] * doppler_centroid_est) / SPEED_OF_LIGHT
-//         );
-//     }
-//     // conjugate_in_place(azimuth_match_filter);
-//     // apply_hanning_window_in_place(azimuth_match_filter);
+    int num_tiles = std::ceil((focused_time / 2) / burst_duration) - std::floor((-focused_time / 2) / burst_duration);
 
-//     return azimuth_match_filter; // compute_1d_dft(azimuth_match_filter, 0, false);
-// }
+    int output_shape = std::floor(prf * burst_duration);
+    int downsample_shape = output_shape + std::floor(processing_bandwidth);
+    int shape = num_tiles * num_az;
+    int mid = shape / 2;
+    int start = mid - bandwidth / 2;
+    int end = mid + bandwidth / 2;
 
+    std::cout << "-------------------------------------------------" << std::endl;
+    std::cout << "Computing Azimuth Time UFR with Parameters: " << std::endl;
+    std::cout << "PRF: " << prf << std::endl;
+    std::cout << "DC Rate: " << dc_rate << std::endl;
+    std::cout << "Burst Duration: " << burst_duration << std::endl;
+    std::cout << "Doppler Bandwidth: " << processing_bandwidth << std::endl;
+    std::cout << "Ramp Signal Bandwidth: " << bandwidth << std::endl;
+    std::cout << "Focused Time: " << focused_time << std::endl;
+    std::cout << "Mean Azimuth FM Rate: " << ka_mean << std::endl;
+    std::cout << "Number of Freq Spectral Replicas: " << num_replicas << std::endl;
+    std::cout << "Number of Time Spectral Replicas: " << num_tiles << std::endl;
+    std::cout << "Tiled Shape: " << shape << std::endl;
+    std::cout << "Low Pass Filter Center: " << mid << std::endl;
+    std::cout << "Low Pass Filter Start Index: " << start << std::endl;
+    std::cout << "Low Pass Filter End Index: " << end << std::endl;
+    std::cout << "Downsample Shape: " << downsample_shape << std::endl;
+    std::cout << "Output Shape: " << output_shape << std::endl;
+    std::cout << "-------------------------------------------------" << std::endl;
 
-// CF_VEC_2D get_azimuth_matched_filters(
-//     const CF_VEC_1D& doppler_centroid_ests,
-//     const double& velocity,
-//     const double& pulse_length,
-//     const double& pri,
-//     const double& window_start_time,
-//     const int&   rank,
-//     const int&   num_azimuth,
-//     const int&   num_range
-// ) {
-//     double prf = 1 / pri;
+    F_VEC_1D az_times = linspace(-focused_time / 2, focused_time / 2, shape);
 
-//     double slant_range_time_near = rank * pri + window_start_time + DELTA_T_SUPPRESSED;
-//     double slant_range_time_far  = slant_range_time_near + pulse_length;
-//     double slant_range_near      = (slant_range_time_near * SPEED_OF_LIGHT) / 2;
-//     double slant_range_far       = (slant_range_time_far  * SPEED_OF_LIGHT) / 2;
-//     double slant_range           = (slant_range_near + slant_range_far) / 2;
+    CF_VEC_2D ufr_intermediate(num_rng, CF_VEC_1D(shape));
 
-//     int block_size = int(std::ceil(double(num_range) / double(num_azimuth)));
+    #pragma omp parallel for
+    for (int rng_line = 0; rng_line < num_rng; rng_line++)
+    {
+        // Mosaic Signal
+        ufr_intermediate[rng_line] = get_tiled_signal(azimuth_compressed[rng_line], num_tiles);
 
-//     CF_VEC_1D current_match_filter(num_azimuth);
-//     CF_VEC_2D azimuth_match_filters(num_range, CF_VEC_1D(num_azimuth));
+        //Apply De-ramping
+        double f_dc = dc_estimates[rng_line];
+        F_VEC_1D ka_row = linear_resample(ka[rng_line], shape);
 
-//     int fine_dc_index = 0;
-//     for (int i = 0; i < num_range; i++)
-//     {
-//         if (i % block_size == 0)
-//         {
-//             double fine_dc = std::abs(doppler_centroid_ests[fine_dc_index]);
-//             current_match_filter = get_azimuth_matched_filter(
-//                 num_azimuth,
-//                 fine_dc,
-//                 prf,
-//                 velocity, 
-//                 slant_range
-//             );
-//             fine_dc_index++;
-//         }
-//         azimuth_match_filters[i] = current_match_filter;
-//     }
-//     return azimuth_match_filters;
-// }
+        for (int az_line = 0; az_line < shape; az_line++)
+        {
+            double kt = -ka_row[az_line] * dc_rate / (dc_rate - ka_row[az_line]);
+            double dc_time = -f_dc / ka_row[az_line];
+            double az_time = dc_time + az_times[az_line];
+
+            std::complex<double> deramp = std::exp( (-1.0 * I * PI * kt * std::pow(az_time, 2.0)) + (2.0 * I * PI * (kt + ka_row[az_line]) * dc_time * az_time) );
+            std::complex<double> sample = ufr_intermediate[rng_line][az_line];
+
+            ufr_intermediate[rng_line][az_line] = deramp * sample;
+        }
+    }
+
+    // Low-pass Filter
+    compute_axis_dft_in_place(ufr_intermediate, 0, 1, false);
+
+    #pragma omp parallel for collapse(2)
+    for (int rng_line = 0; rng_line < num_rng; rng_line++)
+    {
+        for (int az_line = 0; az_line < shape; az_line++)
+        {
+            if (az_line < end-start)
+            {
+                ufr_intermediate[rng_line][az_line] = ufr_intermediate[rng_line][start + az_line];
+            }
+            else
+            {
+                ufr_intermediate[rng_line][az_line] = 0.0;
+            }
+        }
+    }
+
+    compute_axis_dft_in_place(ufr_intermediate, 0, 1, true);
+
+    // Resample
+    CF_VEC_2D ufr_output(num_rng, CF_VEC_1D(downsample_shape));
+
+    std::transform(
+        ufr_intermediate.begin(), ufr_intermediate.end(),
+            ufr_output.begin(),
+                [downsample_shape] (CF_VEC_1D& ufr_row) {
+                    return linear_resample(ufr_row, downsample_shape);
+                }
+    );
+
+    ufr_intermediate.clear();
+    ufr_intermediate.shrink_to_fit();
+
+    // Apply Re-ramping
+    #pragma omp parallel for
+    for (int rng_line = 0; rng_line < num_rng; rng_line++)
+    {
+        double f_dc = dc_estimates[rng_line];
+        F_VEC_1D ka_row = linear_resample(ka[rng_line], downsample_shape);
+
+        for (int az_line = 0; az_line < downsample_shape; az_line++)
+        {
+            double kt = -ka_row[az_line] * dc_rate / (dc_rate - ka_row[az_line]);
+            double dc_time = -f_dc / ka_row[az_line];
+            double az_time = dc_time + az_times[az_line];
+
+            std::complex<double> reramp = std::exp( (1.0 * I * PI * kt * std::pow(az_time, 2.0)) - (2.0 * I * PI * (kt + ka_row[az_line]) * dc_time * az_time) );
+            std::complex<double> sample = ufr_output[rng_line][az_line];
+
+            ufr_output[rng_line][az_line] = reramp * sample;
+        }
+    }
+
+    ufr_output = transpose(ufr_output);
+
+    // Crop to Valid Portion
+    mid = downsample_shape / 2;
+    start = mid - (output_shape / 2);
+    end = mid + (output_shape / 2);
+
+    return CF_VEC_2D(ufr_output.begin() + start, ufr_output.begin() + end);
+}

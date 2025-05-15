@@ -12,41 +12,48 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 
 
 /* Returns the length of the baq blocks in bytes */
-int L0Packet::get_baq_block_length()
+const int L0Packet::get_baq_block_length()
 {   
     return 8 * (_secondary_header["baq_block_length"] + 1);
 }
 
 
-/* Returns the PRI in microseconds */
-double L0Packet::get_pri()
+/* Returns the index of the packet within the data */
+const int L0Packet::get_packet_index()
 {
-    return _secondary_header["pri"] / F_REF;
+    return _packet_index;
+}
+
+
+/* Returns the PRI in microseconds */
+const double L0Packet::get_pri()
+{
+    return _secondary_header.at("pri") / F_REF;
 }
 
 
 /* Returns the pulse length in microseconds */
-double L0Packet::get_pulse_length()
+const double L0Packet::get_pulse_length()
 {
     return _secondary_header["pulse_length"] / F_REF;
 }
 
 
 /* Returns the sampling window length in microseconds */
-double L0Packet::get_swl()
+const double L0Packet::get_swl()
 {
     return _secondary_header["swl"] / F_REF;
 }
 
 
 /* Returns the start time of the sampling window in the PRI in microseconds */
-double L0Packet::get_swst()
+const double L0Packet::get_swst()
 {
     return _secondary_header["swst"] / F_REF;
 }
 
 
-double L0Packet::get_time()
+const double L0Packet::get_time()
 {
     double coarse_time = static_cast<double>(_secondary_header["coarse_time"]);
     double fine_time   = static_cast<double>(_secondary_header["fine_time"]);
@@ -57,14 +64,14 @@ double L0Packet::get_time()
 
 
 /* Returns the RX gain in dB */
-double L0Packet::get_rx_gain()
+const double L0Packet::get_rx_gain()
 {
     return -0.5 * _secondary_header["rx_gain"];
 }
 
 
 /* Returns the tx pulse start frequency in MHz */
-double L0Packet::get_start_frequency()
+const double L0Packet::get_start_frequency()
 {
     int sign = _secondary_header["pulse_start_frequency_sign"] == 0 ? -1 : 1;
     int mag  = _secondary_header["pulse_start_frequency_mag"];
@@ -73,8 +80,18 @@ double L0Packet::get_start_frequency()
 }
 
 
+static const F_VEC_1D AZIMUTH_BEAM_ADDRESS_TO_ANGLE = linspace(-0.018, 0.018, 1024);
+
+
+/* Returns the azimuth beam angle in radians*/
+const double L0Packet::get_azimuth_beam_angle()
+{
+    return AZIMUTH_BEAM_ADDRESS_TO_ANGLE[_secondary_header["azimuth_beam_address"]];
+}
+
+
 /* Returns the linear FM rate at which the chirp frequency changes in MHz/microsecond */
-double L0Packet::get_tx_ramp_rate()
+const double L0Packet::get_tx_ramp_rate()
 {
     int sign = _secondary_header["tx_ramp_rate_sign"] == 0 ? -1 : 1;
     int mag  = _secondary_header["tx_ramp_rate_mag"];
@@ -84,7 +101,7 @@ double L0Packet::get_tx_ramp_rate()
 
 
 /* Returns the polarization of the tx pulse */
-char L0Packet::get_tx_polarization()
+const char L0Packet::get_tx_polarization()
 {
     int pol_code = _secondary_header["polarisation"];
 
@@ -95,7 +112,7 @@ char L0Packet::get_tx_polarization()
 
 
 /* Returns the rx polarization */
-char L0Packet::get_rx_polarization()
+const char L0Packet::get_rx_polarization()
 {
     switch (_secondary_header["rx_channel_id"])
     {
@@ -284,6 +301,27 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
     double max_slant_range = (delay + txpl) * SPEED_OF_LIGHT / 2;
 
     return linspace(min_slant_range, max_slant_range, num_ranges);
+}
+
+
+
+D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
+{
+    if (num_ranges <= 0) num_ranges = 4 * _num_quads;
+
+    double txpsf = get_start_frequency();
+    double txprr = get_tx_ramp_rate();
+    double txpl  = get_pulse_length() * 1e-6;
+
+    double start_time = get_swst() * 1e-6;
+    double pri = get_pri() *1e-6;
+    double rank = _secondary_header.at("rank");
+
+    double delta_t = (320 / (8 * F_REF)) * 1e-6;
+
+    double delay = rank * pri + start_time + delta_t;
+
+    return linspace(delay, delay + txpl, num_ranges);
 }
 
 
@@ -786,7 +824,7 @@ std::unordered_map<std::string, int> L0Packet::_parse_header(
 
 
 /* Decode the next packet within the data stream */
-L0Packet L0Packet::get_next_packet(std::ifstream& data)
+L0Packet L0Packet::get_next_packet(std::ifstream& data, int& packet_index)
 {
     UINT8_VEC_1D primary_bytes = read_bytes(data, 6);
     std::unordered_map<std::string, int> primary_header = _parse_header(
@@ -811,7 +849,8 @@ L0Packet L0Packet::get_next_packet(std::ifstream& data)
     L0Packet packet = L0Packet(
         primary_header,
         secondary_header,
-        user_data
+        user_data,
+        packet_index
     );
     return packet;
 }
@@ -838,7 +877,7 @@ PACKET_VEC_1D L0Packet::get_packets(std::ifstream& data, const int& num_packets)
     {
         try
         {
-            L0Packet packet = L0Packet::get_next_packet(data);
+            L0Packet packet = L0Packet::get_next_packet(data, index);
 
             if (!packet.is_empty()) packets.push_back(packet);
             else break;
@@ -874,7 +913,7 @@ PACKET_VEC_1D L0Packet::get_packets_in_swath(std::ifstream& data, const std::str
     {
         try
         {
-            L0Packet packet = L0Packet::get_next_packet(data);
+            L0Packet packet = L0Packet::get_next_packet(data, index);
 
             if (packet.is_empty()) break;
             if (packet.get_swath() == swath) packets.push_back(packet);

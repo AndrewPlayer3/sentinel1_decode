@@ -118,3 +118,32 @@ VEC_UNSORTEDMAP annotation_decoder(std::ifstream& data)
     }
     return annotation_records;
 }
+
+
+/* Returns a vector of maps containing the annotation records */
+F_VEC_1D annotation_time_decoder(const std::string& filename)
+{
+    std::ifstream data = open_file(filename);
+    return annotation_time_decoder(data);
+}
+
+/* Returns a vector of packet slow times */
+F_VEC_1D annotation_time_decoder(std::ifstream& data)
+{
+    int record_size = 26;
+
+    // Seconds from January 6th 1980 and January 1st 2000. (MJD2000 Epoch and GPS Epoch)
+    double epoch_difference = 7300 * 86400;
+
+    VEC_UNSORTEDMAP annotation_records = annotation_decoder(data);
+
+    F_VEC_1D times;
+
+    for (std::unordered_map<std::string, u_int64_t> record : annotation_records)
+    {
+        double time = (record["days_ul"] * 86400) + (record["milliseconds_ul"] * 1e-3) + (record["microseconds"] * 1e-6) + epoch_difference;
+        times.push_back(time);
+    }
+
+    return times;
+}

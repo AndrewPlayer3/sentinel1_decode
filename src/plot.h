@@ -6,8 +6,6 @@
 
 #include "packet.h"
 #include "aux_decoding.h"
-#include "burst.h"
-#include "swath.h"
 #include "misc_types.h"
 #include "signal_processing.h"
 #include "image_formation.h"
@@ -72,14 +70,6 @@ void plot_burst(
 void plot_swath(
     const std::string& filename,
     const std::string& swath,
-    const std::string& scaling_mode
-);
-
-void plot_fft(
-    const std::string& filename,
-    const int&         packet_index,
-    const int&         fft_size,
-    const bool&        inverse,
     const std::string& scaling_mode
 );
 

@@ -25,7 +25,19 @@ F_VEC_1D linspace(
     const int&   size
 );
 
-std::vector<float> flatten(const std::vector<std::vector<float>>& values);
+F_VEC_1D linear_resample(
+    const F_VEC_1D& arr,
+    const int& num_output_samples
+);
+
+CF_VEC_1D linear_resample(
+    const CF_VEC_1D& arr,
+    const int& num_output_samples
+);
+
+std::vector<float> flatten(
+    const std::vector<std::vector<float>>& values
+);
 
 F_VEC_1D flatten(
     const F_VEC_2D& values
@@ -62,7 +74,18 @@ std::vector<std::vector<float>> magnitude_2d(
     const CF_VEC_2D& complex_values
 );
 
-CF_VEC_2D transpose(const CF_VEC_2D& arr);
+CF_VEC_2D transpose(
+    const CF_VEC_2D& arr
+);
+
+F_VEC_2D transpose(
+    const F_VEC_2D& arr
+);
+
+F_VEC_1D fftfreq(
+    int n,
+    double d
+);
 
 CF_VEC_1D compute_1d_dft(
     const CF_VEC_1D& complex_signal,
@@ -118,4 +141,5 @@ std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals);
 void destroy_fftw_plans(std::vector<fftw_plan>& plans);
 
 void fftshift_in_place(CF_VEC_1D& signal);
+
 void fftshift_in_place(CF_VEC_2D& signals);

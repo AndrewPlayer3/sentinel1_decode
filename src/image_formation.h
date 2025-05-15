@@ -9,8 +9,6 @@
 #include "signal_processing.h"
 #include "aux_decoding.h"
 #include "packet.h"
-#include "burst.h"
-#include "swath.h"
 #include "state_vectors.h"
 
 CF_VEC_1D pulse_compression(
@@ -22,14 +20,28 @@ CF_VEC_1D get_reference_function(
     const CF_VEC_1D& replica_chirp
 );
 
-SIGNAL_PAIR get_signal_pairs_from_swath(
-    const std::string& filename,
-    const std::string& swath_name
+std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(
+    PACKET_VEC_1D& packets
 );
 
-SIGNAL_PAIR get_signal_pairs_from_swath(
-    std::ifstream&     data,
-    const std::string& swath_name
+CF_VEC_2D azimuth_frequency_ufr(
+    CF_VEC_2D& range_compressed,
+    F_VEC_1D&  dc_estimates,
+    L0Packet&  initial_packet,
+    const double& dc_rate,
+    const double& burst_duration,
+    const double& prf,
+    const double& processing_bandwidth  // B_d
 );
 
-void fftshift(std::vector<std::complex<double>>& data);
+CF_VEC_2D azimuth_time_ufr(
+    CF_VEC_2D& range_compressed,
+    F_VEC_1D&  dc_estimates,
+    F_VEC_2D&  ka,
+    L0Packet&  initial_packet,
+    const double& dc_rate,
+    const double& burst_duration,
+    const double& prf,
+    const double& processing_bandwidth  // B_d
+);
+
