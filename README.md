@@ -63,6 +63,7 @@ $ bin/s1_write azimuth_compressed_swath S1 data/sm_sample/sample.dat AZ_S1.tif -
 ### Plotting Images
 
 ```bash
+$ bin/s1_plot --help
 swath [swath] [path]
 burst [swath] [burst_num] [path]
 fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]
@@ -77,7 +78,7 @@ Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
 #### Packet Information
 
 ```bash
-$ bin/main --help
+$ bin/s1_print --help
 packet_info [packet_index] [path]
 complex_samples [packet_index] [path]
 swath_names [path]
@@ -90,7 +91,7 @@ state_vectors [path]
 
 The sample image *data/sample/sample.dat* is the VV data from [S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41-RAW)
 ```bash
-$ bin/main print_packet_info 0 data/sample/sample.dat
+$ bin/s1_print print_packet_info 0 data/sample/sample.dat
 Primary Header:
 packet_version_number: 0
 packet_type: 0
@@ -173,12 +174,12 @@ S1: 60701
 ```
 
 ```bash
-$ bin/main print_state_vectors 0 data/sample/sample.dat
+$ bin/s1_print state_vectors data/sample/sample.dat
 ```
 ![state_vectors_example](imgs/state_vectors.png)
 
 ```bash
-$ bin/main print_complex_samples 0 data/sample/sample.dat
+$ bin/s1_print print_complex_samples 0 data/sample/sample.dat
 # 50,000 lines later...
 ...
 (-11.201,1.59988)
