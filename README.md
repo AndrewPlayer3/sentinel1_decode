@@ -14,7 +14,7 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
 ## Introduction
 **sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite. I am also working on implementing most of the [Level-1 Algorithm](#results-with-point-targets). I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals. 
 
-I'm still working on Optimization, but on my PC, azimuth compressing a full stripmap image takes around 1 minute, and uses ~52GB of RAM. Azimuth compressing an IW mode swath takes approximately 2 minutes, and uses ~27GB of RAM. A burst takes about 30 seconds and uses ~20GB of RAM. Memory usage will go down as I move from `double` to `float` where possible.
+On my PC, azimuth compressing a full stripmap image takes around 1 minute, and uses ~52GB of RAM. Azimuth compressing an IW mode swath takes approximately 2 minutes, and uses ~27GB of RAM. A burst takes about 30 seconds and uses ~20GB of RAM. Memory usage will go down as I move from `double` to `float` where possible.
 
 
 ## Commands
@@ -32,7 +32,7 @@ azimuth_compressed_swath [swath] [in_path] [out_path]
 Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
 ```
 #### Examples
-The sample image *data/points/point.dat* is the VV data from [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW). The colors were added via *Singleband psuedocolor* with *Cumulative cut count* in QGIS.
+The sample image *data/points/point.dat* is the VV data from [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW).
 
 ```bash
 $ bin/s1_write swath IW2 data/points/point.dat IW2.tif --norm
