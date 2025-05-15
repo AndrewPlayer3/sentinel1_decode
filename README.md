@@ -14,10 +14,14 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
    * [Dependencies](#dependencies)
 
 ## Introduction
-**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite, and forming Level-1 SLC images. Currently, image formation for stripmap, IW swaths, and IW bursts mostly works for visual analysis, but won't have accurate phase and may contain some ambiguities. I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals. 
+**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite, and forming Level-1 SLC images. Currently, image formation for stripmap, IW swaths, and IW bursts mostly works for visual analysis, but won't have accurate phase and may contain some ambiguities. I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals.
 
-On my PC, azimuth compressing a full stripmap image takes around 1 minute, and uses ~52GB of RAM. Azimuth compressing an IW mode swath takes approximately 2 minutes, and uses ~27GB of RAM. A burst takes about 30 seconds and uses ~20GB of RAM. Memory usage will go down as I move from `double` to `float` where possible. Decoding the raw data for a swath takes only a couple seconds.
+On my PC (Ryzen 9900x and 64GB DDR5 RAM), azimuth compressing a full stripmap image takes around 1 minute, and uses ~52GB of RAM. Azimuth compressing an IW mode swath takes approximately 2 minutes, and uses ~27GB of RAM. A burst takes about 30 seconds and uses ~20GB of RAM. Memory usage will go down as I move from `double` to `float` where possible. Decoding the raw data for a swath takes only a couple seconds.
 
+Check out these other projects which were very helpful:</br>
+[Rich Hall's sentinel1decoder (Python)](https://github.com/Rich-Hall/sentinel1decoder)</br>
+[Rich Hall's sentinel1Level0DecodingDemo (Python/Jupyter)](https://github.com/Rich-Hall/sentinel1decoder)</br>
+[jmfriedt's sentinel1_level0 (Matlab)](https://github.com/jmfriedt/sentinel1_level0)</br>
 
 ## Commands
 ### Image Formation and Saving Images
