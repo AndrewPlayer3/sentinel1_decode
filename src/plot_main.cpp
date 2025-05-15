@@ -10,49 +10,6 @@ Description: Main function with random command-line arguments for testing purpos
 #include "plot.h"
 
 
-void pulse_command(char* argv[], std::unordered_map<std::string, bool>& options)
-{
-    STRING_VEC_1D args  = {"packet_index", "filepath"};
-    STRING_VEC_1D types = {"int", "path"};
-    validate_args("pulse", args, types, argv);
-
-    int packet_index     = std::stoi(argv[2]);
-    std::string filename = std::string(argv[3]);
-    std::string scaling  = parse_scaling_mode(options);
-
-    plot_pulse(filename, packet_index, scaling);
-}
-
-
-void pulse_compression_command(char* argv[], std::unordered_map<std::string, bool>& options)
-{
-    STRING_VEC_1D args  = {"packet_index", "filepath"};
-    STRING_VEC_1D types = {"int", "path"};
-    validate_args("pulse_compression", args, types, argv);
-
-    int packet_index     = std::stoi(argv[2]);
-    std::string filename = std::string(argv[3]);
-    std::string scaling  = parse_scaling_mode(options);
-
-    plot_pulse_compression(filename, packet_index, scaling);
-}
-
-
-void pulse_image_command(char* argv[], std::unordered_map<std::string, bool>& options)
-{
-    STRING_VEC_1D args  = {"swath", "burst_num", "filepath"};
-    STRING_VEC_1D types = {"std::string", "int", "path"};
-    validate_args("pulse_img", args, types, argv);
-
-    std::string swath    = std::string(argv[2]);
-    int burst_num        = std::stoi(argv[3]);
-    std::string filename = std::string(argv[4]);
-    std::string scaling  = parse_scaling_mode(options);
-
-    plot_pulse_image(filename, swath, burst_num, scaling);
-}
-
-
 void range_compressed_burst_command(char* argv[], std::unordered_map<std::string, bool>& options)
 {
     STRING_VEC_1D args = {"swath", "burst_num", "filepath"};
@@ -147,22 +104,6 @@ void fft2_command(char *argv[], std::unordered_map<std::string, bool>& options)
 }
 
 
-void fft_command(char *argv[], std::unordered_map<std::string, bool>& options)
-{
-    STRING_VEC_1D args  = {"packet_index", "fft_size", "filepath"};
-    STRING_VEC_1D types = {"int", "int", "path"};
-    validate_args("fft", args, types, argv);
-
-    std::string filename = std::string(argv[4]);
-    int  packet_index = std::stoi(argv[2]);
-    int  fft_size     = std::stoi(argv[3]);
-    bool inverse      = options["--inverse"];
-    std::string scaling = parse_scaling_mode(options);
-
-    plot_fft(filename, packet_index, fft_size, inverse, scaling);
-}
-
-
 void burst_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
     STRING_VEC_1D args  = {"swath", "burst_num", "filepath"};
@@ -192,27 +133,11 @@ void swath_command(char *argv[], std::unordered_map<std::string, bool>& options)
 }
 
 
-void signal_command(char *argv[], std::unordered_map<std::string, bool>& options)
-{
-    STRING_VEC_1D args = {"packet_index", "filepath"};
-    STRING_VEC_1D types = {"int", "path"};
-    validate_args("signal", args, types, argv);
-
-    std::string filename = std::string(argv[3]);
-    int packet_index     = std::stoi(argv[2]); 
-    std::string scaling  = parse_scaling_mode(options);
-
-    plot_signal(filename, packet_index, scaling);
-}
-
-
 int main(int argc, char* argv[]) 
 {
     STRING_VEC_1D help_strings = {
-        "signal [packet_index] [mode] [path]",
         "swath [swath] [path]",
         "burst [swath] [burst_num] [path]",
-        "fft [packet_index] [fft_size] [path] [--inverse]",
         "fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]",
         "fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]",
         "range_compressed_burst [swath] [burst_num] [path]",
@@ -242,18 +167,12 @@ int main(int argc, char* argv[])
     };
     options = parse_options(options, argv, 2);
 
-    if      (command == "signal")                 signal_command(&(argv[0]), options);
-    else if (command == "swath")                  swath_command(&(argv[0]), options);
+    if (command == "swath")                       swath_command(&(argv[0]), options);
     else if (command == "burst")                  burst_command(&(argv[0]), options);
-    else if (command == "fft")                    fft_command(&(argv[0]), options); 
     else if (command == "fft2")                   fft2_command(&(argv[0]), options);
     else if (command == "fft_axis")               fft_axis_command(&(argv[0]), options);
-    else if (command == "pulse")                  pulse_command(&(argv[0]), options);
-    else if (command == "pulse_compression")      pulse_compression_command(&(argv[0]), options);
-    else if (command == "burst_pulses")           pulse_image_command(&(argv[0]), options);
     else if (command == "range_compressed_burst") range_compressed_burst_command(&(argv[0]), options);
     else if (command == "range_compressed_swath") range_compressed_swath_command(&(argv[0]), options);
-    // else if (command == "range_doppler_swath")    range_doppler_swath_command(&(argv[0]), options);
     else if (command == "azimuth_compressed_burst") azimuth_compressed_burst_command(&(argv[0]), options);
     else if (command == "azimuth_compressed_swath") azimuth_compressed_swath_command(&(argv[0]), options);
 

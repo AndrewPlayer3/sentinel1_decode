@@ -56,8 +56,6 @@ public:
 
     STATE_VECTORS get_state_vectors();
 
-    std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets);
-
     CF_VEC_2D get_burst(const std::string& swath, const int& burst);
     CF_VEC_2D get_swath(const std::string& swath);
 

@@ -5,8 +5,6 @@
 #include "image_write.h"
 #include "cli.h"
 #include "packet.h"
-#include "burst.h"
-#include "swath.h"
 
 
 void burst_command(char *argv[], std::unordered_map<std::string, bool>& options)
@@ -37,37 +35,6 @@ void swath_command(char *argv[], std::unordered_map<std::string, bool>& options)
     std::string scaling  = parse_scaling_mode(options);
 
     write_swath(in_path, out_path, swath, scaling);
-}
-
-
-void burst_replica_chirps_command(char *argv[], std::unordered_map<std::string, bool>& options)
-{
-    STRING_VEC_1D args  = {"swath", "burst_num", "in_path", "out_path"};
-    STRING_VEC_1D types = {"string", "int", "path", "string"};
-    validate_args("burst", args, types, argv);
-
-    std::string swath    = std::string(argv[2]);
-    int burst_num        = std::stoi(argv[3]);
-    std::string in_path  = std::string(argv[4]);
-    std::string out_path = std::string(argv[5]);
-    std::string scaling  = parse_scaling_mode(options);
-
-    write_burst_replica_chirps(in_path, out_path, swath, burst_num, scaling);
-}
-
-
-void swath_replica_chirps_command(char *argv[], std::unordered_map<std::string, bool>& options)
-{
-    STRING_VEC_1D args  = {"swath", "in_path", "out_path"};
-    STRING_VEC_1D types = {"string", "path", "string"};
-    validate_args("swath", args, types, argv);
-
-    std::string swath    = std::string(argv[2]);
-    std::string in_path  = std::string(argv[3]);
-    std::string out_path = std::string(argv[4]);
-    std::string scaling  = parse_scaling_mode(options);
-
-    write_swath_replica_chirps(in_path, out_path, swath, scaling);
 }
 
 
@@ -164,7 +131,7 @@ void azimuth_compressed_swath_command(char *argv[], std::unordered_map<std::stri
 }
 
 
-void save_raw_npy_command(char *argv[], std::unordered_map<std::string, bool>& options)
+void save_raw_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
     STRING_VEC_1D args  = {"swath", "in_path", "out_path"};
     STRING_VEC_1D types = {"string", "path", "string"};
@@ -217,14 +184,13 @@ int main(int argc, char* argv[])
     STRING_VEC_1D help_strings = {
         "burst [swath] [burst_num] [in_path] [out_path]",
         "swath [swath] [in_path] [out_path]",
-        "burst_replica_chirps [swath] [burst_num] [in_path] [out_path]",
-        "swath_replica_chirps [swath] [in_path] [out_path]",
         "range_compressed_burst [swath] [burst_num] [in_path] [out_path]",
         "range_compressed_swath [swath] [in_path] [out_path]",
         "range_doppler_burst [swath] [burst_num] [in_path] [out_path]",
         "range_doppler_swath [swath] [in_path] [out_path]",
         "azimuth_compressed_burst [swath] [burst_num] [in_path] [out_path]",
         "azimuth_compressed_swath [swath] [in_path] [out_path]",
+        "save_swath_as_cf32 [swath] [in_path] [out_path]"
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 
@@ -250,15 +216,13 @@ int main(int argc, char* argv[])
 
     if      (command == "burst")                    burst_command(&(argv[0]), options);
     else if (command == "swath")                    swath_command(&(argv[0]), options);
-    else if (command == "burst_replica_chirps")     burst_replica_chirps_command(&(argv[0]), options);
-    else if (command == "swath_replica_chirps")     swath_replica_chirps_command(&(argv[0]), options);
     else if (command == "range_compressed_burst")   range_compressed_burst_command(&(argv[0]), options);
     else if (command == "range_compressed_swath")   range_compressed_swath_command(&(argv[0]), options);
     else if (command == "range_doppler_burst")      range_doppler_burst_command(&(argv[0]), options);
     else if (command == "range_doppler_swath")      range_doppler_swath_command(&(argv[0]), options);
     else if (command == "azimuth_compressed_burst") azimuth_compressed_burst_command(&(argv[0]), options);
     else if (command == "azimuth_compressed_swath") azimuth_compressed_swath_command(&(argv[0]), options);
-    else if (command == "save_raw_npy")             save_raw_npy_command(&(argv[0]), options);
+    else if (command == "save_swath_as_cf32")       save_raw_command(&(argv[0]), options);
     else if (command == "help" or command == "--help" or command == "-h")
     {
         print_help(help_strings);

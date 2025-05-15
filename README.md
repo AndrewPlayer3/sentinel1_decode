@@ -2,56 +2,76 @@
 For additional information on Level-0 product decoding, see the [SAR Space Packet Protocol Data Unit Specification](https://sentinels.copernicus.eu/documents/247904/2142675/Sentinel-1-SAR-Space-Packet-Protocol-Data-Unit.pdf) and the [Sentinel-1 Level-0 Data Decoding Package](https://sentinel.esa.int/documents/247904/0/Sentinel-1-Level-0-Data-Decoding-Package.pdf/a8742c59-4914-40c4-8309-c77515649f17).
 
 ## Table of Contents
+
 * [Introduction](#introduction)
 * [Commands and Examples](#commands)
-  * [Image Writing](#writing-images)
-  * [Plotting](#plotting)
-  * [Packet Information and Performance Testing](#packet-information-and-performance-testing)
+  * [Image Formation](#image-formation-and-saving-images)
+  * [Plotting](#plotting-images)
+  * [Packet Information and Performance Testing](#packet-information)
 * [Results with Point Targets](#results-with-point-targets)
 * [Compiling](#compiling)
    * [Build Script](#build-script)
    * [Dependencies](#dependencies)
-## Introduction
-**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite. I am also working on implementing most of the [Level-1 Algorithm](#results-with-point-targets). I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals. 
 
-On my PC, azimuth compressing a full stripmap image takes around 1 minute, and uses ~52GB of RAM. Azimuth compressing an IW mode swath takes approximately 2 minutes, and uses ~27GB of RAM. A burst takes about 30 seconds and uses ~20GB of RAM. Memory usage will go down as I move from `double` to `float` where possible.
+## Introduction
+**sentinel1_decode** is a C++ program/library for quickly decoding Level-0 Raw data from the Sentinel-1 satellite, and forming Level-1 SLC images. Currently, image formation for stripmap, IW swaths, and IW bursts mostly works for visual analysis, but won't have accurate phase and may contain some ambiguities. I am creating this as an education experience for myself, and because there isn't a good fast, simple, and robust program for decoding this data in a way that allows you to get the intermediate products and signals. 
+
+On my PC, azimuth compressing a full stripmap image takes around 1 minute, and uses ~52GB of RAM. Azimuth compressing an IW mode swath takes approximately 2 minutes, and uses ~27GB of RAM. A burst takes about 30 seconds and uses ~20GB of RAM. Memory usage will go down as I move from `double` to `float` where possible. Decoding the raw data for a swath takes only a couple seconds.
 
 
 ## Commands
-### Writing Images
+### Image Formation and Saving Images
 ```bash
 $ bin/s1_write --help
 burst [swath] [burst_num] [in_path] [out_path]
 swath [swath] [in_path] [out_path]
-burst_replica_chirps [swath] [burst_num] [in_path] [out_path]
-swath_replica_chirps [swath] [in_path] [out_path]
 range_compressed_burst [swath] [burst_num] [in_path] [out_path]
 range_compressed_swath [swath] [in_path] [out_path]
+range_doppler_burst [swath] [burst_num] [in_path] [out_path]
+range_doppler_swath [swath] [in_path] [out_path]
 azimuth_compressed_burst [swath] [burst_num] [in_path] [out_path]
 azimuth_compressed_swath [swath] [in_path] [out_path]
-Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
+save_swath_as_cf32 [swath] [in_path] [out_path]Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
 ```
-#### Examples
+#### Image Formation Examples
 The sample image *data/points/point.dat* is the VV data from [S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240813T095440_20240813T095513_055193_06BA22_1119-RAW).
 
 ```bash
 $ bin/s1_write swath IW2 data/points/point.dat IW2.tif --norm
 ```
 ![swath_write_example](imgs/raw_points.png)
+
 ```bash
 $ bin/s1_write range_compressed_swath IW2 data/points/point.dat RC_IW2.tif --norm
 ```
 ![swath_rc_write_example](imgs/rc_points.png)
+
 ```bash
 $ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --norm
 ```
 ![swath_az_write_example](imgs/points_iw_mode.png)
+
 ```bash
 $ bin/s1_write azimuth_compressed_swath S1 data/sm_sample/sample.dat AZ_S1.tif --norm
 ```
 ![az_sm_write_example](imgs/az_sm.png)
 
-#### Packet Information and Performance Testing
+### Plotting Images
+
+```bash
+swath [swath] [path]
+burst [swath] [burst_num] [path]
+fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]
+fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]
+range_compressed_burst [swath] [burst_num] [path]
+range_compressed_swath [swath] [path]
+azimuth_compressed_burst [swath] [burst_num] [path]
+azimuth_compressed_swath [swath] [path]
+Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
+```
+
+#### Packet Information
+
 ```bash
 $ bin/main --help
 packet_info [packet_index] [path]
@@ -61,7 +81,9 @@ index_records [path]
 annotation_record [record_index] [path]
 state_vectors [path]
 ```
+
 #### Examples
+
 The sample image *data/sample/sample.dat* is the VV data from [S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41](https://search.asf.alaska.edu/#/?searchType=List%20Search&searchList=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41&resultsLoaded=true&granule=S1A_IW_RAW__0SDV_20240806T135224_20240806T135256_055093_06B68A_AE41-RAW)
 ```bash
 $ bin/main print_packet_info 0 data/sample/sample.dat
@@ -146,7 +168,6 @@ S1_100MHz_CAL: 20
 S1: 60701
 ```
 
-
 ```bash
 $ bin/main print_state_vectors 0 data/sample/sample.dat
 ```
@@ -174,7 +195,9 @@ $ bin/main print_complex_samples 0 data/sample/sample.dat
 ```
 
 ## Compiling
+
 Using `cmake`:
+
 ```bash
 cd build
 cmake ..

@@ -76,7 +76,7 @@ target_link_libraries(s1_print PRIVATE fftw3 m)
 # Executable: write
 add_executable(
     s1_write_tiff
-    src/write_main.cpp
+    src/image_write_main.cpp
     src/cli.cpp
     src/image_write.cpp
     src/image_formation.cpp

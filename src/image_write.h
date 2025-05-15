@@ -5,8 +5,6 @@
 #include "signal_processing.h"
 #include "image_formation.h"
 #include "packet.h"
-#include "burst.h"
-#include "swath.h"
 #include "state_vectors.h"
 #include "s1_decoder.h"
 

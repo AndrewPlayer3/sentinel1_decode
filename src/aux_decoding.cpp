@@ -127,7 +127,7 @@ F_VEC_1D annotation_time_decoder(const std::string& filename)
     return annotation_time_decoder(data);
 }
 
-/* Returns a vector of maps containing the annotation records */
+/* Returns a vector of packet slow times */
 F_VEC_1D annotation_time_decoder(std::ifstream& data)
 {
     int record_size = 26;
