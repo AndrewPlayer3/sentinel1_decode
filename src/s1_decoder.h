@@ -27,7 +27,7 @@ private:
     STATE_VECTORS _state_vectors;
 
     CF_VEC_2D _range_compress(PACKET_VEC_1D& packets, bool do_ifft=true, bool do_azimuth_fft=false);
-    CF_VEC_2D _azimuth_compress(PACKET_VEC_1D& packets);
+    CF_VEC_2D _azimuth_compress(PACKET_VEC_1D& packets, const bool& tops_mode = false);
 
     CF_VEC_2D _get_range_compressed_swath_sm(const std::string& swath, bool range_doppler=false);
     CF_VEC_2D _get_range_compressed_swath_iw(const std::string& swath, bool range_doppler=false);
