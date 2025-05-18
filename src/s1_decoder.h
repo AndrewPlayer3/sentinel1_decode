@@ -44,7 +44,6 @@ public:
         _filename = filename;
         _set_packets();
         _set_state_vectors();
-        _times = annotation_time_decoder("/home/andrew/Repos/sentinel1_decode/data/san_fran/san_fran_annot.dat");
     }
 
     void _set_state_vectors()
