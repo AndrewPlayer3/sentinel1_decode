@@ -421,7 +421,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
     double dc_rate = get_doppler_centroid_rate(packets, v_norm);
-    double doppler_bandwidth = prf * 0.4;
+    double doppler_bandwidth = prf * 0.5;
 
     double oversample_factor;
     double t0;

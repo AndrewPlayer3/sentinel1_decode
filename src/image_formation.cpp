@@ -316,7 +316,7 @@ CF_VEC_2D azimuth_time_ufr(
         ufr_intermediate.begin(), ufr_intermediate.end(),
             ufr_output.begin(),
                 [downsample_shape] (CF_VEC_1D& ufr_row) {
-                    return linear_resample(ufr_row, downsample_shape);
+                    return quadratic_resample(ufr_row, downsample_shape);
                 }
     );
 
@@ -342,6 +342,12 @@ CF_VEC_2D azimuth_time_ufr(
             ufr_output[rng_line][az_line] = reramp * sample;
         }
     }
+
+    // std::cout << "Applying Hanning Window" << std::endl;
+
+    // apply_hanning_window_in_place(ufr_output);
+
+    // std::cout << "Applied Hanning Window" << std::endl;
 
     ufr_output = transpose(ufr_output);
 

@@ -106,6 +106,57 @@ CF_VEC_1D linear_resample(const CF_VEC_1D& arr, const int& num_output_samples)
 }
 
 
+CF_VEC_1D quadratic_resample(const CF_VEC_1D& arr, const int& num_output_samples)
+{
+    int num_input_samples = arr.size();
+
+    if (num_input_samples == num_output_samples)
+    {
+        return arr;
+    }
+
+    if (num_input_samples < 3)
+    {
+        throw std::invalid_argument("Need at least 3 points for quadratic interpolation.");
+    }
+
+    CF_VEC_1D out(num_output_samples);
+
+    double dx_in = 1.0 / (num_input_samples - 1);
+    double dx_out = 1.0 / (num_output_samples - 1);
+
+    for (int j = 0; j < num_output_samples; ++j)
+    {
+        double x = j * dx_out;
+
+        // Find segment such that x lies between arr[i] and arr[i+1]
+        int i = std::min(int(x / dx_in), num_input_samples - 2);
+        
+        // Ensure we have three points: p0 = arr[i-1], p1 = arr[i], p2 = arr[i+1]
+        int i0 = std::max(i - 1, 0);
+        int i1 = i;
+        int i2 = std::min(i + 1, num_input_samples - 1);
+
+        double x0 = i0 * dx_in;
+        double x1 = i1 * dx_in;
+        double x2 = i2 * dx_in;
+
+        auto y0 = arr[i0];
+        auto y1 = arr[i1];
+        auto y2 = arr[i2];
+
+        // Use Lagrange's form of the quadratic interpolator
+        double L0 = (x - x1)*(x - x2)/((x0 - x1)*(x0 - x2));
+        double L1 = (x - x0)*(x - x2)/((x1 - x0)*(x1 - x2));
+        double L2 = (x - x0)*(x - x1)/((x2 - x0)*(x2 - x1));
+
+        out[j] = L0*y0 + L1*y1 + L2*y2;
+    }
+
+    return out;
+}
+
+
 void conjugate_in_place(CF_VEC_1D& complex_samples)
 {
     std::for_each(
@@ -129,6 +180,24 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
             complex_samples.begin(), complex_samples.begin(),
                 [num_samples] (double& w, std::complex<double>& n) { return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n; }
     );
+}
+
+void apply_hanning_window_in_place(CF_VEC_2D& complex_samples)
+{
+    int num_samples = complex_samples[0].size();
+
+    F_VEC_1D window(num_samples);
+
+    std::iota(window.begin(), window.end(), 0.0);
+
+    for (CF_VEC_1D& row : complex_samples)
+    {
+        std::transform(
+            window.begin(), window.end(), 
+                row.begin(), row.begin(),
+                    [num_samples] (double& w, std::complex<double>& n) { return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n; }
+        );
+    }
 }
 
 

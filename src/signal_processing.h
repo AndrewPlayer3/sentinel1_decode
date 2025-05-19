@@ -35,6 +35,11 @@ CF_VEC_1D linear_resample(
     const int& num_output_samples
 );
 
+CF_VEC_1D quadratic_resample(
+    const CF_VEC_1D& arr,
+    const int& num_output_samples
+);
+
 std::vector<float> flatten(
     const std::vector<std::vector<float>>& values
 );
@@ -55,6 +60,9 @@ void apply_hanning_window_in_place(
     CF_VEC_1D& complex_samples
 );
 
+void apply_hanning_window_in_place(
+    CF_VEC_2D& complex_samples
+);
 
 F_VEC_1D norm_1d(
     const CF_VEC_1D& complex_values,
