@@ -533,11 +533,16 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             double v_rel = sqrt(v_sat * v_ground);
             double az_freq = az_freqs[i];
 
+            // TODO: Range migration correction using sinc-based interpolation
+            // TODO: Secondary range compression
+
             if (tops_mode) az_freq += doppler_centroid[j];
 
             double rcmc_factor = sqrt(1 - (WAVELENGTH*WAVELENGTH * az_freq*az_freq) / (4 * v_rel*v_rel));
 
             if (tops_mode) ka[i][j] = -(2 * std::pow(v_rel, 2.0) * std::pow(rcmc_factor, 3.0)) / (WAVELENGTH * slant_ranges[j]);
+
+            // TODO: Time correction and antenna pattern correction
 
             radar_data_row[j] *= (1 / double(num_samples)) * exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor * CENTER_FREQ / SPEED_OF_LIGHT);
         }
