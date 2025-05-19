@@ -119,7 +119,7 @@ CF_VEC_2D azimuth_frequency_ufr(
     const double& dc_rate,
     const double& burst_duration,
     const double& prf,
-    const double& processing_bandwidth  // B_d
+    const double& doppler_bandwidth  // B_d
 ) {
     int num_az = range_compressed.size();
     int num_rng = range_compressed[0].size();
@@ -134,8 +134,8 @@ CF_VEC_2D azimuth_frequency_ufr(
 
     int shape = std::floor(num_replicas * num_az);
     int mid = shape / 2;
-    int start = mid - (std::floor(processing_bandwidth) / 2);
-    int end = mid + (std::floor(processing_bandwidth) / 2);
+    int start = mid - (std::floor(doppler_bandwidth) / 2);
+    int end = mid + (std::floor(doppler_bandwidth) / 2);
 
     std::cout << "-------------------------------------------------" << std::endl;
     std::cout << "Computing Azimuth Frequency UFR with Parameters: " << std::endl;
@@ -216,7 +216,8 @@ CF_VEC_2D azimuth_time_ufr(
     const double& dc_rate,
     const double& burst_duration,
     const double& prf,
-    const double& processing_bandwidth  // B_d
+    const double& doppler_bandwidth,  // B_d
+    const int&    swath_number
 ) {
     ka = transpose(ka);
     azimuth_compressed = transpose(azimuth_compressed);
@@ -225,15 +226,16 @@ CF_VEC_2D azimuth_time_ufr(
     int num_rng = azimuth_compressed.size();
 
     double num_replicas = std::abs(dc_rate * burst_duration / prf);
-    double bandwidth = num_replicas * prf;
+    double bandwidth = (num_replicas * prf) - doppler_bandwidth;
 
     double ka_mean = std::abs(std::accumulate(ka[0].begin(), ka[0].end(), 0.0)) / num_az;
-    double focused_time = burst_duration + ((bandwidth - (2 * processing_bandwidth)) / ka_mean);
+    double focused_time = burst_duration + ((bandwidth - (2 * doppler_bandwidth)) / ka_mean);
 
     int num_tiles = std::ceil((focused_time / 2) / burst_duration) - std::floor((-focused_time / 2) / burst_duration);
 
+    int output_extension = swath_number == 11 ? std::floor(doppler_bandwidth * 1.15) : std::floor(doppler_bandwidth * 0.26);
     int output_shape = std::floor(prf * burst_duration);
-    int downsample_shape = output_shape + std::floor(processing_bandwidth);
+    int downsample_shape = output_shape + output_extension;
     int shape = num_tiles * num_az;
     int mid = shape / 2;
     int start = mid - bandwidth / 2;
@@ -244,7 +246,7 @@ CF_VEC_2D azimuth_time_ufr(
     std::cout << "PRF: " << prf << std::endl;
     std::cout << "DC Rate: " << dc_rate << std::endl;
     std::cout << "Burst Duration: " << burst_duration << std::endl;
-    std::cout << "Doppler Bandwidth: " << processing_bandwidth << std::endl;
+    std::cout << "Doppler Bandwidth: " << doppler_bandwidth << std::endl;
     std::cout << "Ramp Signal Bandwidth: " << bandwidth << std::endl;
     std::cout << "Focused Time: " << focused_time << std::endl;
     std::cout << "Mean Azimuth FM Rate: " << ka_mean << std::endl;
@@ -309,6 +311,7 @@ CF_VEC_2D azimuth_time_ufr(
     // Resample
     CF_VEC_2D ufr_output(num_rng, CF_VEC_1D(downsample_shape));
 
+    // TODO: Quadratic interpolation rather than linear
     std::transform(
         ufr_intermediate.begin(), ufr_intermediate.end(),
             ufr_output.begin(),

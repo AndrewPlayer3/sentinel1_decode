@@ -42,6 +42,7 @@ CF_VEC_2D azimuth_time_ufr(
     const double& dc_rate,
     const double& burst_duration,
     const double& prf,
-    const double& processing_bandwidth  // B_d
+    const double& processing_bandwidth,  // B_d
+    const int&    swath_number
 );
 
