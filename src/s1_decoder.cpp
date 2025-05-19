@@ -258,6 +258,14 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_iw(const std::string& swath)
     for (int i = 0; i < num_bursts; i++)
     {
         std::cout << "Azimuth Compressing Burst #" << i << std::endl;
+        std::cout << "Burst #" << i << " contains " << packets[i].size() << " packets." << std::endl; 
+
+        if (packets[i].size() < 1000)
+        {
+            std::cout << "Burst #" << i << " does not contain enough packets for image formation, skipping..." << std::endl;
+            continue;
+        }
+
         CF_VEC_2D azimuth_compressed_burst = _azimuth_compress(packets[i], true);
         int num_lines = azimuth_compressed_burst.size();
         for (int i = 0; i < num_lines; i++)
@@ -541,6 +549,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     if (tops_mode)
     {
+        int swath_number = packets[0].secondary_header("swath_number");
         radar_data = azimuth_time_ufr(
             radar_data,
             doppler_centroid,
@@ -549,7 +558,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             dc_rate,
             burst_length_seconds,
             prf,
-            doppler_bandwidth
+            doppler_bandwidth,
+            swath_number
         );
     }
 

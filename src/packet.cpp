@@ -986,25 +986,39 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std:
 
     PACKET_VEC_2D bursts; 
     PACKET_VEC_1D burst_packets;
-    int previous_az = -1;
+    int previous_az = 0;
+    int previous_pri_count = 0;
 
     for (int i = 0; i < num_packets; i++)
     {
+
         L0Packet packet = packets[i];
         bool type_check = get_cal_packets ? packet.get_data_format() != 'D' : packet.get_data_format() == 'D';
+
         if (type_check and packet.get_swath() == swath)
         {
             int az = packet.secondary_header("azimuth_beam_address");
-
-            if (previous_az == -1) previous_az = az;
-
-            if (az != previous_az and az != previous_az + 1 and burst_packets.size() > 0)
+            int pri_count = packet.secondary_header("pri_count");
+            if (previous_az == 0) 
             {
-                bursts.push_back(burst_packets);
-                burst_packets = PACKET_VEC_1D();
+                previous_az = az;
+                previous_pri_count = pri_count;
+            }
+            if (az < previous_az or pri_count > previous_pri_count + 1)
+            {
+                if (burst_packets.size() < 1000)
+                {
+                    burst_packets = PACKET_VEC_1D();
+                }
+                else
+                {
+                    bursts.push_back(burst_packets);
+                    burst_packets = PACKET_VEC_1D();
+                }
             }
             burst_packets.push_back(packet);
 
+            previous_pri_count = pri_count;
             previous_az = az;
         }
         if (i == num_packets - 1 && burst_packets.size() > 0) bursts.push_back(burst_packets);
