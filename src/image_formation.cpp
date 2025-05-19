@@ -311,6 +311,7 @@ CF_VEC_2D azimuth_time_ufr(
     // Resample
     CF_VEC_2D ufr_output(num_rng, CF_VEC_1D(downsample_shape));
 
+    // TODO: Quadratic interpolation rather than linear
     std::transform(
         ufr_intermediate.begin(), ufr_intermediate.end(),
             ufr_output.begin(),
