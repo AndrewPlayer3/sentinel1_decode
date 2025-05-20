@@ -83,12 +83,11 @@ F_VEC_1D get_unwrapped_estimates(CF_VEC_1D& fine_dc_estimates, F_VEC_1D& offset_
 }
 
 
-std::vector<double> polyfit(const std::vector<double>& x, const std::vector<double>& y) {
+F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y) {
     const int N = x.size();
 
-    // Precompute sums
-    double Sx[7] = {}; // Sx[i] = sum(x^i), i from 0 to 6
-    double Sy[4] = {}; // Sy[i] = sum(x^i * y)
+    F_VEC_1D Sx(7);
+    F_VEC_1D Sy(4);
 
     for (int i = 0; i < N; ++i) {
         double xi = 1.0;
@@ -100,13 +99,13 @@ std::vector<double> polyfit(const std::vector<double>& x, const std::vector<doub
     }
 
     // Construct the normal equations matrix and RHS
-    double A[4][4] = {
+    F_VEC_2D A = {
         {Sx[0], Sx[1], Sx[2], Sx[3]},
         {Sx[1], Sx[2], Sx[3], Sx[4]},
         {Sx[2], Sx[3], Sx[4], Sx[5]},
         {Sx[3], Sx[4], Sx[5], Sx[6]}
     };
-    double b[4] = {Sy[0], Sy[1], Sy[2], Sy[3]};
+    F_VEC_1D b = {Sy[0], Sy[1], Sy[2], Sy[3]};
 
     // Solve Ax = b using Gaussian elimination
     for (int i = 0; i < 4; ++i) {
@@ -176,20 +175,16 @@ CF_VEC_2D dce_preconditioning(CF_VEC_2D& range_compressed, const double& doppler
 
     CF_VEC_2D preconditioned = transpose(range_compressed);
 
-    std::transform(
-        preconditioned.begin(), preconditioned.end(),
-            preconditioned.begin(),
-                [deramping_signal] (CF_VEC_1D& precon) {
-                    std::transform(
-                        deramping_signal.begin(), deramping_signal.end(),
-                            precon.begin(), precon.begin(),
-                                [] (std::complex<double> deramp, std::complex<double> rc) {
-                                    return rc * deramp;
-                                }
-                    );
-                    return precon;
-                }
-    );
+    for (int rng_line = 0; rng_line < num_rng; rng_line++)
+    {
+        std::transform(
+            deramping_signal.begin(), deramping_signal.end(),
+                preconditioned[rng_line].begin(), preconditioned[rng_line].begin(),
+                    [] (std::complex<double> deramp, std::complex<double> rc) {
+                        return rc * deramp;
+                    }
+        );
+    }
 
     return transpose(preconditioned);
 }
