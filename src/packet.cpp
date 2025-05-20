@@ -680,6 +680,8 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
 ) {
     D_VEC_2D s_values(_num_quads, D_VEC_1D(4));
 
+    int s_values_offset = 0;
+
     for (int block_id = 0; block_id < _num_baq_blocks; block_id++)
     {
         bool is_last_block = (block_id == _num_baq_blocks - 1);
@@ -689,7 +691,7 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
 
         for (int s_id = 0; s_id < block_length; s_id++)
         {
-            s_values[block_id*block_length+s_id] = D_VEC_1D({
+            s_values[s_values_offset+s_id] = D_VEC_1D({
                 _get_s_values_type_d(
                     brc, threshold_id, 
                     IE.blocks[block_id].signs[s_id],
@@ -712,13 +714,14 @@ CF_VEC_1D L0Packet::_get_signal_type_d(
                 )
             });
         }
+        s_values_offset += block_length;
     }
     CF_VEC_1D complex_samples(_num_quads * 2);
 
     for (int i = 1; i <= _num_quads*2; i+=2)
     {
         int s_index = ceil((i-1)/2);
-        
+
         D_VEC_1D components = s_values[s_index];
 
         complex_samples[i-1] = std::complex<double>(components[0], components[2]);
