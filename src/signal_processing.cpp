@@ -129,10 +129,8 @@ CF_VEC_1D quadratic_resample(const CF_VEC_1D& arr, const int& num_output_samples
     {
         double x = j * dx_out;
 
-        // Find segment such that x lies between arr[i] and arr[i+1]
         int i = std::min(int(x / dx_in), num_input_samples - 2);
         
-        // Ensure we have three points: p0 = arr[i-1], p1 = arr[i], p2 = arr[i+1]
         int i0 = std::max(i - 1, 0);
         int i1 = i;
         int i2 = std::min(i + 1, num_input_samples - 1);
@@ -141,11 +139,11 @@ CF_VEC_1D quadratic_resample(const CF_VEC_1D& arr, const int& num_output_samples
         double x1 = i1 * dx_in;
         double x2 = i2 * dx_in;
 
-        auto y0 = arr[i0];
-        auto y1 = arr[i1];
-        auto y2 = arr[i2];
+        std::complex<double> y0 = arr[i0];
+        std::complex<double> y1 = arr[i1];
+        std::complex<double> y2 = arr[i2];
 
-        // Use Lagrange's form of the quadratic interpolator
+        // Lagrange's form
         double L0 = (x - x1)*(x - x2)/((x0 - x1)*(x0 - x2));
         double L1 = (x - x0)*(x - x2)/((x1 - x0)*(x1 - x2));
         double L2 = (x - x0)*(x - x1)/((x2 - x0)*(x2 - x1));
@@ -178,9 +176,12 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
     std::transform(
         window.begin(), window.end(), 
             complex_samples.begin(), complex_samples.begin(),
-                [num_samples] (double& w, std::complex<double>& n) { return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n; }
+                [num_samples] (double& w, std::complex<double>& n) { 
+                    return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n;
+                }
     );
 }
+
 
 void apply_hanning_window_in_place(CF_VEC_2D& complex_samples)
 {
@@ -195,7 +196,9 @@ void apply_hanning_window_in_place(CF_VEC_2D& complex_samples)
         std::transform(
             window.begin(), window.end(), 
                 row.begin(), row.begin(),
-                    [num_samples] (double& w, std::complex<double>& n) { return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n; }
+                    [num_samples] (double& w, std::complex<double>& n) { 
+                        return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n;
+                    }
         );
     }
 }
@@ -208,13 +211,12 @@ std::vector<float> flatten(const std::vector<std::vector<float>>& values)
 
     std::vector<float> flat(rows * cols);
 
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
-        const std::vector<float>& value_row = values[i];
         for (int j = 0; j < cols; j++)
         {
-            flat[i * cols + j] = value_row[j];
+            flat[i * cols + j] = values[i][j];
         }
     }
     return flat;
@@ -229,13 +231,12 @@ F_VEC_1D flatten(const F_VEC_2D& values)
 
     F_VEC_1D flat(rows * cols);
 
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
-        const F_VEC_1D& value_row = values[i];
         for (int j = 0; j < cols; j++)
         {
-            flat[i * cols + j] = value_row[j];
+            flat[i * cols + j] = values[i][j];
         }
     }
     return flat;
@@ -249,13 +250,12 @@ CF_VEC_1D flatten(const CF_VEC_2D& values)
 
     CF_VEC_1D flat(rows * cols);
 
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
-        const CF_VEC_1D& value_row = values[i];
         for (int j = 0; j < cols; j++)
         {
-            flat[i * cols + j] = value_row[j];
+            flat[i * cols + j] = values[i][j];
         }
     }
     return flat;
@@ -270,20 +270,27 @@ std::vector<std::vector<float>> norm_2d(
 
     int rows = complex_values.size();
     int cols = complex_values[0].size();
-    double scale_factor = rows * cols;
+
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+        {
+            max_value = std::max(max_value, std::abs(complex_values[i][j]));
+        }
+    }
+
+    std::cout << "Normalization Value: " << max_value << std::endl;
 
     std::vector<std::vector<float>> norm(rows, std::vector<float>(cols));
 
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
-        const CF_VEC_1D& complex_value_row = complex_values[i];
-        std::vector<float>& norm_row = norm[i];
-
         for (int j = 0; j < cols; j++)
         {
-            if (log_scale) norm_row[j] = 10.0 * log10(std::abs(complex_value_row[j]) / scale_factor);
-            else           norm_row[j] = std::abs(complex_value_row[j]) / scale_factor;
+            double val = std::abs(complex_values[i][j]) + 1e-12;
+            norm[i][j] = log_scale ? 20.0 * log10(val / max_value) : val / max_value;
         }
     }
 
@@ -326,7 +333,7 @@ F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
     std::transform(
         complex_values.begin(), complex_values.end(),
             magnitude.begin(),
-                [] (const std::complex<double>& n) { return std::abs(n); }
+                [] (const std::complex<double>& n) { return std::pow(std::abs(n), 2.0); }
     );
     return magnitude;
 }
@@ -339,16 +346,12 @@ std::vector<std::vector<float>> magnitude_2d(const CF_VEC_2D& complex_values)
 
     std::vector<std::vector<float>> magnitude(rows, std::vector<float>(cols));
 
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
     {
-        const CF_VEC_1D& complex_values_row = complex_values[i];
-               std::vector<float>& magnitude_row = magnitude[i];
-
         for (int j = 0; j < cols; j++)
         {
-            float mag = std::abs(complex_values_row[j]);
-            magnitude_row[j] = mag;
+            magnitude[i][j] = std::pow(std::abs(complex_values[i][j]), 2.0);
         }
     }
     return magnitude;
@@ -362,13 +365,12 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 
     CF_VEC_2D arr_t(cols, CF_VEC_1D(rows));
 
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < cols; i++)
     {
-        CF_VEC_1D& arr_t_row = arr_t[i];
         for (int j = 0; j < rows; j++)
         {
-            arr_t_row[j] = arr[j][i];
+            arr_t[i][j] = arr[j][i];
         }
     }
     return arr_t;
@@ -382,13 +384,12 @@ F_VEC_2D transpose(const F_VEC_2D& arr)
 
     F_VEC_2D arr_t(cols, F_VEC_1D(rows));
 
-    #pragma omp parallel for num_threads(4)
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < cols; i++)
     {
-        F_VEC_1D& arr_t_row = arr_t[i];
         for (int j = 0; j < rows; j++)
         {
-            arr_t_row[j] = arr[j][i];
+            arr_t[i][j] = arr[j][i];
         }
     }
     return arr_t;
