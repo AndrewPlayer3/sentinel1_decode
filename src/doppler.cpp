@@ -1,7 +1,7 @@
 #include "doppler.h"
 
 
-CF_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
+F_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
 {
     int num_az = range_compressed.size();
     int num_rng = range_compressed[0].size();
@@ -18,12 +18,12 @@ CF_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
 
     std::cout << "Wrapped F_DC: " << phase_difference_sum.front() << ", " << phase_difference_sum.back() << std::endl;
 
-    CF_VEC_1D wrapped_estimates(num_rng);
+    F_VEC_1D wrapped_estimates(num_rng);
 
     std::transform(
         phase_difference_sum.begin(), phase_difference_sum.end(),
             wrapped_estimates.begin(),
-                [prf] (std::complex<double>& v) {
+                [prf] (const std::complex<double>& v) {
                     return -prf * std::arg(v) / (2 * PI);
                 }
     );
@@ -32,7 +32,7 @@ CF_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
 }
 
 
-F_VEC_1D get_unwrapped_estimates(CF_VEC_1D& fine_dc_estimates, F_VEC_1D& offset_rng_times, const double& prf, const int& dense_grid_scalar = 8)
+F_VEC_1D get_unwrapped_estimates(F_VEC_1D& fine_dc_estimates, F_VEC_1D& offset_rng_times, const double& prf, const int& dense_grid_scalar = 8)
 {
     int num_est = fine_dc_estimates.size();
     float dt = offset_rng_times[1] - offset_rng_times[0];
@@ -41,7 +41,7 @@ F_VEC_1D get_unwrapped_estimates(CF_VEC_1D& fine_dc_estimates, F_VEC_1D& offset_
     std::transform(
         fine_dc_estimates.begin(), fine_dc_estimates.end(),
             F.begin(),
-                [prf] (std::complex<double>& dc_est) {
+                [prf] (const double& dc_est) {
                     return std::floor(std::abs(std::exp(2.0 * I * PI * dc_est / prf)));
                 }
     );
@@ -65,14 +65,11 @@ F_VEC_1D get_unwrapped_estimates(CF_VEC_1D& fine_dc_estimates, F_VEC_1D& offset_
     double a = v / dt;
     double b = std::arg(F[max_index]) / (2.0 * PI);
 
-    std::complex<double> r = std::arg(std::exp(2.0 * I * PI * fine_dc_estimates[0] / prf) * std::exp(-1.0 * I * (a * 0.01 + b))) / (2.0 * PI);
-    std::complex<double> u = (a * 0.0 + b + r) * prf;
-
     F_VEC_1D unwrapped_estimates(num_est);
     std::transform(
         fine_dc_estimates.begin(), fine_dc_estimates.end(),
             offset_rng_times.begin(), unwrapped_estimates.begin(),
-                [prf, a, b] (std::complex<double>& dc_est, double& time) {
+                [prf, a, b] (double& dc_est, double& time) {
                     std::complex<double> res = std::exp(2.0 * I * PI * dc_est / prf) * std::exp(-1.0 * I * (a * time + b));
                     double r = std::arg(res) / (2.0 * PI);
                     return (a * time + b + r) * prf;
@@ -127,7 +124,7 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y) {
     }
 
     // Back substitution
-    std::vector<double> coeffs(4);
+    F_VEC_1D coeffs(4);
     for (int i = 3; i >= 0; --i) {
         coeffs[i] = b[i];
         for (int j = i + 1; j < 4; ++j)
@@ -139,7 +136,7 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y) {
 }
 
 
-double polyval(const std::vector<double>& coeffs, double x) {
+double polyval(const F_VEC_1D& coeffs, double x) {
     // Evaluate polynomial: a*x^3 + b*x^2 + c*x + d
     double result = 0.0;
     for (int i = coeffs.size() - 1; i >= 0; --i)
@@ -199,15 +196,15 @@ F_VEC_1D get_doppler_centroid(CF_VEC_2D& range_compressed, const double& doppler
 
     CF_VEC_2D precoditioned_burst = dce_preconditioning(range_compressed, doppler_centroid_rate, 1.06);
 
-    CF_VEC_1D wrapped_estimates = get_wrapped_estimates(precoditioned_burst, prf);
+    F_VEC_1D wrapped_estimates = get_wrapped_estimates(precoditioned_burst, prf);
 
     // TODO: Make this an argument once things are working
     int num_rng_blocks = 15;
     int rng_block_size = num_rng / num_rng_blocks;
 
-    CF_VEC_1D fine_dc_estimates(num_rng_blocks);
+    F_VEC_1D fine_dc_estimates(num_rng_blocks);
 
-    for (int rng_block_index; rng_block_index < num_rng_blocks; rng_block_index++)
+    for (int rng_block_index = 0; rng_block_index < num_rng_blocks; rng_block_index++)
     {
         int start_index = rng_block_index * rng_block_size;
 
@@ -216,9 +213,9 @@ F_VEC_1D get_doppler_centroid(CF_VEC_2D& range_compressed, const double& doppler
                             :
                             num_rng - 1;
 
-        CF_VEC_1D rng_block(wrapped_estimates.begin() + start_index, wrapped_estimates.begin() + end_index);
+        F_VEC_1D rng_block(wrapped_estimates.begin() + start_index, wrapped_estimates.begin() + end_index);
 
-        fine_dc_estimates[rng_block_index] = std::accumulate(rng_block.begin(), rng_block.end(), 0.0 + 0.0 * I) / (double(end_index) - double(start_index));
+        fine_dc_estimates[rng_block_index] = std::accumulate(rng_block.begin(), rng_block.end(), 0.0) / (double(end_index) - double(start_index));
     }
 
     std::cout << "Wrapped F_DC: " << fine_dc_estimates.front() << ", " << fine_dc_estimates.back() << std::endl;
@@ -228,8 +225,8 @@ F_VEC_1D get_doppler_centroid(CF_VEC_2D& range_compressed, const double& doppler
     std::transform(
         rng_times.begin(), rng_times.end(),
             rng_times.begin(),
-                [initial_time] (double& v) {
-                    return v - initial_time;
+                [initial_time] (const double& t) {
+                    return t - initial_time;
                 }
     );
 
@@ -244,8 +241,8 @@ F_VEC_1D get_doppler_centroid(CF_VEC_2D& range_compressed, const double& doppler
     std::transform(
         rng_times.begin(), rng_times.end(),
             rng_times.begin(),
-                [initial_time] (double& v) {
-                    return v - initial_time;
+                [initial_time] (const double& t) {
+                    return t - initial_time;
                 }
     );
 

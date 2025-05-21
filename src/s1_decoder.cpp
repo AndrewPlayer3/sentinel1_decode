@@ -210,7 +210,7 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath, b
         std::cout << "Range Compressing Burst #" << i << std::endl;
         CF_VEC_2D range_compressed_burst = _range_compress(packets[i], true, range_doppler);
         int num_azimuth_lines = range_compressed_burst.size();
-        for (int i = 0; i < num_azimuth_lines; i++)
+        for (int j = 0; j < num_azimuth_lines; j++)
         {
             CF_VEC_1D row = range_compressed_burst.front();
             range_compressed_burst.erase(range_compressed_burst.begin());
@@ -268,11 +268,17 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_iw(const std::string& swath)
 
         CF_VEC_2D azimuth_compressed_burst = _azimuth_compress(packets[i], true);
         int num_lines = azimuth_compressed_burst.size();
-        for (int i = 0; i < num_lines; i++)
+        for (int j = 0; j < num_lines; j++)
         {
             CF_VEC_1D row = azimuth_compressed_burst.front();
             azimuth_compressed_burst.erase(azimuth_compressed_burst.begin());
             azimuth_compressed.push_back(row);
+        }
+
+        CF_VEC_1D zero_padding(azimuth_compressed[0].size());
+        for (int j = 0; j < 20; j++)
+        {
+            azimuth_compressed.push_back(zero_padding);
         }
     }
 
@@ -305,7 +311,7 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
         int size = azimuth_compressed_az_block[0].size();
         int diff = max_size - size;
 
-        for (int i = 0; i < rows; i++)
+        for (int j = 0; j < rows; j++)
         {
             CF_VEC_1D row = azimuth_compressed_az_block.front();
             azimuth_compressed_az_block.erase(azimuth_compressed_az_block.begin());
@@ -314,6 +320,12 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
                 row.emplace(row.begin(), std::complex<double>(0.0));
             }
             azimuth_compressed.push_back(row);
+        }
+
+        CF_VEC_1D zero_padding(azimuth_compressed[0].size());
+        for (int j = 0; j < 20; j++)
+        {
+            azimuth_compressed.push_back(zero_padding);
         }
     }
 
@@ -502,6 +514,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double b = 6356752.3142;  // WGS84 Semi-Minor
     double e = 0.0067395;     // WGS84 Eccentricity
 
+    // compute_axis_dft_in_place(radar_data, 0, 1, false);
+
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
@@ -534,23 +548,29 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             double az_freq = az_freqs[i];
 
             // TODO: Range migration correction using sinc-based interpolation
-            // TODO: Secondary range compression
 
             if (tops_mode) az_freq += doppler_centroid[j];
 
             double rcmc_factor = sqrt(1 - (WAVELENGTH*WAVELENGTH * az_freq*az_freq) / (4 * v_rel*v_rel));
 
+            double src_fm_rate  = 2.0 * std::pow(v_rel, 2.0) * std::pow(CENTER_FREQ, 3.0) * std::pow(rcmc_factor, 2.0);
+                   src_fm_rate /= SPEED_OF_LIGHT * slant_ranges[j] * std::pow(az_freq, 2.0);
+
+            std::complex<double> src_filter = std::exp(-1.0 * I * PI * std::pow(range_freqs[j], 2.0) / src_fm_rate);
+            std::complex<double> az_filter = std::exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor * CENTER_FREQ / SPEED_OF_LIGHT);
+
             if (tops_mode) ka[i][j] = -(2 * std::pow(v_rel, 2.0) * std::pow(rcmc_factor, 3.0)) / (WAVELENGTH * slant_ranges[j]);
 
             // TODO: Time correction and antenna pattern correction
 
-            radar_data_row[j] *= (1 / double(num_samples)) * exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor * CENTER_FREQ / SPEED_OF_LIGHT);
+            radar_data_row[j] *= (1 / double(num_samples)) * az_filter * src_filter;
         }
     }
 
     if (not tops_mode) destroy_fftw_plans(plans);
 
     compute_axis_dft_in_place(radar_data, 0, 0, true);
+    // compute_axis_dft_in_place(radar_data, 0, 1, true);
 
     if (tops_mode)
     {
