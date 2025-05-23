@@ -35,6 +35,8 @@ private:
     CF_VEC_2D _get_azimuth_compressed_swath_sm(const std::string& swath);
     CF_VEC_2D _get_azimuth_compressed_swath_iw(const std::string& swath);
 
+    void _validate_request(const std::string& swath, const int& burst=0);
+
 public:
 
     S1_Decoder() {}

@@ -59,10 +59,59 @@ STATE_VECTORS S1_Decoder::get_state_vectors()
 }
 
 
+void S1_Decoder::_validate_request(const std::string& swath, const int& burst)
+{
+    try
+    {
+        _swath_counts.at(swath);
+    }
+    catch(const std::exception& e)
+    {
+        std::cout << "The requested swath, " << swath << ", does not exist in the data." 
+                  << " The available swaths are: " << std::endl;
+
+        for (std::pair<std::string, int> swath_count : _swath_counts)
+        {
+            std::cout << swath_count.first << std::endl;
+        }
+    
+        std::exit(1);
+    }
+
+    if (burst)
+    {
+        int num_bursts = 0;
+        try
+        {
+            if (is_cal(swath))
+            {
+                num_bursts = _cal_packets.at(swath).size();
+                _cal_packets.at(swath).at(burst);
+            }
+            else
+            {
+                num_bursts = _echo_packets.at(swath).size();
+                _echo_packets.at(swath).at(burst);
+            }
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << "The requested burst, " << burst << ", does not exist in the data." 
+                    << " There are "<< num_bursts << " bursts in swath " << swath << "."
+                    << std::endl;
+
+            std::exit(1);
+        }
+    }
+}
+
+
 CF_VEC_2D S1_Decoder::get_burst(
     const std::string& swath,
     const int& burst
 ) {
+    _validate_request(swath, burst);
+    
     PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
 
     int num_packets = burst_packets.size();
@@ -83,7 +132,10 @@ CF_VEC_2D S1_Decoder::get_burst(
 
 CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
 {
+    _validate_request(swath);
+
     PACKET_VEC_2D swath_packets;
+
     if (is_iw(swath)) swath_packets = _echo_packets[swath];
     else if (is_sm(swath)) swath_packets = get_azimuth_blocks(_echo_packets[swath][0]).first;
     else if (is_cal(swath)) swath_packets = _cal_packets[swath];
@@ -155,6 +207,8 @@ CF_VEC_2D S1_Decoder::get_range_compressed_burst(
     const int& burst,
     const bool& range_doppler
 ) {
+    _validate_request(swath, burst);
+
     PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
 
     return _range_compress(burst_packets, true, range_doppler);
@@ -164,7 +218,7 @@ CF_VEC_2D S1_Decoder::get_range_compressed_burst(
 CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(
     const std::string& swath,
     const bool& range_doppler
-) {
+) {    
     PACKET_VEC_1D burst_packets = _echo_packets[swath][0];
 
     std::pair<PACKET_VEC_2D, int> azimuth_block_pair = get_azimuth_blocks(burst_packets);
@@ -235,6 +289,8 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath(
     const std::string& swath,
     bool range_doppler
 ) {
+    _validate_request(swath);    
+
     if (is_sm(swath))
     {
         return _get_range_compressed_swath_sm(swath, range_doppler);
@@ -256,6 +312,8 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_burst(
     const std::string& swath,
     const int& burst
 ) {
+    _validate_request(swath, burst);    
+
     PACKET_VEC_1D packets = _echo_packets[swath][burst];
     return _azimuth_compress(packets, true);
 }
@@ -356,6 +414,8 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
 
 CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 {
+    _validate_request(swath);    
+
     if (is_sm(swath))
     {
         return _get_azimuth_compressed_swath_sm(swath);
