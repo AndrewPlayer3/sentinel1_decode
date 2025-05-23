@@ -46,9 +46,31 @@ void plot_azimuth_compressed_swath(
     plot_complex_image(s1.get_azimuth_compressed_swath(swath_name), scaling_mode);
 }
 
+cv::Mat g_original_img;
+float g_auto_min = 0.0f;
+float g_auto_max = 1.0f;
+
+// Trackbar callback
+void on_trackbar(int, void*) {
+    int min_slider = cv::getTrackbarPos("Min", "Sentinel-1 Decoder");
+    int max_slider = cv::getTrackbarPos("Max", "Sentinel-1 Decoder");
+
+    float min_val = g_auto_min + min_slider / 1000.0f * (g_auto_max - g_auto_min);
+    float max_val = g_auto_min + max_slider / 1000.0f * (g_auto_max - g_auto_min);
+
+    if (max_val <= min_val) return;
+
+    cv::Mat rescaled;
+    g_original_img.convertTo(rescaled, CV_32F, 1.0f / (max_val - min_val), -min_val / (max_val - min_val));
+    cv::threshold(rescaled, rescaled, 0.0, 0.0, cv::THRESH_TOZERO);
+    cv::threshold(rescaled, rescaled, 1.0, 1.0, cv::THRESH_TRUNC);
+    rescaled.convertTo(rescaled, CV_8U, 255.0);
+
+    cv::imshow("Sentinel-1 Decoder", rescaled);
+}
 
 void plot_complex_image(
-    const CF_VEC_2D&   signal,
+    const CF_VEC_2D& signal,
     const std::string& scaling_mode
 ) {
     std::cout << "Flattening Vector for Plotting" << std::endl;
@@ -57,16 +79,46 @@ void plot_complex_image(
     int cols = signal[0].size();
 
     std::vector<float> samples = scale(signal, scaling_mode);
+    g_original_img = cv::Mat(rows, cols, CV_32F, samples.data()).clone();
 
-    cv::Mat img(rows, cols, CV_32F, samples.data());
+    double min_val, max_val;
+    cv::minMaxLoc(g_original_img, &min_val, &max_val);
+    g_auto_min = static_cast<float>(min_val);
+    g_auto_max = static_cast<float>(max_val);
 
     std::cout << "Calling Plot" << std::endl;
 
     cv::namedWindow("Sentinel-1 Decoder", cv::WINDOW_GUI_EXPANDED);
-    cv::setWindowProperty("Sentinel-1 Decoder", cv::WINDOW_OPENGL, cv::WINDOW_GUI_EXPANDED);
-    cv::imshow("Sentinel-1 Decoder", img);
-    cv::waitKey();
+    cv::createTrackbar("Min", "Sentinel-1 Decoder", nullptr, 1000, on_trackbar);
+    cv::createTrackbar("Max", "Sentinel-1 Decoder", nullptr, 1000, on_trackbar);
+    cv::setTrackbarPos("Min", "Sentinel-1 Decoder", 500);
+    cv::setTrackbarPos("Max", "Sentinel-1 Decoder", 1000);
+
+    on_trackbar(0, nullptr);
+    cv::waitKey(0);
 }
+
+
+// void plot_complex_image(
+//     const CF_VEC_2D&   signal,
+//     const std::string& scaling_mode
+// ) {
+//     std::cout << "Flattening Vector for Plotting" << std::endl;
+
+//     int rows = signal.size();
+//     int cols = signal[0].size();
+
+//     std::vector<float> samples = scale(signal, scaling_mode);
+
+//     cv::Mat img(rows, cols, CV_32F, samples.data());
+
+//     std::cout << "Calling Plot" << std::endl;
+
+//     cv::namedWindow("Sentinel-1 Decoder", cv::WINDOW_GUI_EXPANDED);
+//     cv::setWindowProperty("Sentinel-1 Decoder", cv::WINDOW_OPENGL, cv::WINDOW_GUI_EXPANDED);
+//     cv::imshow("Sentinel-1 Decoder", img);
+//     cv::waitKey();
+// }
 
 
 void plot_fft2d(
