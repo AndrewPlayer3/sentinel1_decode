@@ -50,7 +50,15 @@ void validate_args(
         }
         catch(...)
         {
-            std::cout << args[i] << " is not a valid " << command_args[index] << "." << std::endl;
+            std::cout << args[i] << " is not a valid " << command_args[index];
+
+            if (arg_types[index] == "path")
+            {
+                std::cout << " or the file may not exist";
+            }
+
+            std::cout << std::endl;
+
             exit(1);
         }
     }

@@ -37,7 +37,7 @@ CF_VEC_2D azimuth_frequency_ufr(
 CF_VEC_2D azimuth_time_ufr(
     CF_VEC_2D& range_compressed,
     F_VEC_1D&  dc_estimates,
-    F_VEC_2D&  ka,
+    F_VEC_2D&  az_fm_rate,
     L0Packet&  initial_packet,
     const double& dc_rate,
     const double& burst_duration,

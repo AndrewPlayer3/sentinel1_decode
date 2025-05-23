@@ -40,6 +40,16 @@ CF_VEC_1D quadratic_resample(
     const int& num_output_samples
 );
 
+F_VEC_1D polyfit(
+    const F_VEC_1D& x,
+    const F_VEC_1D& y
+);
+
+double polyval(
+    const F_VEC_1D& coeffs, 
+    const double& x
+);
+
 std::vector<float> flatten(
     const std::vector<std::vector<float>>& values
 );
@@ -144,7 +154,7 @@ std::vector<float> scale(
     const std::string& scaling_mode
 );
 
-std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals);
+std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals, const int& direction = FFTW_FORWARD);
 
 void destroy_fftw_plans(std::vector<fftw_plan>& plans);
 

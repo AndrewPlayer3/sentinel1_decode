@@ -60,7 +60,8 @@ int main(int argc, char* argv[])
 
     if(argv[1] == __null) 
     {
-        std::cout << "Please enter a command." << std::endl;
+        std::cout << "Please enter a command:" << std::endl;
+        print_help(help_strings);
         return 1;
     }
     std::string command = std::string(argv[1]);

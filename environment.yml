@@ -5,9 +5,8 @@ dependencies:
   - cmake
   - ninja
   - openmp
-  - cxx-compiler  # or clang_osx-64 on macOS
+  - cxx-compiler
   - fftw
   - libtiff
-  - opencv
   - pkg-config
   - python=3.11

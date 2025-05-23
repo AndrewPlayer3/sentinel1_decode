@@ -59,8 +59,59 @@ STATE_VECTORS S1_Decoder::get_state_vectors()
 }
 
 
-CF_VEC_2D S1_Decoder::get_burst(const std::string& swath, const int& burst)
+void S1_Decoder::_validate_request(const std::string& swath, const int& burst)
 {
+    try
+    {
+        _swath_counts.at(swath);
+    }
+    catch(const std::exception& e)
+    {
+        std::cout << "The requested swath, " << swath << ", does not exist in the data." 
+                  << " The available swaths are: " << std::endl;
+
+        for (std::pair<std::string, int> swath_count : _swath_counts)
+        {
+            std::cout << swath_count.first << std::endl;
+        }
+    
+        std::exit(1);
+    }
+
+    if (burst)
+    {
+        int num_bursts = 0;
+        try
+        {
+            if (is_cal(swath))
+            {
+                num_bursts = _cal_packets.at(swath).size();
+                _cal_packets.at(swath).at(burst);
+            }
+            else
+            {
+                num_bursts = _echo_packets.at(swath).size();
+                _echo_packets.at(swath).at(burst);
+            }
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << "The requested burst, " << burst << ", does not exist in the data." 
+                    << " There are "<< num_bursts << " bursts in swath " << swath << "."
+                    << std::endl;
+
+            std::exit(1);
+        }
+    }
+}
+
+
+CF_VEC_2D S1_Decoder::get_burst(
+    const std::string& swath,
+    const int& burst
+) {
+    _validate_request(swath, burst);
+    
     PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
 
     int num_packets = burst_packets.size();
@@ -81,7 +132,10 @@ CF_VEC_2D S1_Decoder::get_burst(const std::string& swath, const int& burst)
 
 CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
 {
+    _validate_request(swath);
+
     PACKET_VEC_2D swath_packets;
+
     if (is_iw(swath)) swath_packets = _echo_packets[swath];
     else if (is_sm(swath)) swath_packets = get_azimuth_blocks(_echo_packets[swath][0]).first;
     else if (is_cal(swath)) swath_packets = _cal_packets[swath];
@@ -148,16 +202,23 @@ CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
 }
 
 
-CF_VEC_2D S1_Decoder::get_range_compressed_burst(const std::string& swath, const int& burst, bool range_doppler)
-{
+CF_VEC_2D S1_Decoder::get_range_compressed_burst(
+    const std::string& swath,
+    const int& burst,
+    const bool& range_doppler
+) {
+    _validate_request(swath, burst);
+
     PACKET_VEC_1D burst_packets = _echo_packets[swath][burst];
 
     return _range_compress(burst_packets, true, range_doppler);
 }
 
 
-CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(const std::string& swath, bool range_doppler)
-{
+CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(
+    const std::string& swath,
+    const bool& range_doppler
+) {    
     PACKET_VEC_1D burst_packets = _echo_packets[swath][0];
 
     std::pair<PACKET_VEC_2D, int> azimuth_block_pair = get_azimuth_blocks(burst_packets);
@@ -197,8 +258,10 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(const std::string& swath, b
 }
 
 
-CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath, bool range_doppler)
-{
+CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(
+    const std::string& swath,
+    const bool& range_doppler
+) {
     PACKET_VEC_2D packets = _echo_packets[swath];
 
     int num_bursts = packets.size();
@@ -210,7 +273,7 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath, b
         std::cout << "Range Compressing Burst #" << i << std::endl;
         CF_VEC_2D range_compressed_burst = _range_compress(packets[i], true, range_doppler);
         int num_azimuth_lines = range_compressed_burst.size();
-        for (int i = 0; i < num_azimuth_lines; i++)
+        for (int j = 0; j < num_azimuth_lines; j++)
         {
             CF_VEC_1D row = range_compressed_burst.front();
             range_compressed_burst.erase(range_compressed_burst.begin());
@@ -222,8 +285,12 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_iw(const std::string& swath, b
 }
 
 
-CF_VEC_2D S1_Decoder::get_range_compressed_swath(const std::string& swath, bool range_doppler)
-{
+CF_VEC_2D S1_Decoder::get_range_compressed_swath(
+    const std::string& swath,
+    bool range_doppler
+) {
+    _validate_request(swath);    
+
     if (is_sm(swath))
     {
         return _get_range_compressed_swath_sm(swath, range_doppler);
@@ -234,14 +301,19 @@ CF_VEC_2D S1_Decoder::get_range_compressed_swath(const std::string& swath, bool 
     }
     else
     {
-        std::string msg = swath + " is not a supported swath type. Only IW and SM imaging modes are supported.";
+        std::string msg = 
+            swath + " is not a supported swath type. Only IW and SM imaging modes are supported.";
         throw(std::invalid_argument(msg));
     }
 }
 
 
-CF_VEC_2D S1_Decoder::get_azimuth_compressed_burst(const std::string& swath, const int& burst)
-{
+CF_VEC_2D S1_Decoder::get_azimuth_compressed_burst(
+    const std::string& swath,
+    const int& burst
+) {
+    _validate_request(swath, burst);    
+
     PACKET_VEC_1D packets = _echo_packets[swath][burst];
     return _azimuth_compress(packets, true);
 }
@@ -257,22 +329,35 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_iw(const std::string& swath)
 
     for (int i = 0; i < num_bursts; i++)
     {
-        std::cout << "Azimuth Compressing Burst #" << i << std::endl;
-        std::cout << "Burst #" << i << " contains " << packets[i].size() << " packets." << std::endl; 
+        std::cout << "Azimuth Compressing Burst #" << i 
+                  << std::endl
+                  << "Burst #" << i << " contains " << packets[i].size() << " packets." 
+                  << std::endl; 
 
         if (packets[i].size() < 1000)
         {
-            std::cout << "Burst #" << i << " does not contain enough packets for image formation, skipping..." << std::endl;
+            std::cout << "Burst #" << i 
+                      << " does not contain enough packets for image formation, skipping..." 
+                      << std::endl;
             continue;
         }
 
         CF_VEC_2D azimuth_compressed_burst = _azimuth_compress(packets[i], true);
+
         int num_lines = azimuth_compressed_burst.size();
-        for (int i = 0; i < num_lines; i++)
+
+        for (int j = 0; j < num_lines; j++)
         {
             CF_VEC_1D row = azimuth_compressed_burst.front();
             azimuth_compressed_burst.erase(azimuth_compressed_burst.begin());
             azimuth_compressed.push_back(row);
+        }
+
+        CF_VEC_1D zero_padding(azimuth_compressed[0].size());
+
+        for (int j = 0; j < 20; j++)
+        {
+            azimuth_compressed.push_back(zero_padding);
         }
     }
 
@@ -305,7 +390,7 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
         int size = azimuth_compressed_az_block[0].size();
         int diff = max_size - size;
 
-        for (int i = 0; i < rows; i++)
+        for (int j = 0; j < rows; j++)
         {
             CF_VEC_1D row = azimuth_compressed_az_block.front();
             azimuth_compressed_az_block.erase(azimuth_compressed_az_block.begin());
@@ -315,6 +400,12 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
             }
             azimuth_compressed.push_back(row);
         }
+
+        CF_VEC_1D zero_padding(azimuth_compressed[0].size());
+        for (int j = 0; j < 20; j++)
+        {
+            azimuth_compressed.push_back(zero_padding);
+        }
     }
 
     return azimuth_compressed;
@@ -323,6 +414,8 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
 
 CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 {
+    _validate_request(swath);    
+
     if (is_sm(swath))
     {
         return _get_azimuth_compressed_swath_sm(swath);
@@ -333,14 +426,18 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
     }
     else
     {
-        std::string msg = swath + " is not a supported swath type. Only IW and SM imaging modes are supported.";
+        std::string msg = 
+            swath + " is not a supported swath type. Only IW and SM imaging modes are supported.";
         throw(std::invalid_argument(msg));
     }
 }
 
 
-CF_VEC_2D S1_Decoder::_range_compress(PACKET_VEC_1D& packets, bool do_ifft, bool do_azimuth_fft)
-{
+CF_VEC_2D S1_Decoder::_range_compress(
+    PACKET_VEC_1D& packets,
+    const bool& do_ifft,
+    const bool& do_azimuth_fft
+) {
     L0Packet first_packet = packets[0];
 
     int num_packets = packets.size();
@@ -421,7 +518,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
     double dc_rate = get_doppler_centroid_rate(packets, v_norm);
-    double doppler_bandwidth = prf * 0.5;
+    double doppler_bandwidth = prf * 0.4;
 
     double oversample_factor;
     double t0;
@@ -480,20 +577,20 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     D_VEC_1D range_freqs = linspace(-range_sample_rate/2, range_sample_rate/2, num_samples);
 
-    std::vector<fftw_plan> plans;
-    F_VEC_2D ka;
+    std::vector<fftw_plan> forward_plans = get_fftw_plans(radar_data);
+    std::vector<fftw_plan> inverse_plans = get_fftw_plans(radar_data, FFTW_BACKWARD);
+    F_VEC_2D az_fm_rate;
     D_VEC_1D az_freqs;
 
     if (tops_mode)
     {
         double num_replicas = std::abs(dc_rate * burst_length_seconds / prf);
-        ka = F_VEC_2D(num_packets, F_VEC_1D(num_samples));
+        az_fm_rate = F_VEC_2D(num_packets, F_VEC_1D(num_samples));
         az_freqs = linspace(-num_replicas*prf/2, num_replicas*prf/2, num_packets);
     }
     else
     {
         az_freqs = linspace(-prf/2, prf/2, num_packets);
-        plans = get_fftw_plans(radar_data);
     }
 
     std::cout << "Azimuth Compressing" << std::endl;
@@ -505,50 +602,77 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
-        D_VEC_1D& position = positions[i];
-
-        if (not tops_mode) fftw_execute(plans[i]);
+        fftw_execute(forward_plans[i]);
 
         CF_VEC_1D& radar_data_row = radar_data[i];
 
-        if (not tops_mode) fftshift_in_place(radar_data_row);
+        fftshift_in_place(radar_data_row);
 
-        double latitude = position[2] / position[0];
+        D_VEC_1D& pos = positions[i];
 
-        double earth_radius = sqrt(
-            (pow(a*a*cos(latitude), 2) + pow(b*b*sin(latitude), 2)) 
-            /
-            (pow(a*cos(latitude), 2) + pow(b*sin(latitude), 2))
-        );
-
-        double pos = sqrt(position[0]*position[0] + position[1]*position[1] + position[2]*position[2]);
+        double az_freq = az_freqs[i];
+        double lat = pos[2] / pos[0];
+        double earth_rad_num = std::pow(a * a * std::cos(lat), 2.0) + std::pow(b * b * std::sin(lat), 2.0);
+        double earth_rad_denom = std::pow(a * std::cos(lat), 2.0) + std::pow(b * std::sin(lat), 2.0);
+        double earth_radius = sqrt(earth_rad_num / earth_rad_denom);
+        double sat_alt = std::sqrt(pos[0]*pos[0] + pos[1]*pos[1] + pos[2]*pos[2]);
         double v_sat = velocities_norm[i];
+
+        F_VEC_1D rcmc_factors(num_samples);
+        F_VEC_1D effective_velocities(num_samples);
 
         for (int j = 0; j < num_samples; j++)
         {
-            double numerator = earth_radius*earth_radius + pos*pos - slant_ranges[j]*slant_ranges[j];
-            double denominator = 2 * earth_radius * pos;
+            double slant_range = slant_ranges[j];
+            double numerator = earth_radius*earth_radius + sat_alt*sat_alt - slant_range*slant_range;
+            double denominator = 2 * earth_radius * sat_alt;
             double beta = numerator / denominator;
-            double v_ground = earth_radius * v_sat * beta / pos;
+            double v_ground = earth_radius * v_sat * beta / sat_alt;
             double v_rel = sqrt(v_sat * v_ground);
-            double az_freq = az_freqs[i];
+            double rcmc = sqrt(
+                1 - (std::pow(WAVELENGTH, 2.0) * std::pow(az_freq, 2.0)) / (4 * std::pow(v_rel, 2.0))
+            );
 
+            effective_velocities[j] = v_rel;
+            rcmc_factors[j] = rcmc;
+
+            double src_fm_rate  = 2.0 * std::pow(v_rel, 2.0) * std::pow(CENTER_FREQ, 3.0) * std::pow(rcmc, 2.0);
+                   src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq, 2.0);
+  
+            std::complex<double> src_filter = 
+                std::exp(-1.0 * I * PI * std::pow(range_freqs[j], 2.0) / src_fm_rate);
+
+            radar_data_row[j] *= src_filter;
+        }
+
+        if (tops_mode) fftw_execute(inverse_plans[i]);
+
+        for (int j = 0; j < num_samples; j++)
+        {
             // TODO: Range migration correction using sinc-based interpolation
-            // TODO: Secondary range compression
 
             if (tops_mode) az_freq += doppler_centroid[j];
 
-            double rcmc_factor = sqrt(1 - (WAVELENGTH*WAVELENGTH * az_freq*az_freq) / (4 * v_rel*v_rel));
+            double v_rel = effective_velocities[j];
+            double rcmc  = rcmc_factors[j];
+            double slant_range = slant_ranges[j];
 
-            if (tops_mode) ka[i][j] = -(2 * std::pow(v_rel, 2.0) * std::pow(rcmc_factor, 3.0)) / (WAVELENGTH * slant_ranges[j]);
+            std::complex<double> az_filter = 
+                std::exp(4.0 * I * PI * slant_range * rcmc * CENTER_FREQ / SPEED_OF_LIGHT);
+
+            if (tops_mode) 
+            {
+                az_fm_rate[i][j] = -(2 * std::pow(v_rel, 2.0) * std::pow(rcmc, 3.0)) / (WAVELENGTH * slant_range);
+            }
 
             // TODO: Time correction and antenna pattern correction
 
-            radar_data_row[j] *= (1 / double(num_samples)) * exp(4.0 * I * PI * slant_ranges[j] * rcmc_factor * CENTER_FREQ / SPEED_OF_LIGHT);
+            radar_data_row[j] *= (1 / double(num_samples)) * az_filter;
         }
     }
 
-    if (not tops_mode) destroy_fftw_plans(plans);
+    destroy_fftw_plans(forward_plans);
+    destroy_fftw_plans(inverse_plans);
 
     compute_axis_dft_in_place(radar_data, 0, 0, true);
 
@@ -558,7 +682,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         radar_data = azimuth_time_ufr(
             radar_data,
             doppler_centroid,
-            ka,
+            az_fm_rate,
             first_packet,
             dc_rate,
             burst_length_seconds,
