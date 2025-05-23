@@ -26,16 +26,10 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 # Dependencies via find_package
-find_package(OpenCV QUIET)
-# find_package(FFTW3 QUIET)
 find_package(TIFF QUIET)
 
 # Fallback: pkg-config
 find_package(PkgConfig REQUIRED)
-
-if(NOT OpenCV_FOUND)
-    pkg_check_modules(OpenCV IMPORTED_TARGET opencv4)
-endif()
 
 pkg_check_modules(FFTW3 REQUIRED IMPORTED_TARGET fftw3)
 
@@ -48,8 +42,6 @@ message(STATUS "FFTW3 include: ${FFTW3_INCLUDE_DIRS}")
 message(STATUS "FFTW3 libs: ${FFTW3_LIBRARIES}")
 message(STATUS "TIFF include: ${TIFF_INCLUDE_DIRS}")
 message(STATUS "TIFF libs: ${TIFF_LIBRARIES}")
-message(STATUS "OpenCV include: ${OpenCV_INCLUDE_DIRS}")
-message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
 
 # Shared sources
 set(SRC_COMMON
@@ -69,14 +61,6 @@ function(add_s1_executable name main_file extra_srcs)
     add_executable(${name})
     target_sources(${name} PRIVATE ${main_file} ${SRC_COMMON} ${extra_srcs})
     set_target_properties(${name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
-
-    # Link OpenCV
-    if(OpenCV_FOUND)
-        target_include_directories(${name} PRIVATE ${OpenCV_INCLUDE_DIRS})
-        target_link_libraries(${name} PRIVATE ${OpenCV_LIBS})
-    elseif(TARGET PkgConfig::OpenCV)
-        target_link_libraries(${name} PRIVATE PkgConfig::OpenCV)
-    endif()
 
     # Link FFTW
     target_link_libraries(${name} PRIVATE PkgConfig::FFTW3)
@@ -99,9 +83,8 @@ function(add_s1_executable name main_file extra_srcs)
 endfunction()
 
 # Executables
-add_s1_executable(s1_print        src/print_main.cpp       "")
-add_s1_executable(s1_write_tiff   src/image_write_main.cpp src/image_write.cpp)
-add_s1_executable(s1_plot         src/plot_main.cpp        src/plot.cpp)
+add_s1_executable(s1_print src/print_main.cpp       "")
+add_s1_executable(s1_write src/image_write_main.cpp src/image_write.cpp)
 
 # Optional: install support
-install(TARGETS s1_print s1_write_tiff s1_plot RUNTIME DESTINATION bin)
+install(TARGETS s1_print s1_write RUNTIME DESTINATION bin)

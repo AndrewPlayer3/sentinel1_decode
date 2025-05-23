@@ -6,7 +6,6 @@ For additional information on Level-0 product decoding, see the [SAR Space Packe
 * [Introduction](#introduction)
 * [Commands and Examples](#commands)
   * [Image Formation](#image-formation-and-saving-images)
-  * [Plotting](#plotting-images)
   * [Packet Information and Performance Testing](#packet-information)
 * [Results with Point Targets](#results-with-point-targets)
 * [Compiling](#compiling)
@@ -60,21 +59,6 @@ $ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --n
 $ bin/s1_write azimuth_compressed_swath S1 data/sm_sample/sample.dat AZ_S1.tif --norm
 ```
 ![az_sm_write_example](imgs/az_sm.png)
-
-### Plotting Images
-
-```bash
-$ bin/s1_plot --help
-swath [swath] [path]
-burst [swath] [burst_num] [path]
-fft2 [swath] [burst_num] [path] [fft_rows] [fft_cols] [--inverse]
-fft_axis [swath] [burst_num] [axis] [fft_size] [path] [--inverse]
-range_compressed_burst [swath] [burst_num] [path]
-range_compressed_swath [swath] [path]
-azimuth_compressed_burst [swath] [burst_num] [path]
-azimuth_compressed_swath [swath] [path]
-Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
-```
 
 #### Packet Information
 
@@ -213,4 +197,4 @@ cmake --build .
 
 ### Dependencies
 
-My goal is to not involve too many external dependancies; however, some are necessary. *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*. The plotting functionality also uses *[OpenCV](https://opencv.org/)*.
+My goal is to not involve too many external dependancies; however, some are necessary. *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*.
