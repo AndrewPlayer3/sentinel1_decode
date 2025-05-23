@@ -10,6 +10,15 @@
 #include "state_vectors.h"
 #include "structs.h"
 
-F_VEC_1D get_doppler_centroid(CF_VEC_2D& range_compressed, const double& doppler_centroid_rate, const double& burst_duration, L0Packet& first_packet);
+F_VEC_1D get_doppler_centroid(
+    CF_VEC_2D& range_compressed,
+    const double& doppler_centroid_rate,
+    const double& burst_duration,
+    L0Packet& first_packet,
+    const int& num_rng_blocks = 15
+);
 
-double get_doppler_centroid_rate(PACKET_VEC_1D& burst_packets, const double& velocity);
+double get_doppler_centroid_rate(
+    PACKET_VEC_1D& burst_packets,
+    const double& velocity
+);

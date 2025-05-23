@@ -155,6 +155,73 @@ CF_VEC_1D quadratic_resample(const CF_VEC_1D& arr, const int& num_output_samples
 }
 
 
+F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y) 
+{
+    const int N = x.size();
+
+    F_VEC_1D Sx(7);
+    F_VEC_1D Sy(4);
+
+    for (int i = 0; i < N; ++i) {
+        double xi = 1.0;
+        for (int j = 0; j <= 6; ++j) {
+            if (j <= 3) Sy[j] += xi * y[i];
+            Sx[j] += xi;
+            xi *= x[i];
+        }
+    }
+
+    // Construct the normal equations matrix and RHS
+    F_VEC_2D A = {
+        {Sx[0], Sx[1], Sx[2], Sx[3]},
+        {Sx[1], Sx[2], Sx[3], Sx[4]},
+        {Sx[2], Sx[3], Sx[4], Sx[5]},
+        {Sx[3], Sx[4], Sx[5], Sx[6]}
+    };
+    F_VEC_1D b = {Sy[0], Sy[1], Sy[2], Sy[3]};
+
+    // Solve Ax = b using Gaussian elimination
+    for (int i = 0; i < 4; ++i) {
+        // Pivot
+        for (int k = i + 1; k < 4; ++k) {
+            if (std::abs(A[k][i]) > std::abs(A[i][i])) {
+                for (int j = 0; j < 4; ++j) std::swap(A[i][j], A[k][j]);
+                std::swap(b[i], b[k]);
+            }
+        }
+
+        // Eliminate below
+        for (int k = i + 1; k < 4; ++k) {
+            double factor = A[k][i] / A[i][i];
+            for (int j = i; j < 4; ++j)
+                A[k][j] -= factor * A[i][j];
+            b[k] -= factor * b[i];
+        }
+    }
+
+    // Back substitution
+    F_VEC_1D coeffs(4);
+    for (int i = 3; i >= 0; --i) {
+        coeffs[i] = b[i];
+        for (int j = i + 1; j < 4; ++j)
+            coeffs[i] -= A[i][j] * coeffs[j];
+        coeffs[i] /= A[i][i];
+    }
+
+    return coeffs; // [d, c, b, a]
+}
+
+
+double polyval(const F_VEC_1D& coeffs, const double& x) 
+{
+    // Evaluate polynomial: a*x^3 + b*x^2 + c*x + d
+    double result = 0.0;
+    for (int i = coeffs.size() - 1; i >= 0; --i)
+        result = result * x + coeffs[i];
+    return result;
+}
+
+
 void conjugate_in_place(CF_VEC_1D& complex_samples)
 {
     std::for_each(
@@ -584,18 +651,18 @@ void _compute_axis_dft(
 }
 
 
-std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals)
+std::vector<fftw_plan> get_fftw_plans(CF_VEC_2D& signals, const int& direction)
 {
     std::vector<fftw_plan> plans(signals.size());
     std::transform(
         signals.begin(), signals.end(),
             plans.begin(),
-                [] (CF_VEC_1D& row) {
+                [direction] (CF_VEC_1D& row) {
                     return fftw_plan_dft_1d(
                         row.size(),
                         reinterpret_cast<fftw_complex*>(row.data()),
                         reinterpret_cast<fftw_complex*>(row.data()),
-                        FFTW_FORWARD,
+                        direction,
                         FFTW_ESTIMATE
                     );
                 }
