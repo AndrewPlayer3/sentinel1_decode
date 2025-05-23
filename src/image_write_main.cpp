@@ -141,7 +141,6 @@ void save_raw_command(char *argv[], std::unordered_map<std::string, bool>& optio
     std::string in_path  = std::string(argv[3]);
     std::string out_path = std::string(argv[4]);
 
-    // Open the file in binary mode
     std::ofstream file(out_path, std::ios::binary);
     if (!file) {
         std::cerr << "Error: Unable to open file " << out_path << " for writing." << std::endl;
@@ -157,14 +156,11 @@ void save_raw_command(char *argv[], std::unordered_map<std::string, bool>& optio
     std::cout << "Num Rows: " << rows << std::endl;
     std::cout << "Num Cols: " << cols << std::endl;
 
-    // Iterate through the 2D vector
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             std::complex<double> value = data[i][j];
-            // Convert each complex<double> to complex<float>
             std::complex<float> valueFloat(static_cast<float>(value.real()), static_cast<float>(value.imag()));
             
-            // Write the real and imaginary parts as interleaved floats
             file.write(reinterpret_cast<const char*>(&valueFloat), sizeof(std::complex<float>));
         }
     }
@@ -204,8 +200,6 @@ int main(int argc, char* argv[])
     std::string command = std::string(argv[1]);
 
     std::unordered_map<std::string, bool> options = {
-        {"--inverse",  false},
-        {"--fft",      false},
         {"--norm",     false},
         {"--norm_log", false},
         {"--mag",      false},
