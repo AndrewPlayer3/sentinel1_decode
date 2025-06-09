@@ -72,7 +72,6 @@ std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets)
 }
 
 
-// Mosaic a Signal for UFR
 CF_VEC_1D get_tiled_signal(CF_VEC_1D& signal, const double& num_replicas)
 {
     int num_az = signal.size();
