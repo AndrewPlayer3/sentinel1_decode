@@ -458,7 +458,7 @@ CF_VEC_2D S1_Decoder::_range_compress(
         range_compressed[i] = signal;
     }
 
-    eccm(range_compressed, 64, 32);
+    eccm(range_compressed, 64, 32, 250);
 
     compute_axis_dft_in_place(range_compressed, 0, 1, false);
 

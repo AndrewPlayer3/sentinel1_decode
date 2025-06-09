@@ -244,7 +244,7 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
         window.begin(), window.end(), 
             complex_samples.begin(), complex_samples.begin(),
                 [num_samples] (double& w, std::complex<double>& n) { 
-                    return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n;
+                    return 0.5 * (1.0 - std::cos(2.0 * PI * w / (double(num_samples) - 1))) * n;
                 }
     );
 }
@@ -759,6 +759,59 @@ CF_VEC_2D compute_2d_dft(
 }
 
 
+CF_VEC_2D spectrogram(CF_VEC_1D& signal, const int& fft_size, const int& stride)
+{
+    std::cout << "Calculating Spectrogram" << std::endl;
+
+    int samples = signal.size();
+    int num_ffts = std::floor( (double(samples) / double(fft_size)) * (double(fft_size) / double(stride)) );
+
+    CF_VEC_1D hann(fft_size);
+
+    std::iota(hann.begin(), hann.end(), 0.0);
+
+    std::transform(
+        hann.begin(), hann.end(), 
+            hann.begin(),
+                [fft_size] (std::complex<double>& w) { 
+                    return 0.5 * (1.0 - std::cos(2.0 * PI * w / (double(fft_size) - 1))); // std::pow(std::sin(PI * w / double(fft_size)), 2.0);
+                }
+    );
+
+    CF_VEC_2D specgram(num_ffts, CF_VEC_1D(fft_size));
+
+    for (int i = 0; i < num_ffts; i++)
+    {
+        int start = i * stride;
+        int end = start + fft_size;
+
+        if (end > samples)
+        {
+            end = samples - 1;
+        }
+
+        CF_VEC_1D window(signal.begin() + start, signal.begin() + end);
+
+        window.resize(fft_size);
+
+        for (int j = 0; j < fft_size; j++)
+        {
+            window[j] *= hann[j];
+        }
+
+        specgram[i] = window;
+    }
+
+    compute_axis_dft_in_place(specgram, 0, 1, false);
+
+    fftshift_in_place(specgram);
+
+    specgram = transpose(specgram);
+
+    return specgram;
+}
+
+
 void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const double& threshold)
 {
     std::cout << "Performing ECCM Processing" << std::endl;
@@ -766,17 +819,16 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
     int rows = signals.size();
     int cols = signals[0].size();
 
-    int num_ffts = std::floor(double(cols) / double(fft_size - stride));
+    int num_ffts = std::floor( (double(cols) / double(fft_size)) * (double(fft_size) / double(stride)) );
+
+    std::cout << "ECCM will require " << num_ffts << " short-time ffts." << std::endl;
 
     for (CF_VEC_1D& signal : signals)
     {
         CF_VEC_2D specgram(num_ffts, CF_VEC_1D(fft_size));
-        CF_VEC_1D out_temp(cols);
-        
-        int mask;
+
         std::complex<double> grad;
 
-        #pragma omp parallel for
         for (int i = 0; i < num_ffts; i++)
         {
             int start = i * stride;
@@ -794,7 +846,7 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
             specgram[i] = window;
         }
 
-        compute_axis_dft_in_place(specgram, 0, 0, false);
+        compute_axis_dft_in_place(specgram, 0, 1, false);
 
         for (int i = 0; i < num_ffts; i++)
         {
@@ -807,28 +859,29 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
                 else
                     grad = specgram[i][j] - specgram[i][j - 1];
 
-                specgram[i][j] *= double(std::abs(grad) < threshold);
+                if (std::abs(grad) < threshold)
+                    specgram[i][j] *= 1.0;
+                else
+                    specgram[i][j] *= 0.0;
             }
         }
 
-        compute_axis_dft_in_place(specgram, 0, 0, true);
+        compute_axis_dft_in_place(specgram, 0, 1, true);
 
         for (int i = 0; i < num_ffts; i++)
         {
             int start = i * stride;
             int end = start + fft_size;
 
-            if (end > num_ffts)
+            if (end > cols)
             {
-                end = num_ffts - 1;
+                end = cols - 1;
             }
-
-            CF_VEC_1D temp = specgram[i];
 
             for (int j = start; j < end; j++)
             {
                 if (j < cols)
-                    signal[j] = temp[j-start];
+                    signal[j] = specgram[i][j-start];
             }
         }
     }

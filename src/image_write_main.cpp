@@ -7,6 +7,23 @@
 #include "packet.h"
 
 
+void spectrogram_command(char *argv[], std::unordered_map<std::string, bool>& options)
+{
+    STRING_VEC_1D args  = {"swath", "burst_num", "azimuth_line", "in_path", "out_path"};
+    STRING_VEC_1D types = {"string", "int", "int", "path", "string"};
+    validate_args("burst", args, types, argv);
+
+    std::string swath    = std::string(argv[2]);
+    int burst_num        = std::stoi(argv[3]);
+    int azimuth_line     = std::stoi(argv[4]);
+    std::string in_path  = std::string(argv[5]);
+    std::string out_path = std::string(argv[6]);
+    std::string scaling  = parse_scaling_mode(options);
+
+    write_spectrogram(in_path, out_path, swath, burst_num, azimuth_line, scaling);
+}
+
+
 void burst_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
     STRING_VEC_1D args  = {"swath", "burst_num", "in_path", "out_path"};
@@ -178,6 +195,7 @@ void save_raw_command(char *argv[], std::unordered_map<std::string, bool>& optio
 int main(int argc, char* argv[])
 {
     STRING_VEC_1D help_strings = {
+        "spectrogram [swath] [burst_num] [azimuth_line] [in_path] [out_path]",
         "burst [swath] [burst_num] [in_path] [out_path]",
         "swath [swath] [in_path] [out_path]",
         "range_compressed_burst [swath] [burst_num] [in_path] [out_path]",
@@ -210,6 +228,7 @@ int main(int argc, char* argv[])
 
     if      (command == "burst")                    burst_command(&(argv[0]), options);
     else if (command == "swath")                    swath_command(&(argv[0]), options);
+    else if (command == "spectrogram")              spectrogram_command(&(argv[0]), options);
     else if (command == "range_compressed_burst")   range_compressed_burst_command(&(argv[0]), options);
     else if (command == "range_compressed_swath")   range_compressed_swath_command(&(argv[0]), options);
     else if (command == "range_doppler_burst")      range_doppler_burst_command(&(argv[0]), options);

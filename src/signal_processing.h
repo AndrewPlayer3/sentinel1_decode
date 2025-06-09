@@ -144,6 +144,8 @@ CF_VEC_2D compute_2d_dft(
     int fft_cols
 );
 
+CF_VEC_2D spectrogram(CF_VEC_1D& signal, const int& fft_size, const int& stride);
+
 void eccm(
     CF_VEC_2D& signals,
     const int& fft_size,

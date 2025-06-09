@@ -40,6 +40,30 @@ void write_tif(
 }
 
 
+void write_spectrogram(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const int&         azimuth_line,
+    const std::string& scaling_mode
+) {
+    S1_Decoder s1(in_filename);
+
+    CF_VEC_2D burst = s1.get_burst(swath_name, burst_num);
+
+    if (azimuth_line < 0 or azimuth_line > burst.size())
+    {
+        std::cout << "Azimuth Line " << azimuth_line 
+                  << " is outside of the valid range of 0 to " << burst.size() << std::endl;
+    }
+
+    CF_VEC_2D specgram = spectrogram(burst[azimuth_line], 64, 32);
+
+    write_tif(specgram, out_filename, scaling_mode);
+}
+
+
 void write_burst(
     const std::string& in_filename,
     const std::string& out_filename,

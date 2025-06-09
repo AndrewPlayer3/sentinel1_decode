@@ -21,6 +21,15 @@ void write_tif(
     const std::string& scaling_mode
 );
 
+void write_spectrogram(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const int&         azimuth_line,
+    const std::string& scaling_mode
+);
+
 void write_burst(
     const std::string& in_filename,
     const std::string& out_filename,
