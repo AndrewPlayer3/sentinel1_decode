@@ -144,6 +144,13 @@ CF_VEC_2D compute_2d_dft(
     int fft_cols
 );
 
+void eccm(
+    CF_VEC_2D& signals,
+    const int& fft_size,
+    const int& stride,
+    const double& threshold = 500
+);
+
 F_VEC_1D scale(
     const CF_VEC_1D& signal,
     const std::string& scaling_mode

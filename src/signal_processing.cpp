@@ -606,7 +606,6 @@ void _compute_axis_dft(
     int min_fft_size  = 8;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    std::cout << "Initializing Plans and Excecuting Axis FFTs" << std::endl;
     std::vector<fftw_plan> plans(signal_rows);
 
     std::transform(
@@ -638,7 +637,6 @@ void _compute_axis_dft(
 
     if (inverse)
     {
-        std::cout << "Normalizing Inverse Axis FFT Output" << std::endl;
         #pragma omp parallel for num_threads(4)
         for (int i = 0; i < signal_rows; i++)
         {
@@ -758,6 +756,82 @@ CF_VEC_2D compute_2d_dft(
         }
     }
     return signal_fft;
+}
+
+
+void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const double& threshold)
+{
+    std::cout << "Performing ECCM Processing" << std::endl;
+
+    int rows = signals.size();
+    int cols = signals[0].size();
+
+    int num_ffts = std::floor(double(cols) / double(fft_size - stride));
+
+    for (CF_VEC_1D& signal : signals)
+    {
+        CF_VEC_2D specgram(num_ffts, CF_VEC_1D(fft_size));
+        CF_VEC_1D out_temp(cols);
+        
+        int mask;
+        std::complex<double> grad;
+
+        #pragma omp parallel for
+        for (int i = 0; i < num_ffts; i++)
+        {
+            int start = i * stride;
+            int end = start + fft_size;
+
+            if (end > cols)
+            {
+                end = cols - 1;
+            }
+
+            CF_VEC_1D window(signal.begin() + start, signal.begin() + end);
+
+            window.resize(fft_size);
+
+            specgram[i] = window;
+        }
+
+        compute_axis_dft_in_place(specgram, 0, 0, false);
+
+        for (int i = 0; i < num_ffts; i++)
+        {
+            for (int j = 0; j < fft_size; j++)
+            {
+                if (j != 0 and j != fft_size - 1) 
+                    grad = (specgram[i][j + 1] - specgram[i][j - 1]) / 2.0;
+                else if (j == 0)
+                    grad = specgram[i][1] - specgram[i][0];
+                else
+                    grad = specgram[i][j] - specgram[i][j - 1];
+
+                specgram[i][j] *= double(std::abs(grad) < threshold);
+            }
+        }
+
+        compute_axis_dft_in_place(specgram, 0, 0, true);
+
+        for (int i = 0; i < num_ffts; i++)
+        {
+            int start = i * stride;
+            int end = start + fft_size;
+
+            if (end > num_ffts)
+            {
+                end = num_ffts - 1;
+            }
+
+            CF_VEC_1D temp = specgram[i];
+
+            for (int j = start; j < end; j++)
+            {
+                if (j < cols)
+                    signal[j] = temp[j-start];
+            }
+        }
+    }
 }
 
 
