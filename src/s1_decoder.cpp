@@ -239,7 +239,7 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(
     CF_VEC_2D range_compressed;
 
     for (int i = 0; i < azimuth_blocks.size(); i++)
-    {
+    {        
         CF_VEC_2D range_compressed_az_block = _range_compress(azimuth_blocks[i], true, range_doppler);
 
         int rows = range_compressed_az_block.size();
@@ -458,7 +458,9 @@ CF_VEC_2D S1_Decoder::_range_compress(
         range_compressed[i] = signal;
     }
 
-    eccm(range_compressed, 64, 32, 250);
+    char rx_pol = first_packet.get_rx_polarization();
+
+    // eccm(range_compressed, 128, 64, 250, rx_pol);
 
     compute_axis_dft_in_place(range_compressed, 0, 1, false);
 
@@ -595,6 +597,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
         fftshift_in_place(radar_data_row);
 
+        // CF_VEC_1D radar_data = radar_data_row;
+
         F_VEC_1D& pos = positions[i];
 
         double az_freq = az_freqs[i];
@@ -625,7 +629,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
             double src_fm_rate  = 2.0 * std::pow(v_rel, 2.0) * std::pow(CENTER_FREQ, 3.0) * std::pow(rcmc, 2.0);
                    src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq, 2.0);
-
+    
             std::complex<double> src_filter = 
                 std::exp(-1.0 * I * PI * std::pow(range_freqs[j], 2.0) / src_fm_rate);
 

@@ -50,18 +50,27 @@ std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets)
 {
     PACKET_VEC_2D azimuth_blocks;
     PACKET_VEC_1D azimuth_block;
-    
+
     int previous_size = 2 * packets[0].get_num_quads();
+    double previous_time = packets[0].get_slant_range_times(100)[0];
     int max_size = previous_size;
 
     for (int i = 0; i < packets.size(); i++)
     {
         L0Packet packet = packets[i];
         int size = 2 * packet.get_num_quads();
+        double t = packet.get_slant_range_times(100)[0];
+
         if (size != previous_size or i == packets.size() - 1)
         {
             if (size > max_size) max_size = size;
             previous_size = size;
+            azimuth_blocks.push_back(azimuth_block);
+            azimuth_block = {};
+        }
+        else if (t != previous_time)
+        {
+            previous_time = t;
             azimuth_blocks.push_back(azimuth_block);
             azimuth_block = {};
         }
