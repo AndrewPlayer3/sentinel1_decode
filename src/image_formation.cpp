@@ -46,6 +46,46 @@ CF_VEC_1D pulse_compression(
 }
 
 
+// void rcmc(
+//     CF_VEC_2D& data, 
+//     const double& bandwidth,
+//     const double& range_to_center,
+//     const double& range_res,
+//     const D_VEC_1D& az_freqs,
+//     const D_VEC_2D& effective_velocities
+// ) {
+//     double num_az = effective_velocities.size();
+//     double num_rng = effective_velocities[0].size();
+
+//     double bandwidth;
+//     double range_to_center;
+//     double range_res;
+
+//     // range_offsets = (range_to_center / np.sqrt(1 - ((wavelength * frequency_shifts) / (2 * effective_velocity)) ** 2)) - range_to_center
+//     // range_offsets = np.round(range_offsets / slant_range_res)
+//     // frequency_shifts = frequency_shifts * 5 # Azimuth Freqs
+
+//     D_VEC_1D range_freqs;
+
+//     D_VEC_1D frequency_shifts(num_az);
+//     D_VEC_1D range_offsets(num_az);
+
+//     std::transform(
+//         az_freqs.begin(), az_freqs.end(),
+//             frequency_shifts.begin(),
+//                 [] (const double& az_freq) {
+//                     return az_freq * WAVELENGTH;
+//                 }
+//     );
+
+//     for (int i = 0; i < range_offsets.size(); i++) {
+//         std::rotate(
+//             data[i].begin(), data[i].begin() - int(range_offsets[i]), data[i].end()
+//         );
+//     }
+// }
+
+
 std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets)
 {
     PACKET_VEC_2D azimuth_blocks;
