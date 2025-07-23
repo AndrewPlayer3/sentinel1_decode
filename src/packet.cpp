@@ -277,7 +277,7 @@ void L0Packet::_set_data_format()
 double L0Packet::get_range_sample_rate()
 {
     int range_dec = secondary_header("range_decimation");
-    return RANGE_DECIMATION[range_dec];
+    return RANGE_DECIMATION[range_dec] * 1e+6;
 }
 
 

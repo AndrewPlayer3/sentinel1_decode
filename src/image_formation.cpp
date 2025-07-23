@@ -236,7 +236,7 @@ CF_VEC_2D azimuth_time_ufr(
 
     int output_extension = swath_number == 11 ? 
                              std::floor(doppler_bandwidth * 1.15) 
-                             : 
+                             :
                              std::floor(doppler_bandwidth * 0.26);
     int output_shape = std::floor(prf * burst_duration);
     int downsample_shape = output_shape + output_extension;

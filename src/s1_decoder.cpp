@@ -458,7 +458,7 @@ CF_VEC_2D S1_Decoder::_range_compress(
         range_compressed[i] = signal;
     }
 
-    eccm(range_compressed, 64, 32);
+    // eccm(range_compressed, 64, 32);
 
     compute_axis_dft_in_place(range_compressed, 0, 1, false);
 
@@ -512,12 +512,13 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     double v_norm = std::sqrt(std::pow(v_0[0], 2.0) + std::pow(v_0[1], 2.0) + std::pow(v_0[2], 2.0));
     double range_sample_rate = packets[0].get_range_sample_rate();
+    double range_resolution = SPEED_OF_LIGHT / (2 * range_sample_rate);
     double pulse_length = packets[0].get_pulse_length() * 1e-6;
     double pri = packets[0].get_pri() * 1e-6;
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
     double dc_rate = get_doppler_centroid_rate(packets, v_norm);
-    double doppler_bandwidth = prf * 0.4;
+    double doppler_bandwidth = prf * 0.7;
     double t0 = packets[0].get_time();
     double t1 = packets[1].get_time();
     double time_delta = (t1 - t0);
@@ -526,6 +527,9 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     F_VEC_1D az_freqs;
     F_VEC_1D doppler_centroid;
     F_VEC_1D range_freqs = linspace(-range_sample_rate/2, range_sample_rate/2, num_samples);
+
+    std::cout << "Range Bandwidth: " << range_sample_rate << std::endl;
+    std::cout << "Range Resolution: " << range_resolution << std::endl;
 
     if (tops_mode)
     {
@@ -610,21 +614,21 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
         for (int j = 0; j < num_samples; j++)
         {
-            double slant_range = slant_ranges[j];
+            double slant_range = slant_ranges[0];
             double numerator = earth_radius*earth_radius + sat_alt*sat_alt - slant_range*slant_range;
             double denominator = 2 * earth_radius * sat_alt;
             double beta = numerator / denominator;
             double v_ground = earth_radius * v_sat * beta / sat_alt;
             double v_rel = sqrt(v_sat * v_ground);
             double rcmc = sqrt(
-                1 - (std::pow(WAVELENGTH, 2.0) * std::pow(az_freq, 2.0)) / (4 * std::pow(v_rel, 2.0))
+                1 - (std::pow(WAVELENGTH, 2.0) * std::pow(az_freq + doppler_centroid[j], 2.0)) / (4 * std::pow(v_rel, 2.0))
             );
 
             effective_velocities[j] = v_rel;
             rcmc_factors[j] = rcmc;
 
             double src_fm_rate  = 2.0 * std::pow(v_rel, 2.0) * std::pow(CENTER_FREQ, 3.0) * std::pow(rcmc, 2.0);
-                   src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq, 2.0);
+                   src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq + doppler_centroid[j], 2.0);
 
             std::complex<double> src_filter = 
                 std::exp(-1.0 * I * PI * std::pow(range_freqs[j], 2.0) / src_fm_rate);
@@ -638,10 +642,28 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             fftw_execute(inverse_plans[i]);
         }
 
+        // CF_VEC_1D range_migration_corrected(radar_data_row.size());
+
+        // for (int j = 0; j < num_samples; j++)
+        // {
+        //     double rcmc = sqrt(
+        //         1 - std::pow((WAVELENGTH * (az_freq + doppler_centroid[j])) / (2 * effective_velocities[j]), 2.0)
+        //     );
+
+        //     double slant_range = slant_ranges[j];
+
+        //     int shift = int(std::round( ((slant_range / rcmc) - slant_range) / range_resolution ));
+
+        //     if (j - shift >= 0)
+        //     {
+        //         range_migration_corrected[j - shift] += radar_data_row[j];
+        //     }
+        // }
+
+        // radar_data_row = range_migration_corrected;
+
         for (int j = 0; j < num_samples; j++)
         {
-            // TODO: Range migration correction using sinc-based interpolation
-
             if (tops_mode) az_freq += doppler_centroid[j];
 
             double v_rel = effective_velocities[j];
