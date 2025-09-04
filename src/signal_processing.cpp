@@ -171,7 +171,6 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
         }
     }
 
-    // Construct the normal equations matrix and RHS
     F_VEC_2D A = {
         {Sx[0], Sx[1], Sx[2], Sx[3]},
         {Sx[1], Sx[2], Sx[3], Sx[4]},
@@ -180,9 +179,7 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
     };
     F_VEC_1D b = {Sy[0], Sy[1], Sy[2], Sy[3]};
 
-    // Solve Ax = b using Gaussian elimination
     for (int i = 0; i < 4; ++i) {
-        // Pivot
         for (int k = i + 1; k < 4; ++k) {
             if (std::abs(A[k][i]) > std::abs(A[i][i])) {
                 for (int j = 0; j < 4; ++j) std::swap(A[i][j], A[k][j]);
@@ -190,7 +187,6 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
             }
         }
 
-        // Eliminate below
         for (int k = i + 1; k < 4; ++k) {
             double factor = A[k][i] / A[i][i];
             for (int j = i; j < 4; ++j)
@@ -199,7 +195,6 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
         }
     }
 
-    // Back substitution
     F_VEC_1D coeffs(4);
     for (int i = 3; i >= 0; --i) {
         coeffs[i] = b[i];
@@ -222,21 +217,20 @@ double polyval(const F_VEC_1D& coeffs, const double& x)
 }
 
 
-// Sinc function: sin(pi x) / (pi x)
-inline double sinc(double x) {
+double sinc(double x) {
     return x == 0.0 ? 1.0 : std::sin(PI * x) / (PI * x);
 }
 
-// Hann window for smoothing sinc lobes
-inline double hann_window(double x, int L) {
+
+double hann_window(double x, int L) {
     return 0.5 * (1 + std::cos(PI * x / L));
 }
 
-// Truncated sinc interpolation function
+
 std::complex<double> sinc_interpolate(
     const CF_VEC_1D& signal,
-    double t,           // fractional index to interpolate (can be non-integer)
-    int L              // half-width of sinc kernel (total support = 2L + 1)
+    double t,
+    int L
 ) {
     int n = static_cast<int>(std::floor(t));
     std::complex<double> result = 0.0;
@@ -244,7 +238,7 @@ std::complex<double> sinc_interpolate(
     for (int k = -L; k <= L; ++k) {
         int idx = n + k;
         if (idx < 0 || idx >= static_cast<int>(signal.size()))
-            continue; // out of bounds
+            continue;
 
         double x = t - idx;
         double w = hann_window(x, L);
@@ -253,23 +247,6 @@ std::complex<double> sinc_interpolate(
 
     return result;
 }
-
-
-// void rcmc(CF_VEC_1D& signal, F_VEC_1D& az_freqs, F_VEC_1D& effective_velocities, F_VEC_1D& ranges)
-// {
-//     int samples = signal.size();
-
-//     CF_VEC_1D  out_signal(samples);
-
-//     for (int j = 0; j < samples; j++)
-//     {
-//         double range_shift = std::pow(WAVELENGTH, 2.0) * ranges[j] * std::pow(az_freqs[j], 2.0)
-//                  / (8 * std::pow(effective_velocities[j], 2.0));
-
-//         out_signal[j] = sinc_interpolate(signal, range_shift);
-//     }
-//     signal = out_signal;
-// }
 
 
 void conjugate_in_place(CF_VEC_1D& complex_samples)
@@ -864,14 +841,47 @@ CF_VEC_2D spectrogram(CF_VEC_1D& signal, const int& fft_size, const int& stride)
 
 std::complex<double> calculate_mean(const CF_VEC_1D& arr)
 {
-    return (1.0 / double(arr.size())) * std::accumulate(arr.begin(), arr.end(), std::complex<double>(0.0, 0.0));
+    CF_VEC_1D arr_abs = arr;
+
+    std::for_each(
+        arr_abs.begin(), arr_abs.end(),
+            [] (std::complex<double>& n) {
+                n = std::abs(n);
+            }
+    );
+
+    return (1.0 / double(arr_abs.size())) * std::accumulate(arr_abs.begin(), arr_abs.end(), std::complex<double>(0.0, 0.0));
 }
 
 
 double calculate_mean(const F_VEC_1D& arr)
 {
-    return (1.0 / double(arr.size())) * std::accumulate(arr.begin(), arr.end(), 0.0);
+    F_VEC_1D arr_abs = arr;
+
+    std::for_each(
+        arr_abs.begin(), arr_abs.end(),
+            [] (double& n) {
+                n = std::abs(n);
+            }
+    );
+
+    return (1.0 / double(arr_abs.size())) * std::accumulate(arr_abs.begin(), arr_abs.end(), 0.0);
 }
+
+
+double calculate_max(const CF_VEC_1D& arr)
+{
+    double max = 0.0;
+
+    for (int i = 0; i < arr.size(); i++)
+    {
+        double n = std::abs(arr[i]);
+        max = n > max ? n : max;
+    }
+
+    return max;
+}
+
 
 double calculate_standard_deviation(const CF_VEC_1D& arr)
 {
@@ -895,7 +905,7 @@ double calculate_standard_deviation(const CF_VEC_1D& arr)
 }
 
 
-void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const double& threshold, const char& rx_pol)
+void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const double& detection_threshold, const double& mitigation_threshold, const char& rx_pol)
 {
     std::cout << "Performing ECCM Processing" << std::endl;
 
@@ -904,53 +914,36 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
 
     int num_ffts = std::floor( (double(cols) / double(fft_size)) * (double(fft_size) / double(stride)) );
 
-    std::cout << "ECCM will require " << num_ffts << " short-time ffts." << std::endl;
+    std::cout << "ECCM will require at most " << num_ffts << " short-time ffts." << std::endl;
 
-    F_VEC_1D stds;
-    F_VEC_1D means;
+    // double fft_amp_threshold;
+    // double mask_val;
 
-    double min_mean = 10000000;
-    double min_std  = 10000000;
+    // if (rx_pol == 'V')
+    // {
+    //     mask_val = 150;
+    //     fft_amp_threshold = 15000;
+    // }
+    // else if (rx_pol == 'H')
+    // {
+    //     mask_val = 80;
+    //     fft_amp_threshold = 15000;
+    // }
+    // else
+    // {
+    //     throw std::invalid_argument("Only v and h receive polarizations are supported for ECCM.");
+    // }
 
-    double mask_val;
-
-    if (rx_pol == 'V')
-    {
-        mask_val = 200;
-    }
-    else if (rx_pol == 'H')
-    {
-        mask_val = 80;
-    }
-    else
-    {
-        throw std::invalid_argument("Only v and h receive polarizations are supported for ECCM.");
-    }
-
-    for (CF_VEC_1D& signal : signals)
-    {
-        double curr_std = calculate_standard_deviation(signal);
-        double curr_mean = std::abs(calculate_mean(signal));
-
-        min_std = std::min(curr_std, min_std);
-        min_mean = std::min(curr_mean, min_mean);
-
-        stds.push_back(curr_std);
-        means.push_back(curr_mean);
-    }
-
-    double t = calculate_mean(stds);
-
-    std::cout << "Run ECCM Threshold: " << t << std::endl;
-    std::cout << "ECCM Masking Value: " << mask_val << std::endl;
+    std::cout << "Run ECCM Threshold: " << detection_threshold << std::endl;
+    std::cout << "ECCM Masking Value: " << mitigation_threshold << std::endl;
 
     for (CF_VEC_1D& signal : signals)
     {
         CF_VEC_2D specgram(num_ffts, CF_VEC_1D(fft_size));
 
-        double sig_std = calculate_standard_deviation(signal);
+        double max_fft_amp = calculate_max(compute_1d_dft(signal));
 
-        if (sig_std < t)
+        if (max_fft_amp < detection_threshold)
         {
             continue;
         }
@@ -993,14 +986,11 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
             }
         }
 
-        double grad_mean = std::abs(calculate_mean(grads));
-        double grad_std = calculate_standard_deviation(grads);
-
         for (int i = 0; i < num_ffts; i++)
         {
             for (int j = 0; j < fft_size; j++)
             {
-                if (std::abs(grads[i*fft_size + j]) < mask_val)
+                if (std::abs(grads[i*fft_size + j]) < mitigation_threshold)
                     specgram[i][j] *= 1.0;
                 else
                     specgram[i][j] *= 0.0;

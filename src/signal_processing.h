@@ -156,7 +156,8 @@ void eccm(
     CF_VEC_2D& signals,
     const int& fft_size,
     const int& stride,
-    const double& threshold = 500,
+    const double& detection_threshold,
+    const double& mitigation_threshold,
     const char& rx_pol = 'V'
 );
 

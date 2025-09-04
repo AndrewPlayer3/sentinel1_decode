@@ -166,3 +166,34 @@ void write_azimuth_compressed_swath(
     CF_VEC_2D azimuth_compressed_swath = s1.get_azimuth_compressed_swath(swath_name);
     write_tif(azimuth_compressed_swath, out_filename, scaling_mode);
 }
+
+
+void write_azimuth_compressed_burst_eccm(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const int&         detection_threshold,
+    const int&         mitigation_threshold,
+    const std::string& scaling_mode
+) {
+    S1_Decoder s1(in_filename);
+    s1.apply_eccm(detection_threshold, mitigation_threshold);
+    CF_VEC_2D azimuth_compressed_burst = s1.get_azimuth_compressed_burst(swath_name, burst_num);
+    write_tif(azimuth_compressed_burst, out_filename, scaling_mode);
+}
+
+
+void write_azimuth_compressed_swath_eccm(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         detection_threshold,
+    const int&         mitigation_threshold,
+    const std::string& scaling_mode
+) {
+    S1_Decoder s1(in_filename);
+    s1.apply_eccm(detection_threshold, mitigation_threshold);
+    CF_VEC_2D azimuth_compressed_swath = s1.get_azimuth_compressed_swath(swath_name);
+    write_tif(azimuth_compressed_swath, out_filename, scaling_mode);
+}

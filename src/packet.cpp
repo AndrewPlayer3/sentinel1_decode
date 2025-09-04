@@ -288,6 +288,7 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
     double txpsf = get_start_frequency();
     double txprr = get_tx_ramp_rate();
     double txpl  = get_pulse_length() * 1e-6;
+    double swl   = get_swl() * 1e-6;
 
     double start_time = get_swst() * 1e-6;
     double pri = get_pri() *1e-6;
@@ -298,7 +299,7 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
     double delay = rank * pri + start_time + delta_t;
 
     double min_slant_range = delay * SPEED_OF_LIGHT / 2;
-    double max_slant_range = (delay + txpl) * SPEED_OF_LIGHT / 2;
+    double max_slant_range = (delay + swl) * SPEED_OF_LIGHT / 2;
 
     return linspace(min_slant_range, max_slant_range, num_ranges);
 }
@@ -312,6 +313,7 @@ D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
     double txpsf = get_start_frequency();
     double txprr = get_tx_ramp_rate();
     double txpl  = get_pulse_length() * 1e-6;
+    double swl   = get_swl() * 1e-6;
 
     double start_time = get_swst() * 1e-6;
     double pri = get_pri() *1e-6;
@@ -321,7 +323,7 @@ D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
 
     double delay = rank * pri + start_time + delta_t;
 
-    return linspace(delay, delay + txpl, num_ranges);
+    return linspace(delay, delay + swl, num_ranges);
 }
 
 
@@ -353,7 +355,6 @@ CF_VEC_1D L0Packet::get_replica_chirp()
 
     return chirp;
 }
-
 
 
 /***********************************************************************/

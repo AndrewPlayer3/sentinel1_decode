@@ -15,6 +15,10 @@ private:
 
     std::string _filename;
 
+    bool _use_eccm = false;
+    int _eccm_detection_threshold;
+    int _eccm_mitigation_threshold;
+
     PACKET_VEC_1D _flat_packets;
 
     D_VEC_1D _times;
@@ -31,7 +35,7 @@ private:
     CF_VEC_2D _get_cal_swath(const std::string& swath);
 
     CF_VEC_2D _range_compress(PACKET_VEC_1D& packets, const bool& do_ifft=true, const bool& do_azimuth_fft=false);
-    CF_VEC_2D _azimuth_compress(PACKET_VEC_1D& packets, const bool& tops_mode = false);
+    CF_VEC_2D _azimuth_compress(PACKET_VEC_1D& packets, const bool& tops_mode=false);
 
     CF_VEC_2D _get_range_compressed_swath_sm(const std::string& swath, const bool& range_doppler=false);
     CF_VEC_2D _get_range_compressed_swath_iw(const std::string& swath, const bool& range_doppler=false);
@@ -58,6 +62,9 @@ public:
     void _set_packets();
 
     STATE_VECTORS get_state_vectors();
+
+    void apply_eccm() {_use_eccm = true;}
+    void apply_eccm(const int& detection_threshold, const int& mitigation_threshold);
 
     CF_VEC_2D get_burst(const std::string& swath, const int& burst);
     CF_VEC_2D get_swath(const std::string& swath);

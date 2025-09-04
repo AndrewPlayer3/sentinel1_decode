@@ -104,3 +104,22 @@ void write_azimuth_compressed_swath(
     const std::string& swath_name,
     const std::string& scaling_mode
 );
+
+void write_azimuth_compressed_burst_eccm(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         burst_num,
+    const int&         detection_threshold,
+    const int&         mitigation_threshold,
+    const std::string& scaling_mode
+);
+
+void write_azimuth_compressed_swath_eccm(
+    const std::string& in_filename,
+    const std::string& out_filename,
+    const std::string& swath_name,
+    const int&         detection_threshold,
+    const int&         mitigation_threshold,
+    const std::string& scaling_mode
+);

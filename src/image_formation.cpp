@@ -370,3 +370,109 @@ CF_VEC_2D azimuth_time_ufr(
 
     return CF_VEC_2D(ufr_output.begin() + start, ufr_output.begin() + end);
 }
+
+
+void rcmc(
+    CF_VEC_1D& signal,
+    const F_VEC_1D& effective_velocities,
+    const F_VEC_1D& ranges,
+    const F_VEC_1D& az_freqs,
+    const double& range_sample_rate
+) {
+    int samples = signal.size();
+
+    CF_VEC_1D out_signal = signal;
+
+    double range_spacing = SPEED_OF_LIGHT / (2 * range_sample_rate);
+
+    for (int j = 0; j < samples; j++)
+    {
+        // double range_shift = std::pow(WAVELENGTH, 2.0) * ranges[j] * std::pow(az_freqs[j], 2.0)
+        //          / (8 * std::pow(effective_velocities[j], 2.0));
+
+        double rcmc_factor = sqrt(
+            1 - (std::pow(WAVELENGTH, 2.0) * std::pow(az_freqs[j], 2.0)) / (4 * std::pow(effective_velocities[j], 2.0))
+        );
+
+        double range_shift = (ranges[j] / rcmc_factor) - ranges[j];
+
+        double range_shift_pixels = range_shift / range_spacing;
+        double range_shift_index = static_cast<double>(j) + range_shift_pixels;
+
+        out_signal[j] = sinc_interpolate(signal, range_shift_index, 16);
+    }
+    signal = out_signal;
+}
+
+
+F_VEC_1D get_effective_velocities(
+    const F_VEC_1D& position,
+    const double& velocity,
+    const F_VEC_1D& slant_ranges
+) {
+    int num_samples = slant_ranges.size();
+
+    double lat = position[2] / position[0];
+    double earth_rad_num = std::pow(SEMI_MAJOR * SEMI_MAJOR * std::cos(lat), 2.0) + std::pow(SEMI_MINOR * SEMI_MINOR * std::sin(lat), 2.0);
+    double earth_rad_denom = std::pow(SEMI_MAJOR * std::cos(lat), 2.0) + std::pow(SEMI_MINOR * std::sin(lat), 2.0);
+    double earth_radius = std::sqrt(earth_rad_num / earth_rad_denom);
+    double sat_alt = std::sqrt(position[0]*position[0] + position[1]*position[1] + position[2]*position[2]);
+
+    F_VEC_1D effective_velocities(num_samples);
+
+    for (int j = 0; j < num_samples; j++)
+    {
+        double slant_range = slant_ranges[j];
+        double numerator = earth_radius*earth_radius + sat_alt*sat_alt - slant_range*slant_range;
+        double denominator = 2 * earth_radius * sat_alt;
+        double beta = numerator / denominator;
+        double v_ground = earth_radius * velocity * beta / sat_alt;
+        double v_rel = sqrt(velocity * v_ground);
+
+        effective_velocities[j] = v_rel;
+    }
+
+    return effective_velocities;
+}
+
+
+F_VEC_1D apply_src_and_rcmc(
+    CF_VEC_1D& range_line,
+    const F_VEC_1D& effective_velocities,
+    const F_VEC_1D& slant_ranges,
+    const F_VEC_1D& range_freqs,
+    const double& az_freq
+) {
+    int num_samples = range_line.size();
+    F_VEC_1D rcmc_factors(num_samples);
+
+    for (int j = 0; j < num_samples; j++)
+    {
+        double slant_range = slant_ranges[j];
+        double v_rel = effective_velocities[j];
+
+        double rcmc_factor = sqrt(
+            1 - ((std::pow(WAVELENGTH, 2.0) * std::pow(az_freq, 2.0)) / (4 * v_rel*v_rel))
+        );
+
+        rcmc_factors[j] = rcmc_factor;
+
+        double src_fm_rate  = 2.0 * std::pow(v_rel, 2.0) * std::pow(CENTER_FREQ, 3.0) * std::pow(rcmc_factor, 2.0);
+                src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq, 2.0);
+
+        std::complex<double> src_filter = 
+            std::exp(-1.0 * I * PI * std::pow(range_freqs[j], 2.0) / src_fm_rate);
+
+        range_line[j] *= src_filter;
+
+        double range_shift = (slant_range / rcmc_factor) - slant_range;
+
+        std::complex<double> rcmc_phase =
+            std::exp(4.0 * I * PI * range_freqs[j] * range_shift / SPEED_OF_LIGHT);
+
+        range_line[j] *= rcmc_phase;
+    }
+
+    return rcmc_factors;
+}
+

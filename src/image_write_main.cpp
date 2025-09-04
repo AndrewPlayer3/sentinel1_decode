@@ -148,15 +148,54 @@ void azimuth_compressed_swath_command(char *argv[], std::unordered_map<std::stri
 }
 
 
-void save_raw_command(char *argv[], std::unordered_map<std::string, bool>& options)
+void azimuth_compressed_burst_eccm_command(char *argv[], std::unordered_map<std::string, bool>& options)
 {
-    STRING_VEC_1D args  = {"swath", "in_path", "out_path"};
-    STRING_VEC_1D types = {"string", "path", "string"};
+    STRING_VEC_1D args  = {"swath", "burst_num", "detection_threshold", "masking_threshold", "in_path", "out_path"};
+    STRING_VEC_1D types = {"string", "int", "int", "int", "path", "string"};
+    validate_args("azimuth_compressed_burst", args, types, argv);
+
+    std::string swath        = std::string(argv[2]);
+    int burst_num            = std::stoi(argv[3]);
+    int detection_threshold  = std::stoi(argv[4]);
+    int mitigation_threshold = std::stoi(argv[5]);
+    std::string in_path      = std::string(argv[6]);
+    std::string out_path     = std::string(argv[7]);
+    std::string scaling      = parse_scaling_mode(options);
+
+    write_azimuth_compressed_burst_eccm(in_path, out_path, swath, burst_num, detection_threshold, mitigation_threshold, scaling);
+}
+
+
+void azimuth_compressed_swath_eccm_command(char *argv[], std::unordered_map<std::string, bool>& options)
+{
+    STRING_VEC_1D args  = {"swath", "detection_threshold", "masking_threshold", "in_path", "out_path"};
+    STRING_VEC_1D types = {"string", "int", "int", "path", "string"};
     validate_args("azimuth_compressed_swath", args, types, argv);
 
+    std::string swath        = std::string(argv[2]);
+    int detection_threshold  = std::stoi(argv[3]);
+    int mitigation_threshold = std::stoi(argv[4]);
+    std::string in_path      = std::string(argv[5]);
+    std::string out_path     = std::string(argv[6]);
+    std::string scaling      = parse_scaling_mode(options);
+
+    write_azimuth_compressed_swath_eccm(in_path, out_path, swath, detection_threshold, mitigation_threshold, scaling);
+}
+
+
+void save_burst_as_cf32_command(char *argv[], std::unordered_map<std::string, bool>& options)
+{
+    STRING_VEC_1D args  = {"swath", "burst_num", "processing_level", "in_path", "out_path"};
+    STRING_VEC_1D types = {"string", "int", "string", "path", "string"};
+    validate_args("save_burst_as_cf32", args, types, argv);
+
     std::string swath    = std::string(argv[2]);
-    std::string in_path  = std::string(argv[3]);
-    std::string out_path = std::string(argv[4]);
+    int burst_num        = std::stoi(argv[3]);
+    std::string proc     = std::string(argv[4]);
+    std::string in_path  = std::string(argv[5]);
+    std::string out_path = std::string(argv[6]);
+
+    std::transform(proc.begin(), proc.end(), proc.begin(), ::tolower);
 
     std::ofstream file(out_path, std::ios::binary);
     if (!file) {
@@ -165,7 +204,100 @@ void save_raw_command(char *argv[], std::unordered_map<std::string, bool>& optio
     }
 
     S1_Decoder s1(in_path);
-    CF_VEC_2D data = s1.get_swath(swath);
+    CF_VEC_2D data;
+
+    if (proc == "raw")
+    {
+        data = s1.get_burst(swath, burst_num);
+    }
+    else if (proc == "range_compressed")
+    {
+        data = s1.get_range_compressed_burst(swath, burst_num);
+    }
+    else if (proc == "range_doppler")
+    {
+        data = s1.get_range_compressed_burst(swath, burst_num, true);
+    }
+    else if (proc == "azimuth_compressed")
+    {
+        data = s1.get_azimuth_compressed_burst(swath, burst_num);
+    }
+    else
+    {
+        throw std::invalid_argument(
+            "Invalid processing_level. Options are raw, range_compressed, range_doppler, or azimuth_compressed."
+        );
+    }
+
+    int rows = data.size();
+    int cols = data[0].size();
+
+    std::cout << "Num Rows: " << rows << std::endl;
+    std::cout << "Num Cols: " << cols << std::endl;
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            std::complex<double> value = data[i][j];
+            std::complex<float> valueFloat(static_cast<float>(value.real()), static_cast<float>(value.imag()));
+            
+            file.write(reinterpret_cast<const char*>(&valueFloat), sizeof(std::complex<float>));
+        }
+    }
+
+    file.close();
+
+    if (!file) {
+        std::cerr << "Error: Failed to write to file " << out_path << "." << std::endl;
+    } else {
+        std::cout << "Data successfully saved to " << out_path << "." << std::endl;
+    }
+}
+
+
+void save_swath_as_cf32_command(char *argv[], std::unordered_map<std::string, bool>& options)
+{
+    STRING_VEC_1D args  = {"swath", "processing_level", "in_path", "out_path"};
+    STRING_VEC_1D types = {"string", "string", "path", "string"};
+    validate_args("save_swath_as_cf32", args, types, argv);
+
+    std::string swath    = std::string(argv[2]);
+    std::string proc     = std::string(argv[3]);
+    std::string in_path  = std::string(argv[4]);
+    std::string out_path = std::string(argv[5]);
+
+    std::transform(proc.begin(), proc.end(), proc.begin(), ::tolower);
+
+    std::ofstream file(out_path, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error: Unable to open file " << out_path << " for writing." << std::endl;
+        return;
+    }
+
+    S1_Decoder s1(in_path);
+    CF_VEC_2D data;
+
+    if (proc == "raw")
+    {
+        data = s1.get_swath(swath);
+    }
+    else if (proc == "range_compressed")
+    {
+        data = s1.get_range_compressed_swath(swath);
+    }
+    else if (proc == "range_doppler")
+    {
+        data = s1.get_range_compressed_swath(swath, true);
+    }
+    else if (proc == "azimuth_compressed")
+    {
+        data = s1.get_azimuth_compressed_swath(swath);
+    }
+    else
+    {
+        throw std::invalid_argument(
+            "Invalid processing_level. Options are raw, range_compressed, range_doppler, or azimuth_compressed."
+        );
+    }
 
     int rows = data.size();
     int cols = data[0].size();
@@ -204,7 +336,10 @@ int main(int argc, char* argv[])
         "range_doppler_swath [swath] [in_path] [out_path]",
         "azimuth_compressed_burst [swath] [burst_num] [in_path] [out_path]",
         "azimuth_compressed_swath [swath] [in_path] [out_path]",
-        "save_swath_as_cf32 [swath] [in_path] [out_path]"
+        "azimuth_compressed_burst_eccm [swath] [burst_num] [detection_threshold] [mitigation_threshold] [in_path] [out_path]",
+        "azimuth_compressed_swath_eccm [swath] [detection_threshold] [mitigation_threshold] [in_path] [out_path]",
+        "save_burst_as_cf32 [swath] [processing_level] [in_path] [out_path]",
+        "save_swath_as_cf32 [swath] [processing_level] [in_path] [out_path]",
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 
@@ -226,16 +361,19 @@ int main(int argc, char* argv[])
     };
     options = parse_options(options, argv, 2);
 
-    if      (command == "burst")                    burst_command(&(argv[0]), options);
-    else if (command == "swath")                    swath_command(&(argv[0]), options);
-    else if (command == "spectrogram")              spectrogram_command(&(argv[0]), options);
-    else if (command == "range_compressed_burst")   range_compressed_burst_command(&(argv[0]), options);
-    else if (command == "range_compressed_swath")   range_compressed_swath_command(&(argv[0]), options);
-    else if (command == "range_doppler_burst")      range_doppler_burst_command(&(argv[0]), options);
-    else if (command == "range_doppler_swath")      range_doppler_swath_command(&(argv[0]), options);
-    else if (command == "azimuth_compressed_burst") azimuth_compressed_burst_command(&(argv[0]), options);
-    else if (command == "azimuth_compressed_swath") azimuth_compressed_swath_command(&(argv[0]), options);
-    else if (command == "save_swath_as_cf32")       save_raw_command(&(argv[0]), options);
+    if      (command == "burst")                         burst_command(&(argv[0]), options);
+    else if (command == "swath")                         swath_command(&(argv[0]), options);
+    else if (command == "spectrogram")                   spectrogram_command(&(argv[0]), options);
+    else if (command == "range_compressed_burst")        range_compressed_burst_command(&(argv[0]), options);
+    else if (command == "range_compressed_swath")        range_compressed_swath_command(&(argv[0]), options);
+    else if (command == "range_doppler_burst")           range_doppler_burst_command(&(argv[0]), options);
+    else if (command == "range_doppler_swath")           range_doppler_swath_command(&(argv[0]), options);
+    else if (command == "azimuth_compressed_burst")      azimuth_compressed_burst_command(&(argv[0]), options);
+    else if (command == "azimuth_compressed_swath")      azimuth_compressed_swath_command(&(argv[0]), options);
+    else if (command == "azimuth_compressed_burst_eccm") azimuth_compressed_burst_eccm_command(&(argv[0]), options);
+    else if (command == "azimuth_compressed_swath_eccm") azimuth_compressed_swath_eccm_command(&(argv[0]), options);
+    else if (command == "save_burst_as_cf32")            save_burst_as_cf32_command(&(argv[0]), options);
+    else if (command == "save_swath_as_cf32")            save_swath_as_cf32_command(&(argv[0]), options);
     else if (command == "help" or command == "--help" or command == "-h")
     {
         print_help(help_strings);
