@@ -518,12 +518,12 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     if (tops_mode) radar_data = _range_compress(packets, true, false);
     else radar_data = _range_compress(packets, false, true);
 
-    F_VEC_1D slant_ranges = packets[0].get_slant_ranges();
+    D_VEC_1D slant_ranges = packets[0].get_slant_ranges();
 
     std::cout << "Slant Ranges: "
               << slant_ranges[0] << ", " << slant_ranges.back() << std::endl;
 
-    F_VEC_1D v_0 = _state_vectors.velocities[0];
+    D_VEC_1D v_0 = _state_vectors.velocities[0];
 
     double v_norm = std::sqrt(std::pow(v_0[0], 2.0) + std::pow(v_0[1], 2.0) + std::pow(v_0[2], 2.0));
     double range_sample_rate = double(num_samples) / (1e-6 * first_packet.get_swl());
@@ -538,11 +538,11 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double range_dec_sample_rate = first_packet.get_range_sample_rate();
     double dc_rate;
 
-    F_VEC_1D range_freqs = linspace(-range_dec_sample_rate / 2, range_dec_sample_rate / 2, num_samples);
-    F_VEC_1D az_freqs(num_packets);
-    F_VEC_1D doppler_centroid(num_samples);
+    D_VEC_1D range_freqs = linspace(-range_dec_sample_rate / 2, range_dec_sample_rate / 2, num_samples);
+    D_VEC_1D az_freqs(num_packets);
+    D_VEC_1D doppler_centroid(num_samples);
 
-    F_VEC_2D az_fm_rate;
+    D_VEC_2D az_fm_rate;
 
     if (tops_mode)
     {
@@ -569,8 +569,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         time_delta /= double(num_packets) / double(packets.size());
     }
 
-    F_VEC_2D positions(num_packets, F_VEC_1D(3));
-    F_VEC_1D velocities_norm(num_packets);
+    D_VEC_2D positions(num_packets, D_VEC_1D(3));
+    D_VEC_1D velocities_norm(num_packets);
 
     for (int i = 0; i < num_packets; i++)
     {
@@ -578,8 +578,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
         STATE_VECTOR state_vector = _state_vectors.interpolate(t);
 
-        F_VEC_1D v = state_vector.velocity;
-        F_VEC_1D p = state_vector.position;
+        D_VEC_1D v = state_vector.velocity;
+        D_VEC_1D p = state_vector.position;
 
         positions[i]  = p;
         velocities_norm[i] = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
@@ -591,7 +591,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     if (tops_mode)
     {
         double num_replicas = std::abs(dc_rate * burst_length_seconds / prf);
-        az_fm_rate = F_VEC_2D(num_packets, F_VEC_1D(num_samples));
+        az_fm_rate = D_VEC_2D(num_packets, D_VEC_1D(num_samples));
         az_freqs = linspace(-num_replicas*prf/2, num_replicas*prf/2, num_packets);
     }
     else
@@ -611,13 +611,13 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
         CF_VEC_1D& range_line = radar_data[i];
 
-        F_VEC_1D effective_velocities = get_effective_velocities(
+        D_VEC_1D effective_velocities = get_effective_velocities(
             positions[i],
             velocities_norm[i],
             slant_ranges
         );
 
-        F_VEC_1D rcmc_factors = apply_src_and_rcmc(
+        D_VEC_1D rcmc_factors = apply_src_and_rcmc(
             range_line,
             effective_velocities,
             slant_ranges,

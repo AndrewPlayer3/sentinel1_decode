@@ -58,3 +58,6 @@ build/**/*
 # Processed Data
 *.tif
 *.tiff
+
+data
+data/*

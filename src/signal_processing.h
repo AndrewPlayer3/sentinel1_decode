@@ -19,14 +19,14 @@ CF_VEC_1D linspace(
     const int& size
 );
 
-F_VEC_1D linspace(
+D_VEC_1D linspace(
     const double& start, 
     const double& end, 
     const int&   size
 );
 
-F_VEC_1D linear_resample(
-    const F_VEC_1D& arr,
+D_VEC_1D linear_resample(
+    const D_VEC_1D& arr,
     const int& num_output_samples
 );
 
@@ -40,13 +40,13 @@ CF_VEC_1D quadratic_resample(
     const int& num_output_samples
 );
 
-F_VEC_1D polyfit(
-    const F_VEC_1D& x,
-    const F_VEC_1D& y
+D_VEC_1D polyfit(
+    const D_VEC_1D& x,
+    const D_VEC_1D& y
 );
 
 double polyval(
-    const F_VEC_1D& coeffs, 
+    const D_VEC_1D& coeffs, 
     const double& x
 );
 
@@ -56,12 +56,12 @@ std::complex<double> sinc_interpolate(
     int L = 8          // half-width of sinc kernel (total support = 2L + 1)
 );
 
-std::vector<float> flatten(
-    const std::vector<std::vector<float>>& values
-);
-
 F_VEC_1D flatten(
     const F_VEC_2D& values
+);
+
+D_VEC_1D flatten(
+    const D_VEC_2D& values
 );
 
 CF_VEC_1D flatten(
@@ -80,7 +80,7 @@ void apply_hanning_window_in_place(
     CF_VEC_2D& complex_samples
 );
 
-F_VEC_1D norm_1d(
+D_VEC_1D norm_1d(
     const CF_VEC_1D& complex_values,
     const bool& log_scale
 );
@@ -90,7 +90,7 @@ std::vector<std::vector<float>> norm_2d(
     const bool& log_scale
 );
 
-F_VEC_1D magnitude_1d(
+D_VEC_1D magnitude_1d(
     const CF_VEC_1D& complex_values
 );
 
@@ -102,11 +102,11 @@ CF_VEC_2D transpose(
     const CF_VEC_2D& arr
 );
 
-F_VEC_2D transpose(
-    const F_VEC_2D& arr
+D_VEC_2D transpose(
+    const D_VEC_2D& arr
 );
 
-F_VEC_1D fftfreq(
+D_VEC_1D fftfreq(
     int n,
     double d
 );
@@ -161,7 +161,7 @@ void eccm(
     const char& rx_pol = 'V'
 );
 
-F_VEC_1D scale(
+D_VEC_1D scale(
     const CF_VEC_1D& signal,
     const std::string& scaling_mode
 );

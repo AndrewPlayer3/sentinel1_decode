@@ -42,11 +42,11 @@ void validate_args(
         }
         try
         {
-            if      (arg_types[index] == "string") (std::string(args[i]));
-            else if (arg_types[index] == "char")   char test = (char(args[i][0]));
-            else if (arg_types[index] == "int")    std::stoi(args[i]);
+            if      (arg_types[index] == "string")  std::string(args[i]);
+            else if (arg_types[index] == "char")    char(args[i][0]);
+            else if (arg_types[index] == "int")     std::stoi(args[i]);
             else if (arg_types[index] == "double")  std::stof(args[i]);
-            else if (arg_types[index] == "path")   open_file(std::string(args[i]));
+            else if (arg_types[index] == "path")    open_file(std::string(args[i]));
         }
         catch(...)
         {

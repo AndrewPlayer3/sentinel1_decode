@@ -139,7 +139,7 @@ std::pair<D_VEC_1D::iterator, D_VEC_1D::iterator> find_time_bounds(const double&
 }
 
 
-D_VEC_1D interpolate_vector(const F_VEC_2D& vec, int a_index, int b_index, double linear_extrapolant)
+D_VEC_1D interpolate_vector(const D_VEC_2D& vec, int a_index, int b_index, double linear_extrapolant)
 {
     D_VEC_1D new_vec(vec[a_index].size());
 
@@ -243,11 +243,11 @@ Quaternion get_quaternions_from_rotation_matrix(F_VEC_2D& R)
 }
 
 
-F_VEC_1D Quaternion::to_euler_angles()
+D_VEC_1D Quaternion::to_euler_angles()
 {
     double roll, pitch, yaw;
 
-    F_VEC_1D R = to_rotation_matrix();
+    D_VEC_1D R = to_rotation_matrix();
 
     pitch = asin(-std::max(-1.0, std::min(1.0, R[7])));
 
@@ -311,7 +311,7 @@ F_VEC_2D get_eocfi_rotation_matrix(const Quaternion& q)
 
 
 // https://forum.step.esa.int/uploads/default/original/2X/3/315f415284743cf42be03a464121df1ca337a26d.pdf
-Quaternion parse_quaternions(const F_VEC_1D& quaternions)
+Quaternion parse_quaternions(const D_VEC_1D& quaternions)
 {
     Quaternion raw_q(quaternions);
     F_VEC_2D eocfi_rotation_matrix = get_eocfi_rotation_matrix(raw_q);

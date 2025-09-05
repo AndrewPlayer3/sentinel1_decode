@@ -7,7 +7,7 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
 
     CF_VEC_1D reference = replica_chirp;
 
-    F_VEC_1D norm = magnitude_1d(replica_chirp);
+    D_VEC_1D norm = magnitude_1d(replica_chirp);
 
     double norm_size = norm.size();
     std::for_each(
@@ -121,7 +121,7 @@ CF_VEC_1D get_tiled_signal(CF_VEC_1D& signal, const double& num_replicas)
 
 CF_VEC_2D azimuth_frequency_ufr(
     CF_VEC_2D& range_compressed,
-    F_VEC_1D&  dc_estimates,
+    D_VEC_1D&  dc_estimates,
     L0Packet&  initial_packet,
     const double& dc_rate,
     const double& burst_duration,
@@ -157,7 +157,7 @@ CF_VEC_2D azimuth_frequency_ufr(
     std::cout << "Low Pass Filter End Index: " << end << std::endl;
     std::cout << "-------------------------------------------------" << std::endl;
 
-    F_VEC_1D  az_freqs = linspace(-bandwidth, bandwidth, shape);
+    D_VEC_1D  az_freqs = linspace(-bandwidth, bandwidth, shape);
     CF_VEC_2D ufr_output(num_rng, CF_VEC_1D(shape));
 
     #pragma omp parallel for
@@ -218,8 +218,8 @@ CF_VEC_2D azimuth_frequency_ufr(
 
 CF_VEC_2D azimuth_time_ufr(
     CF_VEC_2D& azimuth_compressed,
-    F_VEC_1D&  dc_estimates,
-    F_VEC_2D& az_fm_rate,
+    D_VEC_1D&  dc_estimates,
+    D_VEC_2D& az_fm_rate,
     L0Packet&  initial_packet,
     const double& dc_rate,
     const double& burst_duration,
@@ -273,14 +273,14 @@ CF_VEC_2D azimuth_time_ufr(
     std::cout << "Output Shape: " << output_shape << std::endl;
     std::cout << "-------------------------------------------------" << std::endl;
 
-    F_VEC_1D az_times = linspace(-focused_time / 2, focused_time / 2, shape);
+    D_VEC_1D az_times = linspace(-focused_time / 2, focused_time / 2, shape);
 
     CF_VEC_2D ufr_intermediate(num_rng, CF_VEC_1D(shape));
 
     #pragma omp parallel for
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
-        F_VEC_1D ka = linear_resample(az_fm_rate[rng_line], shape);
+        D_VEC_1D ka = linear_resample(az_fm_rate[rng_line], shape);
 
         // Mosaic Signal
         ufr_intermediate[rng_line] = get_tiled_signal(azimuth_compressed[rng_line], num_tiles);
@@ -342,7 +342,7 @@ CF_VEC_2D azimuth_time_ufr(
     #pragma omp parallel for
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
-        F_VEC_1D ka = linear_resample(az_fm_rate[rng_line], downsample_shape);
+        D_VEC_1D ka = linear_resample(az_fm_rate[rng_line], downsample_shape);
 
         double f_dc = dc_estimates[rng_line];
 
@@ -372,10 +372,10 @@ CF_VEC_2D azimuth_time_ufr(
 }
 
 
-F_VEC_1D get_effective_velocities(
-    const F_VEC_1D& position,
+D_VEC_1D get_effective_velocities(
+    const D_VEC_1D& position,
     const double& velocity,
-    const F_VEC_1D& slant_ranges
+    const D_VEC_1D& slant_ranges
 ) {
     int num_samples = slant_ranges.size();
 
@@ -385,7 +385,7 @@ F_VEC_1D get_effective_velocities(
     double earth_radius = std::sqrt(earth_rad_num / earth_rad_denom);
     double sat_alt = std::sqrt(position[0]*position[0] + position[1]*position[1] + position[2]*position[2]);
 
-    F_VEC_1D effective_velocities(num_samples);
+    D_VEC_1D effective_velocities(num_samples);
 
     for (int j = 0; j < num_samples; j++)
     {
@@ -403,16 +403,16 @@ F_VEC_1D get_effective_velocities(
 }
 
 
-F_VEC_1D apply_src_and_rcmc(
+D_VEC_1D apply_src_and_rcmc(
     CF_VEC_1D& range_line,
-    const F_VEC_1D& effective_velocities,
-    const F_VEC_1D& slant_ranges,
-    const F_VEC_1D& range_freqs,
-    const F_VEC_1D& doppler_centroids,
+    const D_VEC_1D& effective_velocities,
+    const D_VEC_1D& slant_ranges,
+    const D_VEC_1D& range_freqs,
+    const D_VEC_1D& doppler_centroids,
     const double& az_freq
 ) {
     int num_samples = range_line.size();
-    F_VEC_1D rcmc_factors(num_samples);
+    D_VEC_1D rcmc_factors(num_samples);
 
     for (int j = 0; j < num_samples; j++)
     {

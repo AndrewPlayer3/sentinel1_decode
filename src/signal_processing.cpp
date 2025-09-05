@@ -15,9 +15,9 @@ CF_VEC_1D linspace(const std::complex<double>& start, const std::complex<double>
 }
 
 
-F_VEC_1D linspace(const double& start, const double& end, const int& size)
+D_VEC_1D linspace(const double& start, const double& end, const int& size)
 {
-    F_VEC_1D range(size);
+    D_VEC_1D range(size);
 
     double step = (end - start) / (size - 1);
 
@@ -29,7 +29,7 @@ F_VEC_1D linspace(const double& start, const double& end, const int& size)
 }
 
 
-F_VEC_1D linear_resample(const F_VEC_1D& arr, const int& num_output_samples)
+D_VEC_1D linear_resample(const D_VEC_1D& arr, const int& num_output_samples)
 {
     int num_input_samples = arr.size();
 
@@ -38,7 +38,7 @@ F_VEC_1D linear_resample(const F_VEC_1D& arr, const int& num_output_samples)
         return arr;
     }
 
-    F_VEC_1D out(num_output_samples);
+    D_VEC_1D out(num_output_samples);
 
     double x = 0.0;
     double dx_in = 1.0 / (num_input_samples - 1);
@@ -151,12 +151,12 @@ CF_VEC_1D quadratic_resample(const CF_VEC_1D& arr, const int& num_output_samples
 }
 
 
-F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y) 
+D_VEC_1D polyfit(const D_VEC_1D& x, const D_VEC_1D& y) 
 {
     const int N = x.size();
 
-    F_VEC_1D Sx(7);
-    F_VEC_1D Sy(4);
+    D_VEC_1D Sx(7);
+    D_VEC_1D Sy(4);
 
     for (int i = 0; i < N; ++i) {
         double xi = 1.0;
@@ -167,13 +167,13 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
         }
     }
 
-    F_VEC_2D A = {
+    D_VEC_2D A = {
         {Sx[0], Sx[1], Sx[2], Sx[3]},
         {Sx[1], Sx[2], Sx[3], Sx[4]},
         {Sx[2], Sx[3], Sx[4], Sx[5]},
         {Sx[3], Sx[4], Sx[5], Sx[6]}
     };
-    F_VEC_1D b = {Sy[0], Sy[1], Sy[2], Sy[3]};
+    D_VEC_1D b = {Sy[0], Sy[1], Sy[2], Sy[3]};
 
     for (int i = 0; i < 4; ++i) {
         for (int k = i + 1; k < 4; ++k) {
@@ -191,7 +191,7 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
         }
     }
 
-    F_VEC_1D coeffs(4);
+    D_VEC_1D coeffs(4);
     for (int i = 3; i >= 0; --i) {
         coeffs[i] = b[i];
         for (int j = i + 1; j < 4; ++j)
@@ -203,7 +203,7 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
 }
 
 
-double polyval(const F_VEC_1D& coeffs, const double& x) 
+double polyval(const D_VEC_1D& coeffs, const double& x) 
 {
     // Evaluate polynomial: a*x^3 + b*x^2 + c*x + d
     double result = 0.0;
@@ -259,7 +259,7 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
 {
     int num_samples = complex_samples.size();
 
-    F_VEC_1D window(num_samples);
+    D_VEC_1D window(num_samples);
 
     std::iota(window.begin(), window.end(), 0.0);
 
@@ -277,7 +277,7 @@ void apply_hanning_window_in_place(CF_VEC_2D& complex_samples)
 {
     int num_samples = complex_samples[0].size();
 
-    F_VEC_1D window(num_samples);
+    D_VEC_1D window(num_samples);
 
     std::iota(window.begin(), window.end(), 0.0);
 
@@ -294,12 +294,12 @@ void apply_hanning_window_in_place(CF_VEC_2D& complex_samples)
 }
 
 
-std::vector<float> flatten(const std::vector<std::vector<float>>& values)
+F_VEC_1D flatten(const F_VEC_2D& values)
 {
     int rows = values.size();
     int cols = values[0].size();
 
-    std::vector<float> flat(rows * cols);
+    F_VEC_1D flat(rows * cols);
 
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
@@ -314,12 +314,12 @@ std::vector<float> flatten(const std::vector<std::vector<float>>& values)
 
 
 
-F_VEC_1D flatten(const F_VEC_2D& values)
+D_VEC_1D flatten(const D_VEC_2D& values)
 {
     int rows = values.size();
     int cols = values[0].size();
 
-    F_VEC_1D flat(rows * cols);
+    D_VEC_1D flat(rows * cols);
 
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
@@ -388,14 +388,14 @@ std::vector<std::vector<float>> norm_2d(
 }
 
 
-F_VEC_1D norm_1d(
+D_VEC_1D norm_1d(
     const CF_VEC_1D& complex_values,
     const bool& log_scale = false
 ) {
     int num_samples = complex_values.size();
     double max_value = 0;
 
-    F_VEC_1D norm(num_samples);
+    D_VEC_1D norm(num_samples);
 
     for (int i = 0; i < num_samples; i++)
     {
@@ -416,9 +416,9 @@ F_VEC_1D norm_1d(
 }
 
 
-F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
+D_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
 {
-    F_VEC_1D magnitude(complex_values.size());
+    D_VEC_1D magnitude(complex_values.size());
 
     std::transform(
         complex_values.begin(), complex_values.end(),
@@ -429,12 +429,12 @@ F_VEC_1D magnitude_1d(const CF_VEC_1D& complex_values)
 }
 
 
-std::vector<std::vector<float>> magnitude_2d(const CF_VEC_2D& complex_values)
+F_VEC_2D magnitude_2d(const CF_VEC_2D& complex_values)
 {
     int rows = complex_values.size();
     int cols = complex_values[0].size();
 
-    std::vector<std::vector<float>> magnitude(rows, std::vector<float>(cols));
+    F_VEC_2D magnitude(rows, std::vector<float>(cols));
 
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; i++)
@@ -467,12 +467,12 @@ CF_VEC_2D transpose(const CF_VEC_2D& arr)
 }
 
 
-F_VEC_2D transpose(const F_VEC_2D& arr)
+D_VEC_2D transpose(const D_VEC_2D& arr)
 {
     int rows = arr.size();
     int cols = arr[0].size();
 
-    F_VEC_2D arr_t(cols, F_VEC_1D(rows));
+    D_VEC_2D arr_t(cols, D_VEC_1D(rows));
 
     #pragma omp parallel for collapse(2)
     for (int i = 0; i < cols; i++)
@@ -486,7 +486,7 @@ F_VEC_2D transpose(const F_VEC_2D& arr)
 }
 
 
-F_VEC_1D fftfreq(int n, double d = 1.0) {
+D_VEC_1D fftfreq(int n, double d = 1.0) {
     std::vector<double> freqs(n);
     double val = 1.0 / (n * d);
     int N = (n - 1) / 2 + 1;
@@ -848,9 +848,9 @@ std::complex<double> calculate_mean(const CF_VEC_1D& arr)
 }
 
 
-double calculate_mean(const F_VEC_1D& arr)
+double calculate_mean(const D_VEC_1D& arr)
 {
-    F_VEC_1D arr_abs = arr;
+    D_VEC_1D arr_abs = arr;
 
     std::for_each(
         arr_abs.begin(), arr_abs.end(),
@@ -883,7 +883,7 @@ double calculate_standard_deviation(const CF_VEC_1D& arr)
 
     std::complex<double> mean = calculate_mean(arr);
 
-    F_VEC_1D mean_removed(num_samples);
+    D_VEC_1D mean_removed(num_samples);
 
     std::transform(
         arr.begin(), arr.end(),
@@ -993,9 +993,9 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
 }
 
 
-F_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
+D_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
 {
-    F_VEC_1D samples(signal.size());
+    D_VEC_1D samples(signal.size());
 
     if      (scaling_mode == "norm_log") samples = norm_1d(signal, true);
     else if (scaling_mode == "norm"    ) samples = norm_1d(signal, false);

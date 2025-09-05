@@ -26,7 +26,7 @@ std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(
 
 CF_VEC_2D azimuth_frequency_ufr(
     CF_VEC_2D& range_compressed,
-    F_VEC_1D&  dc_estimates,
+    D_VEC_1D&  dc_estimates,
     L0Packet&  initial_packet,
     const double& dc_rate,
     const double& burst_duration,
@@ -36,8 +36,8 @@ CF_VEC_2D azimuth_frequency_ufr(
 
 CF_VEC_2D azimuth_time_ufr(
     CF_VEC_2D& range_compressed,
-    F_VEC_1D&  dc_estimates,
-    F_VEC_2D&  az_fm_rate,
+    D_VEC_1D&  dc_estimates,
+    D_VEC_2D&  az_fm_rate,
     L0Packet&  initial_packet,
     const double& dc_rate,
     const double& burst_duration,
@@ -46,17 +46,17 @@ CF_VEC_2D azimuth_time_ufr(
     const int&    swath_number
 );
 
-F_VEC_1D get_effective_velocities(
-    const F_VEC_1D& position,
+D_VEC_1D get_effective_velocities(
+    const D_VEC_1D& position,
     const double& velocity,
-    const F_VEC_1D& slant_ranges
+    const D_VEC_1D& slant_ranges
 );
 
-F_VEC_1D apply_src_and_rcmc(
+D_VEC_1D apply_src_and_rcmc(
     CF_VEC_1D& range_line,
-    const F_VEC_1D& effective_velocities,
-    const F_VEC_1D& slant_ranges,
-    const F_VEC_1D& range_freqs,
-    const F_VEC_1D& doppler_centroids,
+    const D_VEC_1D& effective_velocities,
+    const D_VEC_1D& slant_ranges,
+    const D_VEC_1D& range_freqs,
+    const D_VEC_1D& doppler_centroids,
     const double& az_freq
 );

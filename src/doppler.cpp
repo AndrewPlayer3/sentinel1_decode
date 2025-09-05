@@ -1,7 +1,7 @@
 #include "doppler.h"
 
 
-F_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
+D_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
 {
     int num_az = range_compressed.size();
     int num_rng = range_compressed[0].size();
@@ -25,7 +25,7 @@ F_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
               << phase_difference_sum.back() 
               << std::endl;
 
-    F_VEC_1D wrapped_estimates(num_rng);
+    D_VEC_1D wrapped_estimates(num_rng);
 
     std::transform(
         phase_difference_sum.begin(), phase_difference_sum.end(),
@@ -39,18 +39,18 @@ F_VEC_1D get_wrapped_estimates(CF_VEC_2D& range_compressed, const double& prf)
 }
 
 
-F_VEC_1D get_unwrapped_estimates(
-    F_VEC_1D& fine_dc_estimates,
-    F_VEC_1D& offset_rng_times,
+D_VEC_1D get_unwrapped_estimates(
+    D_VEC_1D& fine_dc_estimates,
+    D_VEC_1D& offset_rng_times,
     const double& prf,
     const int& dense_grid_scalar = 8
 ) {
     int num_est = fine_dc_estimates.size();
     float dt = offset_rng_times[1] - offset_rng_times[0];
 
-    F_VEC_1D unwrapped_estimates(num_est);
+    D_VEC_1D unwrapped_estimates(num_est);
     CF_VEC_1D F(num_est * dense_grid_scalar);
-    F_VEC_1D F_norm_squared(num_est * dense_grid_scalar);
+    D_VEC_1D F_norm_squared(num_est * dense_grid_scalar);
 
     std::transform(
         fine_dc_estimates.begin(), fine_dc_estimates.end(),
@@ -70,8 +70,8 @@ F_VEC_1D get_unwrapped_estimates(
                 }
     );
 
-    F_VEC_1D::iterator max = std::max_element(F_norm_squared.begin(), F_norm_squared.end());
-    F_VEC_1D freqs = fftfreq(num_est * dense_grid_scalar, dt);
+    D_VEC_1D::iterator max = std::max_element(F_norm_squared.begin(), F_norm_squared.end());
+    D_VEC_1D freqs = fftfreq(num_est * dense_grid_scalar, dt);
 
     int max_index = std::distance(F_norm_squared.begin(), max);
 
@@ -100,7 +100,7 @@ CF_VEC_1D get_deramping_signal(
     const double& doppler_centroid_rate,
     const double& burst_duration
 ) {
-    F_VEC_1D az_time = linspace(0.0, burst_duration, num_az_samples);
+    D_VEC_1D az_time = linspace(0.0, burst_duration, num_az_samples);
 
     CF_VEC_1D deramping_signal(num_az_samples);
 
@@ -143,25 +143,24 @@ CF_VEC_2D dce_preconditioning(
 }
 
 
-F_VEC_1D get_doppler_centroid(
+D_VEC_1D get_doppler_centroid(
     CF_VEC_2D& range_compressed,
     const double& doppler_centroid_rate,
     const double& burst_duration,
     L0Packet& first_packet,
     const int& num_rng_blocks
 ) {
-    int num_az = range_compressed.size();
     int num_rng = range_compressed[0].size();
     int rng_block_size = num_rng / num_rng_blocks;
 
-    F_VEC_1D  rng_times = first_packet.get_slant_range_times(num_rng_blocks);
+    D_VEC_1D  rng_times = first_packet.get_slant_range_times(num_rng_blocks);
 
     double prf = 1.0 / (first_packet.get_pri() * 1e-6);
     double initial_time = rng_times[0];
 
     CF_VEC_2D precoditioned_burst = dce_preconditioning(range_compressed, doppler_centroid_rate, 1.06);
-    F_VEC_1D  wrapped_estimates   = get_wrapped_estimates(precoditioned_burst, prf);
-    F_VEC_1D  fine_dc_estimates(num_rng_blocks);
+    D_VEC_1D  wrapped_estimates   = get_wrapped_estimates(precoditioned_burst, prf);
+    D_VEC_1D  fine_dc_estimates(num_rng_blocks);
 
     for (int rng_block_index = 0; rng_block_index < num_rng_blocks; rng_block_index++)
     {
@@ -171,7 +170,7 @@ F_VEC_1D get_doppler_centroid(
                             :
                             num_rng - 1;
 
-        F_VEC_1D rng_block(
+        D_VEC_1D rng_block(
             wrapped_estimates.begin() + start_index,
             wrapped_estimates.begin() + end_index
         );
@@ -189,8 +188,8 @@ F_VEC_1D get_doppler_centroid(
                 }
     );
 
-    F_VEC_1D unwrapped_estimates = get_unwrapped_estimates(fine_dc_estimates, rng_times, prf, 8);
-    F_VEC_1D poly = polyfit(rng_times, unwrapped_estimates);
+    D_VEC_1D unwrapped_estimates = get_unwrapped_estimates(fine_dc_estimates, rng_times, prf, 8);
+    D_VEC_1D poly = polyfit(rng_times, unwrapped_estimates);
 
     rng_times = first_packet.get_slant_range_times(num_rng);
 
@@ -202,7 +201,7 @@ F_VEC_1D get_doppler_centroid(
                 }
     );
 
-    unwrapped_estimates = F_VEC_1D(num_rng);
+    unwrapped_estimates = D_VEC_1D(num_rng);
 
     std::transform(
         rng_times.begin(), rng_times.end(),

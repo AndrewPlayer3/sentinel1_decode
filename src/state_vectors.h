@@ -22,7 +22,7 @@ struct Quaternion
 
     Quaternion() {}
 
-    Quaternion(F_VEC_1D quaternions, QUAT_ORDER order = SCALAR_FIRST)
+    Quaternion(D_VEC_1D quaternions, QUAT_ORDER order = SCALAR_FIRST)
     {
         if (order == SCALAR_FIRST)
         {
@@ -40,13 +40,13 @@ struct Quaternion
         }
     }
 
-    F_VEC_1D to_vector(QUAT_ORDER order = SCALAR_FIRST)
+    D_VEC_1D to_vector(QUAT_ORDER order = SCALAR_FIRST)
     {
         if (order == SCALAR_FIRST) return {w, x, y, z};
         else                       return {x, y, z, w};
     }
 
-    F_VEC_1D to_euler_angles();
+    D_VEC_1D to_euler_angles();
 
     D_VEC_1D to_rotation_matrix();
 };
@@ -54,17 +54,17 @@ struct Quaternion
 
 Quaternion get_quaternions_from_rotation_matrix(F_VEC_2D& R);
 F_VEC_2D get_eocfi_rotation_matrix(const Quaternion& q);
-Quaternion parse_quaternions(const F_VEC_1D& quaternions);
+Quaternion parse_quaternions(const D_VEC_1D& quaternions);
 
 struct STATE_VECTOR
 {
     double time;
 
     D_VEC_1D position;
-    F_VEC_1D velocity;
-    F_VEC_1D quaternions;
-    F_VEC_1D angular_rate;
-    F_VEC_1D attitude;
+    D_VEC_1D velocity;
+    D_VEC_1D quaternions;
+    D_VEC_1D angular_rate;
+    D_VEC_1D attitude;
 
     STATE_VECTOR() {}
 
@@ -108,10 +108,10 @@ struct STATE_VECTORS
     D_VEC_1D times;
 
     D_VEC_2D positions;
-    F_VEC_2D velocities;
-    F_VEC_2D quaternions;
-    F_VEC_2D angular_rates;
-    F_VEC_2D attitudes;
+    D_VEC_2D velocities;
+    D_VEC_2D quaternions;
+    D_VEC_2D angular_rates;
+    D_VEC_2D attitudes;
 
     STATE_VECTORS() {}
 

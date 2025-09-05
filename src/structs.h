@@ -557,7 +557,7 @@ const std::unordered_map<int, std::string> SWATH_NUM_TO_STRING = {
 };
 
 
-const F_VEC_1D RANGE_DECIMATION = {
+const D_VEC_1D RANGE_DECIMATION = {
     112.6041667,
     100.0925926,
     0.000000000,

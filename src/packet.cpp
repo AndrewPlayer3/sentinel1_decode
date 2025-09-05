@@ -80,7 +80,7 @@ const double L0Packet::get_start_frequency()
 }
 
 
-static const F_VEC_1D AZIMUTH_BEAM_ADDRESS_TO_ANGLE = linspace(-0.018, 0.018, 1024);
+static const D_VEC_1D AZIMUTH_BEAM_ADDRESS_TO_ANGLE = linspace(-0.018, 0.018, 1024);
 
 
 /* Returns the azimuth beam angle in radians*/
@@ -334,7 +334,7 @@ CF_VEC_1D L0Packet::get_replica_chirp()
     int range_dec   = secondary_header("range_decimation");
     int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));
 
-    F_VEC_1D  time = linspace(0.0, txpl, num_samples);
+    D_VEC_1D  time = linspace(0.0, txpl, num_samples);
 
     int min_index = int(ceil((num_range - num_samples)/2))-1;
     int max_index = min_index + num_samples;
