@@ -522,9 +522,12 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     else radar_data = _range_compress(packets, false, true);
 
     F_VEC_1D slant_ranges = packets[0].get_slant_ranges();
-    F_VEC_1D v_0 = _state_vectors.velocities[0];
 
-    std::cout << slant_ranges[0] << ", " << slant_ranges[slant_ranges.size() / 2] << ", " << slant_ranges.back() << std::endl;
+    std::cout << "Start, Mid, and End Slant Ranges: "
+              << slant_ranges[0] << ", " << slant_ranges[slant_ranges.size() / 2] 
+              << ", " << slant_ranges.back() << std::endl;
+
+    F_VEC_1D v_0 = _state_vectors.velocities[0];
 
     double v_norm = std::sqrt(std::pow(v_0[0], 2.0) + std::pow(v_0[1], 2.0) + std::pow(v_0[2], 2.0));
     double range_sample_rate = double(num_samples) / (1e-6 * first_packet.get_swl()); // packets[0].get_range_sample_rate();
@@ -536,16 +539,14 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double doppler_bandwidth = prf * 0.4;
     double t0 = first_packet.get_time();
     double time_delta = burst_length_seconds / prf;
+    double dc_rate;
+    double range_dec_sample_rate = first_packet.get_range_sample_rate();
+
+    F_VEC_1D range_freqs = linspace(-range_dec_sample_rate / 2, range_dec_sample_rate / 2, num_samples);
+    F_VEC_1D az_freqs(num_packets);
+    F_VEC_1D doppler_centroid(num_samples);
 
     F_VEC_2D az_fm_rate;
-    F_VEC_1D az_freqs;
-
-    double range_dec_sample_rate = first_packet.get_range_sample_rate();
-    F_VEC_1D range_freqs = linspace(-range_dec_sample_rate / 2, range_dec_sample_rate / 2, num_samples);
-
-    double dc_rate;
-
-    F_VEC_1D doppler_centroid;
 
     if (tops_mode)
     {
@@ -614,14 +615,18 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
         CF_VEC_1D& range_line = radar_data[i];
 
-        F_VEC_1D effective_velocities = 
-            get_effective_velocities(positions[i], velocities_norm[i], slant_ranges);
+        F_VEC_1D effective_velocities = get_effective_velocities(
+            positions[i],
+            velocities_norm[i],
+            slant_ranges
+        );
 
         F_VEC_1D rcmc_factors = apply_src_and_rcmc(
             range_line,
             effective_velocities,
             slant_ranges,
             range_freqs,
+            doppler_centroid,
             az_freqs[i]
         );
 

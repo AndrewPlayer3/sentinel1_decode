@@ -65,5 +65,6 @@ F_VEC_1D apply_src_and_rcmc(
     const F_VEC_1D& effective_velocities,
     const F_VEC_1D& slant_ranges,
     const F_VEC_1D& range_freqs,
+    const F_VEC_1D& doppler_centroids,
     const double& az_freq
 );

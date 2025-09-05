@@ -441,6 +441,7 @@ F_VEC_1D apply_src_and_rcmc(
     const F_VEC_1D& effective_velocities,
     const F_VEC_1D& slant_ranges,
     const F_VEC_1D& range_freqs,
+    const F_VEC_1D& doppler_centroids,
     const double& az_freq
 ) {
     int num_samples = range_line.size();
@@ -450,15 +451,16 @@ F_VEC_1D apply_src_and_rcmc(
     {
         double slant_range = slant_ranges[j];
         double v_rel = effective_velocities[j];
+        double dc = doppler_centroids[j];
 
         double rcmc_factor = sqrt(
-            1 - ((std::pow(WAVELENGTH, 2.0) * std::pow(az_freq, 2.0)) / (4 * v_rel*v_rel))
+            1 - ((std::pow(WAVELENGTH, 2.0) * std::pow(az_freq + dc, 2.0)) / (4 * v_rel*v_rel))
         );
 
         rcmc_factors[j] = rcmc_factor;
 
         double src_fm_rate  = 2.0 * std::pow(v_rel, 2.0) * std::pow(CENTER_FREQ, 3.0) * std::pow(rcmc_factor, 2.0);
-                src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq, 2.0);
+                src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq + dc, 2.0);
 
         std::complex<double> src_filter = 
             std::exp(-1.0 * I * PI * std::pow(range_freqs[j], 2.0) / src_fm_rate);
