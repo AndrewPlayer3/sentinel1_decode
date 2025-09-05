@@ -4,8 +4,8 @@
 // Time in seconds since J2000 Epoch.
 double parse_time_stamp(u_int64_t raw_time_stamp)
 {
-    uint coarse_time = (raw_time_stamp >> 24) & 0xffffffff;
-    uint raw_fine_time = raw_time_stamp & 0xffffff;
+    unsigned int coarse_time = (raw_time_stamp >> 24) & 0xffffffff;
+    unsigned int raw_fine_time = raw_time_stamp & 0xffffff;
     double fine_time = 0.0;
     for (int i = 23; i >= 0; i--)
     {
@@ -36,10 +36,10 @@ SUBCOMM_DICTS build_data_word_dicts(PACKET_VEC_1D& packets)
             SUBCOMM_DICT_DOUBLE processed_subcomm_dict;
             for(std::pair<std::string, u_int64_t> key_val : raw_subcomm_dict)
             {
-                bool is_time = key_val.first == "data_time_stamp" or key_val.first == "pod_data_stamp";
+                bool is_time = key_val.first == "data_time_stamp" || key_val.first == "pod_data_stamp";
                 double val = is_time ? 
                     parse_time_stamp(key_val.second) 
-                    : 
+                    :
                     int_to_ieee754(key_val.second, SUB_COMM_DOUBLE_KEYS.contains(key_val.first));
                 processed_subcomm_dict[key_val.first] = val;
             }
