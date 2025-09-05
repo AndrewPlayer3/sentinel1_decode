@@ -6,7 +6,6 @@ dependencies:
   - cmake
   - ninja
   - openmp
-  - gcc
   - cxx-compiler
   - fftw
   - libtiff
