@@ -59,7 +59,7 @@ $ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --n
 ```
 ![swath_az_write_example](imgs/points_iw_mode.png)
 
-Some basic heuristic RFI mitigation is also available. I'm currently working on a better version that should work without as much guess work. The values in the commands below probably good starting points.
+Some basic heuristic RFI mitigation is also available. I'm currently working on a better version that should work without as much guess work. The values in the commands below are probably good starting points for VV and VH, respectively.
 
 ```bash
 $ bin/s1_write azimuth_compressed_swath_eccm IW2 13000 100 data/korea_patriot/korea_patriot_vh.dat data/korea_patriot_vh_iw2_eccm.tif --norm
@@ -69,7 +69,7 @@ Without ECCM               |  With ECCM
 ![swath_az_write_example](imgs/korea_interference.png)   |  ![swath_az_write_example](imgs/korea_mitigated.png)
 
 ```bash
-$ bin/s1_write azimuth_compressed_swath_eccm IW2 13000 100 data/korea_patriot/korea_patriot_vh.dat data/korea_patriot_vh_iw2_eccm.tif --norm
+$ bin/s1_write azimuth_compressed_swath_eccm IW2 15000 250 data/petro_interference/petro_interference_vv.dat data/petro_interference_vv_iw2.tif --norm
 ```
 Without ECCM               |  With ECCM
 :-------------------------:|:-------------------------:
