@@ -905,6 +905,7 @@ double calculate_standard_deviation(const CF_VEC_1D& arr)
 }
 
 
+/* An attempt at very basic heuristic approach to RFI mitigation */
 void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const double& detection_threshold, const double& mitigation_threshold, const char& rx_pol)
 {
     std::cout << "Performing ECCM Processing" << std::endl;
@@ -915,24 +916,6 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
     int num_ffts = std::floor( (double(cols) / double(fft_size)) * (double(fft_size) / double(stride)) );
 
     std::cout << "ECCM will require at most " << num_ffts << " short-time ffts." << std::endl;
-
-    // double fft_amp_threshold;
-    // double mask_val;
-
-    // if (rx_pol == 'V')
-    // {
-    //     mask_val = 150;
-    //     fft_amp_threshold = 15000;
-    // }
-    // else if (rx_pol == 'H')
-    // {
-    //     mask_val = 80;
-    //     fft_amp_threshold = 15000;
-    // }
-    // else
-    // {
-    //     throw std::invalid_argument("Only v and h receive polarizations are supported for ECCM.");
-    // }
 
     std::cout << "Run ECCM Threshold: " << detection_threshold << std::endl;
     std::cout << "ECCM Masking Value: " << mitigation_threshold << std::endl;
