@@ -59,7 +59,7 @@ $ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --n
 ```
 ![swath_az_write_example](imgs/points_iw_mode.png)
 
-Some basic heuristic RFI mitigation is also available. I'm currently working on a better version that should work without as much guess work. The values in the commands below probably good starting points.
+Some basic heuristic RFI mitigation is also available. I'm currently working on a better version that should work without as much guess work. The values in the commands below are probably good starting points for VV and VH, respectively.
 
 ```bash
 $ bin/s1_write azimuth_compressed_swath_eccm IW2 13000 100 data/korea_patriot/korea_patriot_vh.dat data/korea_patriot_vh_iw2_eccm.tif --norm
@@ -69,7 +69,7 @@ Without ECCM               |  With ECCM
 ![swath_az_write_example](imgs/korea_interference.png)   |  ![swath_az_write_example](imgs/korea_mitigated.png)
 
 ```bash
-$ bin/s1_write azimuth_compressed_swath_eccm IW2 13000 100 data/korea_patriot/korea_patriot_vh.dat data/korea_patriot_vh_iw2_eccm.tif --norm
+$ bin/s1_write azimuth_compressed_swath_eccm IW2 15000 250 data/petro_interference/petro_interference_vv.dat data/petro_interference_vv_iw2.tif --norm
 ```
 Without ECCM               |  With ECCM
 :-------------------------:|:-------------------------:
@@ -201,15 +201,21 @@ $ bin/s1_print print_complex_samples 0 data/sample/sample.dat
 
 ## Compiling
 
-For now `cmake` is used. Although, I will likely switch to a Conda based install/compilation for simplicity later. 
+My goal is to not involve too many external dependancies; however, some are necessary. *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*.
+
+Everything necessary for compilation to work on MacOS, Linux, and Windows should be available through the use of the conda environment. Windows support is still WIP, however. Install it via:
+```
+conda env create -f environment.yml
+conda activate sentinel1_decode
+```
 
 Once the [dependencies](#dependencies) are installed, simply run:
 ```bash
 cd build
 cmake ..
-cmake --build .
+cmake --build build
+# If on Windows:
+# cmake --build build --config Release
 ```
 
-### Dependencies
-
-My goal is to not involve too many external dependancies; however, some are necessary. *[OpenMP](https://curc.readthedocs.io/en/latest/programming/OpenMP-C.html)* and *[FFTW3](https://www.fftw.org/)* are required. The image writing is done via *[libtiff](http://www.libtiff.org/)*.
+Note the the binarys will be located in `./build/bin/` (or `./build/bin/Release` on Windows).

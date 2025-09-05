@@ -56,6 +56,10 @@ set(SRC_COMMON
     src/doppler.cpp
 )
 
+if(WIN32)
+    add_library(m INTERFACE)
+endif()
+
 # Function to define executables cleanly
 function(add_s1_executable name main_file extra_srcs)
     add_executable(${name})
