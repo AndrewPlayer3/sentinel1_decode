@@ -46,14 +46,6 @@ CF_VEC_2D azimuth_time_ufr(
     const int&    swath_number
 );
 
-void rcmc(
-    CF_VEC_1D& signal,
-    const F_VEC_1D& effective_velocities,
-    const F_VEC_1D& ranges,
-    const F_VEC_1D& az_freqs,
-    const double& range_sample_rate
-);
-
 F_VEC_1D get_effective_velocities(
     const F_VEC_1D& position,
     const double& velocity,

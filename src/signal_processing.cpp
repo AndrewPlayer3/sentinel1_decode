@@ -912,13 +912,11 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
 
     int rows = signals.size();
     int cols = signals[0].size();
-
     int num_ffts = std::floor( (double(cols) / double(fft_size)) * (double(fft_size) / double(stride)) );
 
     std::cout << "ECCM will require at most " << num_ffts << " short-time ffts." << std::endl;
-
-    std::cout << "Run ECCM Threshold: " << detection_threshold << std::endl;
-    std::cout << "ECCM Masking Value: " << mitigation_threshold << std::endl;
+    std::cout << "ECCM Detection Threshold: " << detection_threshold << std::endl;
+    std::cout << "ECCM Mitigation Threshold: " << mitigation_threshold << std::endl;
 
     for (CF_VEC_1D& signal : signals)
     {

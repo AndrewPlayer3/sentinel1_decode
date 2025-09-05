@@ -521,12 +521,12 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     F_VEC_1D slant_ranges = packets[0].get_slant_ranges();
 
     std::cout << "Slant Ranges: "
-              << slant_ranges[0] << ", " << ", " << slant_ranges.back() << std::endl;
+              << slant_ranges[0] << ", " << slant_ranges.back() << std::endl;
 
     F_VEC_1D v_0 = _state_vectors.velocities[0];
 
     double v_norm = std::sqrt(std::pow(v_0[0], 2.0) + std::pow(v_0[1], 2.0) + std::pow(v_0[2], 2.0));
-    double range_sample_rate = double(num_samples) / (1e-6 * first_packet.get_swl()); // packets[0].get_range_sample_rate();
+    double range_sample_rate = double(num_samples) / (1e-6 * first_packet.get_swl());
     double range_resolution = SPEED_OF_LIGHT / (2 * range_sample_rate);
     double pulse_length = packets[0].get_pulse_length() * 1e-6;
     double pri = packets[0].get_pri() * 1e-6;

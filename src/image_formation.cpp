@@ -372,39 +372,6 @@ CF_VEC_2D azimuth_time_ufr(
 }
 
 
-void rcmc(
-    CF_VEC_1D& signal,
-    const F_VEC_1D& effective_velocities,
-    const F_VEC_1D& ranges,
-    const F_VEC_1D& az_freqs,
-    const double& range_sample_rate
-) {
-    int samples = signal.size();
-
-    CF_VEC_1D out_signal = signal;
-
-    double range_spacing = SPEED_OF_LIGHT / (2 * range_sample_rate);
-
-    for (int j = 0; j < samples; j++)
-    {
-        // double range_shift = std::pow(WAVELENGTH, 2.0) * ranges[j] * std::pow(az_freqs[j], 2.0)
-        //          / (8 * std::pow(effective_velocities[j], 2.0));
-
-        double rcmc_factor = sqrt(
-            1 - (std::pow(WAVELENGTH, 2.0) * std::pow(az_freqs[j], 2.0)) / (4 * std::pow(effective_velocities[j], 2.0))
-        );
-
-        double range_shift = (ranges[j] / rcmc_factor) - ranges[j];
-
-        double range_shift_pixels = range_shift / range_spacing;
-        double range_shift_index = static_cast<double>(j) + range_shift_pixels;
-
-        out_signal[j] = sinc_interpolate(signal, range_shift_index, 16);
-    }
-    signal = out_signal;
-}
-
-
 F_VEC_1D get_effective_velocities(
     const F_VEC_1D& position,
     const double& velocity,
