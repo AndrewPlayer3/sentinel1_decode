@@ -50,6 +50,12 @@ double polyval(
     const double& x
 );
 
+std::complex<double> sinc_interpolate(
+    const CF_VEC_1D& signal,
+    double t,           // fractional index to interpolate (can be non-integer)
+    int L = 8          // half-width of sinc kernel (total support = 2L + 1)
+);
+
 std::vector<float> flatten(
     const std::vector<std::vector<float>>& values
 );
@@ -142,6 +148,17 @@ CF_VEC_2D compute_2d_dft(
     const bool& inverse,
     int fft_rows,
     int fft_cols
+);
+
+CF_VEC_2D spectrogram(CF_VEC_1D& signal, const int& fft_size, const int& stride);
+
+void eccm(
+    CF_VEC_2D& signals,
+    const int& fft_size,
+    const int& stride,
+    const double& detection_threshold,
+    const double& mitigation_threshold,
+    const char& rx_pol = 'V'
 );
 
 F_VEC_1D scale(

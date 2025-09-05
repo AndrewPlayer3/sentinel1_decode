@@ -26,6 +26,7 @@ Check out these other projects which were very helpful:</br>
 ### Image Formation and Saving Images
 ```bash
 $ bin/s1_write --help
+spectrogram [swath] [burst_num] [azimuth_line] [in_path] [out_path]
 burst [swath] [burst_num] [in_path] [out_path]
 swath [swath] [in_path] [out_path]
 range_compressed_burst [swath] [burst_num] [in_path] [out_path]
@@ -34,7 +35,10 @@ range_doppler_burst [swath] [burst_num] [in_path] [out_path]
 range_doppler_swath [swath] [in_path] [out_path]
 azimuth_compressed_burst [swath] [burst_num] [in_path] [out_path]
 azimuth_compressed_swath [swath] [in_path] [out_path]
-save_swath_as_cf32 [swath] [in_path] [out_path]
+azimuth_compressed_burst_eccm [swath] [burst_num] [detection_threshold] [mitigation_threshold] [in_path] [out_path]
+azimuth_compressed_swath_eccm [swath] [detection_threshold] [mitigation_threshold] [in_path] [out_path]
+save_burst_as_cf32 [swath] [processing_level] [in_path] [out_path]
+save_swath_as_cf32 [swath] [processing_level] [in_path] [out_path]
 Scaling Options: [--norm_log|--norm|--mag|--real|--imag]
 ```
 #### Image Formation Examples
@@ -55,10 +59,21 @@ $ bin/s1_write azimuth_compressed_swath IW2 data/points/point.dat AZ_IW2.tif --n
 ```
 ![swath_az_write_example](imgs/points_iw_mode.png)
 
+Some basic heuristic RFI mitigation is also available. I'm currently working on a better version that should work without as much guess work. The values in the commands below probably good starting points.
+
 ```bash
-$ bin/s1_write azimuth_compressed_swath S1 data/sm_sample/sample.dat AZ_S1.tif --norm
+$ bin/s1_write azimuth_compressed_swath_eccm IW2 13000 100 data/korea_patriot/korea_patriot_vh.dat data/korea_patriot_vh_iw2_eccm.tif --norm
 ```
-![az_sm_write_example](imgs/az_sm.png)
+Without ECCM               |  With ECCM
+:-------------------------:|:-------------------------:
+![swath_az_write_example](imgs/korea_interference.png)   |  ![swath_az_write_example](imgs/korea_mitigated.png)
+
+```bash
+$ bin/s1_write azimuth_compressed_swath_eccm IW2 13000 100 data/korea_patriot/korea_patriot_vh.dat data/korea_patriot_vh_iw2_eccm.tif --norm
+```
+Without ECCM               |  With ECCM
+:-------------------------:|:-------------------------:
+![swath_az_write_example](imgs/rostov_interference.png)   |  ![swath_az_write_example](imgs/rostov_mitigated.png)
 
 #### Packet Information
 

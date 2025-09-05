@@ -171,7 +171,6 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
         }
     }
 
-    // Construct the normal equations matrix and RHS
     F_VEC_2D A = {
         {Sx[0], Sx[1], Sx[2], Sx[3]},
         {Sx[1], Sx[2], Sx[3], Sx[4]},
@@ -180,9 +179,7 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
     };
     F_VEC_1D b = {Sy[0], Sy[1], Sy[2], Sy[3]};
 
-    // Solve Ax = b using Gaussian elimination
     for (int i = 0; i < 4; ++i) {
-        // Pivot
         for (int k = i + 1; k < 4; ++k) {
             if (std::abs(A[k][i]) > std::abs(A[i][i])) {
                 for (int j = 0; j < 4; ++j) std::swap(A[i][j], A[k][j]);
@@ -190,7 +187,6 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
             }
         }
 
-        // Eliminate below
         for (int k = i + 1; k < 4; ++k) {
             double factor = A[k][i] / A[i][i];
             for (int j = i; j < 4; ++j)
@@ -199,7 +195,6 @@ F_VEC_1D polyfit(const F_VEC_1D& x, const F_VEC_1D& y)
         }
     }
 
-    // Back substitution
     F_VEC_1D coeffs(4);
     for (int i = 3; i >= 0; --i) {
         coeffs[i] = b[i];
@@ -218,6 +213,38 @@ double polyval(const F_VEC_1D& coeffs, const double& x)
     double result = 0.0;
     for (int i = coeffs.size() - 1; i >= 0; --i)
         result = result * x + coeffs[i];
+    return result;
+}
+
+
+double sinc(double x) {
+    return x == 0.0 ? 1.0 : std::sin(PI * x) / (PI * x);
+}
+
+
+double hann_window(double x, int L) {
+    return 0.5 * (1 + std::cos(PI * x / L));
+}
+
+
+std::complex<double> sinc_interpolate(
+    const CF_VEC_1D& signal,
+    double t,
+    int L
+) {
+    int n = static_cast<int>(std::floor(t));
+    std::complex<double> result = 0.0;
+
+    for (int k = -L; k <= L; ++k) {
+        int idx = n + k;
+        if (idx < 0 || idx >= static_cast<int>(signal.size()))
+            continue;
+
+        double x = t - idx;
+        double w = hann_window(x, L);
+        result += signal[idx] * sinc(x) * w;
+    }
+
     return result;
 }
 
@@ -244,7 +271,7 @@ void apply_hanning_window_in_place(CF_VEC_1D& complex_samples)
         window.begin(), window.end(), 
             complex_samples.begin(), complex_samples.begin(),
                 [num_samples] (double& w, std::complex<double>& n) { 
-                    return sin(PI * w / num_samples) * sin(PI * w / num_samples) * n;
+                    return 0.5 * (1.0 - std::cos(2.0 * PI * w / (double(num_samples) - 1))) * n;
                 }
     );
 }
@@ -606,7 +633,6 @@ void _compute_axis_dft(
     int min_fft_size  = 8;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
-    std::cout << "Initializing Plans and Excecuting Axis FFTs" << std::endl;
     std::vector<fftw_plan> plans(signal_rows);
 
     std::transform(
@@ -638,7 +664,6 @@ void _compute_axis_dft(
 
     if (inverse)
     {
-        std::cout << "Normalizing Inverse Axis FFT Output" << std::endl;
         #pragma omp parallel for num_threads(4)
         for (int i = 0; i < signal_rows; i++)
         {
@@ -758,6 +783,220 @@ CF_VEC_2D compute_2d_dft(
         }
     }
     return signal_fft;
+}
+
+
+CF_VEC_2D spectrogram(CF_VEC_1D& signal, const int& fft_size, const int& stride)
+{
+    std::cout << "Calculating Spectrogram" << std::endl;
+
+    int samples = signal.size();
+    int num_ffts = std::floor( (double(samples) / double(fft_size)) * (double(fft_size) / double(stride)) );
+
+    CF_VEC_1D hann(fft_size);
+
+    std::iota(hann.begin(), hann.end(), 0.0);
+
+    std::transform(
+        hann.begin(), hann.end(), 
+            hann.begin(),
+                [fft_size] (std::complex<double>& w) { 
+                    return 0.5 * (1.0 - std::cos(2.0 * PI * w / (double(fft_size) - 1)));
+                }
+    );
+
+    CF_VEC_2D specgram(num_ffts, CF_VEC_1D(fft_size));
+
+    for (int i = 0; i < num_ffts; i++)
+    {
+        int start = i * stride;
+        int end = start + fft_size;
+
+        if (end > samples)
+        {
+            end = samples - 1;
+        }
+
+        CF_VEC_1D window(signal.begin() + start, signal.begin() + end);
+
+        window.resize(fft_size);
+
+        for (int j = 0; j < fft_size; j++)
+        {
+            window[j] *= hann[j];
+        }
+
+        specgram[i] = window;
+    }
+
+    compute_axis_dft_in_place(specgram, 0, 1, false);
+
+    fftshift_in_place(specgram);
+
+    specgram = transpose(specgram);
+
+    return specgram;
+}
+
+
+std::complex<double> calculate_mean(const CF_VEC_1D& arr)
+{
+    CF_VEC_1D arr_abs = arr;
+
+    std::for_each(
+        arr_abs.begin(), arr_abs.end(),
+            [] (std::complex<double>& n) {
+                n = std::abs(n);
+            }
+    );
+
+    return (1.0 / double(arr_abs.size())) * std::accumulate(arr_abs.begin(), arr_abs.end(), std::complex<double>(0.0, 0.0));
+}
+
+
+double calculate_mean(const F_VEC_1D& arr)
+{
+    F_VEC_1D arr_abs = arr;
+
+    std::for_each(
+        arr_abs.begin(), arr_abs.end(),
+            [] (double& n) {
+                n = std::abs(n);
+            }
+    );
+
+    return (1.0 / double(arr_abs.size())) * std::accumulate(arr_abs.begin(), arr_abs.end(), 0.0);
+}
+
+
+double calculate_max(const CF_VEC_1D& arr)
+{
+    double max = 0.0;
+
+    for (int i = 0; i < arr.size(); i++)
+    {
+        double n = std::abs(arr[i]);
+        max = n > max ? n : max;
+    }
+
+    return max;
+}
+
+
+double calculate_standard_deviation(const CF_VEC_1D& arr)
+{
+    int num_samples = arr.size();
+
+    std::complex<double> mean = calculate_mean(arr);
+
+    F_VEC_1D mean_removed(num_samples);
+
+    std::transform(
+        arr.begin(), arr.end(),
+            mean_removed.begin(),
+                [mean] (std::complex<double> x) {
+                    return std::pow(std::abs(x - mean), 2.0);
+                }
+    );
+
+    double variance = std::accumulate(mean_removed.begin(), mean_removed.end(), 0.0);
+
+    return std::sqrt(variance / num_samples);
+}
+
+
+/* An attempt at very basic heuristic approach to RFI mitigation */
+void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const double& detection_threshold, const double& mitigation_threshold, const char& rx_pol)
+{
+    std::cout << "Performing ECCM Processing" << std::endl;
+
+    int rows = signals.size();
+    int cols = signals[0].size();
+    int num_ffts = std::floor( (double(cols) / double(fft_size)) * (double(fft_size) / double(stride)) );
+
+    std::cout << "ECCM will require at most " << num_ffts << " short-time ffts." << std::endl;
+    std::cout << "ECCM Detection Threshold: " << detection_threshold << std::endl;
+    std::cout << "ECCM Mitigation Threshold: " << mitigation_threshold << std::endl;
+
+    for (CF_VEC_1D& signal : signals)
+    {
+        CF_VEC_2D specgram(num_ffts, CF_VEC_1D(fft_size));
+
+        double max_fft_amp = calculate_max(compute_1d_dft(signal));
+
+        if (max_fft_amp < detection_threshold)
+        {
+            continue;
+        }
+
+        std::complex<double> grad;
+
+        for (int i = 0; i < num_ffts; i++)
+        {
+            int start = i * stride;
+            int end = start + fft_size;
+
+            if (end > cols)
+            {
+                end = cols - 1;
+            }
+
+            CF_VEC_1D window(signal.begin() + start, signal.begin() + end);
+
+            window.resize(fft_size);
+
+            specgram[i] = window;
+        }
+
+        compute_axis_dft_in_place(specgram, 0, 1, false);
+
+        CF_VEC_1D grads(fft_size * num_ffts);
+
+        for (int i = 0; i < num_ffts; i++)
+        {
+            for (int j = 0; j < fft_size; j++)
+            {
+                if (j != 0 and j != fft_size - 1) 
+                    grad = (specgram[i][j + 1] - specgram[i][j - 1]) / 2.0;
+                else if (j == 0)
+                    grad = specgram[i][1] - specgram[i][0];
+                else
+                    grad = specgram[i][j] - specgram[i][j - 1];
+
+                grads[i*fft_size + j] = std::abs(grad);
+            }
+        }
+
+        for (int i = 0; i < num_ffts; i++)
+        {
+            for (int j = 0; j < fft_size; j++)
+            {
+                if (std::abs(grads[i*fft_size + j]) < mitigation_threshold)
+                    specgram[i][j] *= 1.0;
+                else
+                    specgram[i][j] *= 0.0;
+            }
+        }
+
+        compute_axis_dft_in_place(specgram, 0, 1, true);
+
+        for (int i = 0; i < num_ffts; i++)
+        {
+            int start = i * stride;
+            int end = start + fft_size;
+
+            if (end > cols)
+            {
+                end = cols - 1;
+            }
+
+            for (int j = start; j < end; j++)
+            {
+                if (j < cols)
+                    signal[j] = specgram[i][j-start];
+            }
+        }
+    }
 }
 
 
