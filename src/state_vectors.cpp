@@ -157,7 +157,6 @@ STATE_VECTOR STATE_VECTORS::interpolate(const double& time)
 {    
     STATE_VECTOR state_vector;
 
-    int num_times = times.size();
     int a_index, b_index;
     double a, b, t;
 

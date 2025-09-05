@@ -162,7 +162,7 @@ public:
         _user_data_length = primary_header["packet_data_length"] + 1 - SECONDARY_HEADER_SIZE;
         _num_baq_blocks   = ceil((2.0 * double(_num_quads)) / 256.0);
 
-        if (_user_data_length != _raw_user_data.size()) 
+        if (_user_data_length != int(_raw_user_data.size())) 
         {
             std::cout << _user_data_length << " != " << _raw_user_data.size() << std::endl;
             throw std::runtime_error("The lenght of the user data field is invalid.");

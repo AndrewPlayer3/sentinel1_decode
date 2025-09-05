@@ -138,7 +138,7 @@ CF_VEC_2D compute_axis_dft(
 
 void compute_axis_dft_in_place(
     CF_VEC_2D&  signals,
-          int   fft_size,
+    int fft_size,
     const int&  axis,
     const bool& inverse
 );
@@ -146,8 +146,8 @@ void compute_axis_dft_in_place(
 CF_VEC_2D compute_2d_dft(
     const CF_VEC_2D& complex_samples,
     const bool& inverse,
-    int fft_rows,
-    int fft_cols
+    unsigned int fft_rows,
+    unsigned int fft_cols
 );
 
 CF_VEC_2D spectrogram(CF_VEC_1D& signal, const int& fft_size, const int& stride);

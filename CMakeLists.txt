@@ -10,7 +10,7 @@ file(MAKE_DIRECTORY ${BIN_DIR})
 
 # Compiler flags
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
-    add_compile_options(-O3)
+    add_compile_options(-O3 -Wall)
 endif()
 
 # Add Homebrew and common prefixes

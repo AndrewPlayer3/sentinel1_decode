@@ -60,8 +60,6 @@ F_VEC_1D linear_resample(const F_VEC_1D& arr, const int& num_output_samples)
             index += 1;
         }
     }
-
-    out[-1] = out[-1];
  
     return out;
 }
@@ -99,8 +97,6 @@ CF_VEC_1D linear_resample(const CF_VEC_1D& arr, const int& num_output_samples)
             index += 1;
         }
     }
-
-    out[-1] = out[-1];
  
     return out;
 }
@@ -629,8 +625,6 @@ void _compute_axis_dft(
     const bool& inverse
 ) {
     int signal_rows   = signals.size();
-    int signal_cols   = signals[0].size();
-    int min_fft_size  = 8;
     int fft_direction = inverse ? FFTW_BACKWARD : FFTW_FORWARD;
 
     std::vector<fftw_plan> plans(signal_rows);
@@ -725,8 +719,8 @@ void fftshift_in_place(CF_VEC_2D& signals)
 CF_VEC_2D compute_2d_dft(
     const CF_VEC_2D& signal,
     const bool& inverse = false,
-    int fft_rows = 0,
-    int fft_cols = 0
+    unsigned int fft_rows = 0,
+    unsigned int fft_cols = 0
 ) {
     std::cout << "Initializing 1D Complex Vector for FFTW" << std::endl;
     if (fft_rows == 0) fft_rows = signal.size();
@@ -742,9 +736,9 @@ CF_VEC_2D compute_2d_dft(
 
     CF_VEC_1D signal_fftw(fft_rows * fft_cols);
 
-    for (int i = 0; i < fft_rows; i++)
+    for (unsigned int i = 0; i < fft_rows; i++)
     {
-        for (int j = 0; j < fft_cols; j++)
+        for (unsigned int j = 0; j < fft_cols; j++)
         {
             signal_fftw[i*fft_cols+j] = signal[i][j];
         }
@@ -775,9 +769,9 @@ CF_VEC_2D compute_2d_dft(
 
     CF_VEC_2D signal_fft(fft_rows, CF_VEC_1D(fft_cols));
 
-    for (int i = 0; i < fft_rows; i++)
+    for (unsigned int i = 0; i < fft_rows; i++)
     {
-        for (int j = 0; j < fft_cols; j++)
+        for (unsigned int j = 0; j < fft_cols; j++)
         {
             signal_fft[i][j] = signal_fftw[i*fft_cols+j] * norm_factor;
         }
@@ -873,7 +867,7 @@ double calculate_max(const CF_VEC_1D& arr)
 {
     double max = 0.0;
 
-    for (int i = 0; i < arr.size(); i++)
+    for (unsigned int i = 0; i < arr.size(); i++)
     {
         double n = std::abs(arr[i]);
         max = n > max ? n : max;
@@ -910,7 +904,6 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
 {
     std::cout << "Performing ECCM Processing" << std::endl;
 
-    int rows = signals.size();
     int cols = signals[0].size();
     int num_ffts = std::floor( (double(cols) / double(fft_size)) * (double(fft_size) / double(stride)) );
 
@@ -1011,7 +1004,7 @@ F_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
     {
         bool real = scaling_mode == "real";
         
-        for (int i = 0; i < signal.size(); i++)
+        for (unsigned int i = 0; i < signal.size(); i++)
         {
             samples[i] = real ? signal[i].real() : signal[i].imag();
         }
@@ -1043,7 +1036,6 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
     else if (scaling_mode == "real" || scaling_mode == "imag")
     {
         bool real = scaling_mode == "real";
-        int  size = signal.size() * signal[0].size();
         
         for (int i = 0; i < rows; i++)
         {

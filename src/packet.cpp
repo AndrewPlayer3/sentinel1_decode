@@ -285,9 +285,6 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
 {
     if (num_ranges <= 0) num_ranges = 4 * _num_quads;
 
-    double txpsf = get_start_frequency();
-    double txprr = get_tx_ramp_rate();
-    double txpl  = get_pulse_length() * 1e-6;
     double swl   = get_swl() * 1e-6;
 
     double start_time = get_swst() * 1e-6;
@@ -305,14 +302,10 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
 }
 
 
-
 D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
 {
     if (num_ranges <= 0) num_ranges = 4 * _num_quads;
 
-    double txpsf = get_start_frequency();
-    double txprr = get_tx_ramp_rate();
-    double txpl  = get_pulse_length() * 1e-6;
     double swl   = get_swl() * 1e-6;
 
     double start_time = get_swst() * 1e-6;
@@ -495,7 +488,6 @@ CF_VEC_1D L0Packet::_get_signal_types_a_and_b(
 
 void L0Packet::_set_quad_types_a_and_b(H_CODE& component, int& bit_index)
 {
-    int num_bits = 0;
     int sign_bits = 1;
     int m_code_bits = 9;
 
@@ -605,7 +597,6 @@ H_CODE L0Packet::_get_h_code_type_c(int& bit_index, const bool& is_last_block)
 
         for (int i = 0; i < num_codes; i++)
         {
-            int start_bit_index = bit_index;
             int sign   = read_n_bits(_raw_user_data, bit_index, 1);
             bit_index += 1;
 
@@ -624,7 +615,6 @@ void L0Packet::_set_quad_type_c(QUAD& component, int& bit_index)
     u_int16_t threshold;
 
     int threshold_bits = 8;       
-    int s_code_bits    = _baq_mode;
 
     for (int i = 0; i < _num_baq_blocks; i++)
     {
@@ -743,7 +733,6 @@ H_CODE L0Packet::_get_h_code_type_d(
 
     for (int i = 0; i < num_codes; i++)
     {
-        int start_bit_index = bit_index;
         int sign   = read_n_bits(_raw_user_data, bit_index, 1);
 
         bit_index += 1;
@@ -887,10 +876,10 @@ PACKET_VEC_1D L0Packet::get_packets(std::ifstream& data, const int& num_packets)
             else break;
             index += 1;
         }
-        catch(std::runtime_error)
+        catch(const std::runtime_error& e)
         {
             std::cout << "Caught a runtime error while decoding packet #"
-                 << index << ". Skipping..." << std::endl;
+                 << index << " - " << e.what() << std::endl;
             continue;
         }
     }
@@ -923,10 +912,10 @@ PACKET_VEC_1D L0Packet::get_packets_in_swath(std::ifstream& data, const std::str
             if (packet.get_swath() == swath) packets.push_back(packet);
             index += 1;
         }
-        catch(std::runtime_error)
+        catch(const std::runtime_error& e)
         {
-            std::cout << "Caught a runtime error while decoding packet #" 
-                 << index << ". Skipping..." << std::endl;
+            std::cout << "Caught a runtime error while decoding packet #"
+                 << index << " - " << e.what() << std::endl;
             continue;
         }
     }

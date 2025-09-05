@@ -127,11 +127,10 @@ F_VEC_1D annotation_time_decoder(const std::string& filename)
     return annotation_time_decoder(data);
 }
 
+
 /* Returns a vector of packet slow times */
 F_VEC_1D annotation_time_decoder(std::ifstream& data)
 {
-    int record_size = 26;
-
     // Seconds from January 6th 1980 and January 1st 2000. (MJD2000 Epoch and GPS Epoch)
     double epoch_difference = 7300 * 86400;
 
