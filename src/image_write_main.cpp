@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
         "Scaling Options: [--norm_log|--norm|--mag|--real|--imag]"
     };
 
-    if(argv[1] == __null) 
+    if(argv[1] == NULL) 
     {
         std::cout << "Please enter a command:" << std::endl;
         print_help(help_strings);
@@ -374,7 +374,7 @@ int main(int argc, char* argv[])
     else if (command == "azimuth_compressed_swath_eccm") azimuth_compressed_swath_eccm_command(&(argv[0]), options);
     else if (command == "save_burst_as_cf32")            save_burst_as_cf32_command(&(argv[0]), options);
     else if (command == "save_swath_as_cf32")            save_swath_as_cf32_command(&(argv[0]), options);
-    else if (command == "help" or command == "--help" or command == "-h")
+    else if (command == "help" || command == "--help" || command == "-h")
     {
         print_help(help_strings);
     }

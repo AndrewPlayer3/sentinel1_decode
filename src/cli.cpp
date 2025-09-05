@@ -34,7 +34,7 @@ void validate_args(
     for (int i = start_index; i < end_index; i++)
     {
         int index = i - start_index;
-        if (args[i] == __null)
+        if (args[i] == NULL)
         {
             std::cout << command  << " is missing the following argument: "
                  << command_args[index] << std::endl;

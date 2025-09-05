@@ -53,7 +53,7 @@ F_VEC_1D linear_resample(const F_VEC_1D& arr, const int& num_output_samples)
         double y0 = arr[i];
         double y1 = arr[i+1];
 
-        while (x < x1 and index < num_output_samples)
+        while (x < x1 && index < num_output_samples)
         {
             out[index] = y0 + ((x - x0) * (y1 - y0) / (x1 - x0));
             x += dx_out;
@@ -92,7 +92,7 @@ CF_VEC_1D linear_resample(const CF_VEC_1D& arr, const int& num_output_samples)
         std::complex<double> y0 = arr[i];
         std::complex<double> y1 = arr[i+1];
 
-        while (x < x1 and index < num_output_samples)
+        while (x < x1 && index < num_output_samples)
         {
             out[index] = y0 + ((x - x0) * (y1 - y0) / (x1 - x0));
             x += dx_out;
@@ -576,7 +576,7 @@ void compute_axis_dft_in_place(
     const int&  axis     = 0,
     const bool& inverse  = false
 ) {
-    if (axis != 0 and axis != 1) 
+    if (axis != 0 && axis != 1) 
     {
         throw std::invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
     }
@@ -603,7 +603,7 @@ CF_VEC_2D compute_axis_dft(
     const int&  axis     = 0,
     const bool& inverse  = false
 ) {
-    if (axis != 0 and axis != 1) 
+    if (axis != 0 && axis != 1) 
     {
         throw std::invalid_argument("FFT axis must be 0 (rows) or 1 (cols).");
     }
@@ -732,10 +732,10 @@ CF_VEC_2D compute_2d_dft(
     if (fft_rows == 0) fft_rows = signal.size();
     if (fft_cols == 0) fft_cols = signal[0].size();
 
-    bool rows_out_of_lims = fft_rows < 0 or fft_rows > signal.size();
-    bool cols_out_of_lims = fft_cols < 0 or fft_cols > signal[0].size();
+    bool rows_out_of_lims = fft_rows < 0 || fft_rows > signal.size();
+    bool cols_out_of_lims = fft_cols < 0 || fft_cols > signal[0].size();
 
-    if (rows_out_of_lims or cols_out_of_lims)
+    if (rows_out_of_lims || cols_out_of_lims)
     {
         throw std::invalid_argument("Invalid FFT size for signal.");
     }
@@ -956,7 +956,7 @@ void eccm(CF_VEC_2D& signals, const int& fft_size, const int& stride, const doub
         {
             for (int j = 0; j < fft_size; j++)
             {
-                if (j != 0 and j != fft_size - 1) 
+                if (j != 0 && j != fft_size - 1) 
                     grad = (specgram[i][j + 1] - specgram[i][j - 1]) / 2.0;
                 else if (j == 0)
                     grad = specgram[i][1] - specgram[i][0];
@@ -1007,7 +1007,7 @@ F_VEC_1D scale(const CF_VEC_1D& signal, const std::string& scaling_mode)
     if      (scaling_mode == "norm_log") samples = norm_1d(signal, true);
     else if (scaling_mode == "norm"    ) samples = norm_1d(signal, false);
     else if (scaling_mode == "mag"     ) samples = magnitude_1d(signal);      
-    else if (scaling_mode == "real" or scaling_mode == "imag")
+    else if (scaling_mode == "real" || scaling_mode == "imag")
     {
         bool real = scaling_mode == "real";
         
@@ -1040,7 +1040,7 @@ std::vector<float> scale(const CF_VEC_2D& signal, const std::string& scaling_mod
     if      (scaling_mode == "norm_log") samples = flatten(norm_2d(signal, true));
     else if (scaling_mode == "norm"    ) samples = flatten(norm_2d(signal, false));
     else if (scaling_mode == "mag"     ) samples = flatten(magnitude_2d(signal));    
-    else if (scaling_mode == "real" or scaling_mode == "imag")
+    else if (scaling_mode == "real" || scaling_mode == "imag")
     {
         bool real = scaling_mode == "real";
         int  size = signal.size() * signal[0].size();

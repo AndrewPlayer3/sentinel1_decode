@@ -52,7 +52,7 @@ void write_spectrogram(
 
     CF_VEC_2D burst = s1.get_burst(swath_name, burst_num);
 
-    if (azimuth_line < 0 or azimuth_line > burst.size())
+    if (azimuth_line < 0 || azimuth_line > burst.size())
     {
         std::cout << "Azimuth Line " << azimuth_line 
                   << " is outside of the valid range of 0 to " << burst.size() << std::endl;

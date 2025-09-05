@@ -61,7 +61,7 @@ std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets)
         int size = 2 * packet.get_num_quads();
         double t = packet.get_slant_range_times(100)[0];
 
-        if (size != previous_size or i == packets.size() - 1)
+        if (size != previous_size || i == packets.size() - 1)
         {
             if (size > max_size) max_size = size;
             previous_size = size;

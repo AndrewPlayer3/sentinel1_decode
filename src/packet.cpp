@@ -877,7 +877,7 @@ PACKET_VEC_1D L0Packet::get_packets(std::ifstream& data, const int& num_packets)
 
     bool get_all_packets = num_packets == 0;
 
-    while (!data.eof() and (index < num_packets or get_all_packets))
+    while (!data.eof() && (index < num_packets || get_all_packets))
     {
         try
         {
@@ -967,7 +967,7 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::st
 
             if (i == 0) previous_az = az;
 
-            if (az != previous_az and az != previous_az + 1)
+            if (az != previous_az && az != previous_az + 1)
             {
                 bursts.push_back(burst_packets);
                 burst_packets = PACKET_VEC_1D();
@@ -999,7 +999,7 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std:
         L0Packet packet = packets[i];
         bool type_check = get_cal_packets ? packet.get_data_format() != 'D' : packet.get_data_format() == 'D';
 
-        if (type_check and packet.get_swath() == swath)
+        if (type_check && packet.get_swath() == swath)
         {
             int az = packet.secondary_header("azimuth_beam_address");
             int pri_count = packet.secondary_header("pri_count");
@@ -1008,7 +1008,7 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std:
                 previous_az = az;
                 previous_pri_count = pri_count;
             }
-            if (az < previous_az or pri_count > previous_pri_count + 1)
+            if (az < previous_az || pri_count > previous_pri_count + 1)
             {
                 if (burst_packets.size() < 1000)
                 {

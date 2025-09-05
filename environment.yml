@@ -2,9 +2,11 @@ name: sentinel1_decode
 channels:
   - conda-forge
 dependencies:
+  - make
   - cmake
   - ninja
   - openmp
+  - gcc
   - cxx-compiler
   - fftw
   - libtiff

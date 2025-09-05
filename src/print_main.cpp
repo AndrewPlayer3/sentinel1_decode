@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
         "state_vectors [path]"
     };
 
-    if(argv[1] == __null) 
+    if(argv[1] == NULL) 
     {
         std::cout << "Please enter a command:" << std::endl;
         print_help(help_strings);
@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
         print_state_vectors(std::string(argv[2]));
     }
 
-    else if (command == "help" or command  == "--help" or command == "-h")
+    else if (command == "help" || command  == "--help" || command == "-h")
     {
         print_help(help_strings);
     }
