@@ -31,7 +31,7 @@ SUBCOMM_DICTS build_data_word_dicts(PACKET_VEC_1D& packets)
     {
         L0Packet packet = packets[i];
         sc_data_word_index = packet.secondary_header("sc_data_word_index");
-        if (sc_data_word_index == 1 and i != start_index)
+        if (sc_data_word_index == 1 && i != start_index)
         {
             SUBCOMM_DICT_DOUBLE processed_subcomm_dict;
             for(std::pair<std::string, u_int64_t> key_val : raw_subcomm_dict)

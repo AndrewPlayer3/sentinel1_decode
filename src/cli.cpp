@@ -9,7 +9,7 @@ std::unordered_map<std::string, bool> parse_options(
 
     int index = arg_index;
 
-    while(args[index] != __null)
+    while(args[index] != NULL)
     {
         std::string users_option = std::string(args[index]);
 
