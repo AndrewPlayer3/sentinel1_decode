@@ -513,9 +513,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     int num_packets = packets.size();
     int num_samples = 2 * packets[0].get_num_quads();
 
-    std::cout << num_packets << std::endl;
-    std::cout << num_samples << std::endl;
-
     CF_VEC_2D radar_data;
 
     if (tops_mode) radar_data = _range_compress(packets, true, false);
@@ -523,9 +520,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     F_VEC_1D slant_ranges = packets[0].get_slant_ranges();
 
-    std::cout << "Start, Mid, and End Slant Ranges: "
-              << slant_ranges[0] << ", " << slant_ranges[slant_ranges.size() / 2] 
-              << ", " << slant_ranges.back() << std::endl;
+    std::cout << "Slant Ranges: "
+              << slant_ranges[0] << ", " << ", " << slant_ranges.back() << std::endl;
 
     F_VEC_1D v_0 = _state_vectors.velocities[0];
 
@@ -539,8 +535,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double doppler_bandwidth = prf * 0.4;
     double t0 = first_packet.get_time();
     double time_delta = burst_length_seconds / prf;
-    double dc_rate;
     double range_dec_sample_rate = first_packet.get_range_sample_rate();
+    double dc_rate;
 
     F_VEC_1D range_freqs = linspace(-range_dec_sample_rate / 2, range_dec_sample_rate / 2, num_samples);
     F_VEC_1D az_freqs(num_packets);
