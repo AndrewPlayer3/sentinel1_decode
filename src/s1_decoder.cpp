@@ -532,7 +532,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double pri = packets[0].get_pri() * 1e-6;
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
-    double doppler_bandwidth = prf * 0.4;
+    double doppler_bandwidth = prf * 0.5;
     double t0 = first_packet.get_time();
     double time_delta = burst_length_seconds / prf;
     double range_dec_sample_rate = first_packet.get_range_sample_rate();
