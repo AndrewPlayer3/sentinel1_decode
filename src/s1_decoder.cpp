@@ -538,10 +538,9 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double range_dec_sample_rate = first_packet.get_range_sample_rate();
     double dc_rate;
 
-    D_VEC_1D range_freqs = linspace(-range_dec_sample_rate / 2, range_dec_sample_rate / 2, num_samples);
+    D_VEC_1D range_freqs = linspace(-range_sample_rate / 2, range_sample_rate / 2, num_samples);
     D_VEC_1D az_freqs(num_packets);
     D_VEC_1D doppler_centroid(num_samples);
-
     D_VEC_2D az_fm_rate;
 
     if (tops_mode)

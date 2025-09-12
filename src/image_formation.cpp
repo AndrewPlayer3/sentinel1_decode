@@ -238,9 +238,10 @@ CF_VEC_2D azimuth_time_ufr(
 
     double ka_mean = std::abs(std::accumulate(az_fm_rate[0].begin(), az_fm_rate[0].end(), 0.0)) / num_az;
     double focused_time = burst_duration + ((bandwidth - (2 * doppler_bandwidth)) / ka_mean);
+    double n_ref = dc_estimates[num_rng / 2] / az_fm_rate[num_az / 2][num_rng / 2];
 
-    int num_pos_tiles = std::ceil((focused_time / 2) / burst_duration);
-    int num_neg_tiles = std::floor((-focused_time / 2) / burst_duration);
+    int num_pos_tiles = std::ceil((n_ref + focused_time / 2) / burst_duration);
+    int num_neg_tiles = std::floor((n_ref - focused_time / 2) / burst_duration);
     int num_tiles = num_pos_tiles - num_neg_tiles;
 
     int output_extension = swath_number == 11 ? 
@@ -262,6 +263,7 @@ CF_VEC_2D azimuth_time_ufr(
     std::cout << "Doppler Bandwidth: " << doppler_bandwidth << std::endl;
     std::cout << "Ramp Signal Bandwidth: " << bandwidth << std::endl;
     std::cout << "Focused Time: " << focused_time << std::endl;
+    std::cout << "Reference Time: " << n_ref << std::endl;
     std::cout << "Mean Azimuth FM Rate: " << ka_mean << std::endl;
     std::cout << "Number of Freq Spectral Replicas: " << num_replicas << std::endl;
     std::cout << "Number of Time Spectral Replicas: " << num_tiles << std::endl;
@@ -337,6 +339,8 @@ CF_VEC_2D azimuth_time_ufr(
 
     ufr_intermediate.clear();
     ufr_intermediate.shrink_to_fit();
+
+    az_times = linspace(n_ref-focused_time / 2, n_ref+focused_time / 2, downsample_shape);
 
     // Apply Re-ramping
     #pragma omp parallel for
