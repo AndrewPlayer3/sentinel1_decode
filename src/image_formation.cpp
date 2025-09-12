@@ -3,10 +3,7 @@
 
 CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
 {
-    int num_samples = replica_chirp.size();
-
     CF_VEC_1D reference = replica_chirp;
-
     D_VEC_1D norm = magnitude_1d(replica_chirp);
 
     double norm_size = norm.size();
@@ -55,7 +52,7 @@ std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets)
     double previous_time = packets[0].get_slant_range_times(100)[0];
     int max_size = previous_size;
 
-    for (int i = 0; i < packets.size(); i++)
+    for (unsigned int i = 0; i < packets.size(); i++)
     {
         L0Packet packet = packets[i];
         int size = 2 * packet.get_num_quads();

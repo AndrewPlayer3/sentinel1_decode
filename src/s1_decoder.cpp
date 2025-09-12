@@ -142,7 +142,6 @@ CF_VEC_2D S1_Decoder::_get_cal_swath(const std::string& swath)
 
     int num_packets = swath_packets.size();
     int num_samples = 2 * swath_packets[0][0].get_num_quads();
-    int signals_index = 0;
 
     CF_VEC_2D signals(num_packets, CF_VEC_1D(num_samples));
 
@@ -188,7 +187,6 @@ CF_VEC_2D S1_Decoder::get_swath(const std::string& swath)
     std::cout << "Number of Bursts: "  << num_bursts  << "\n"
               << "Number of Samples: " << max_samples << std::endl;
 
-    int signals_index = 0;
     CF_VEC_2D signals(num_packets_total, CF_VEC_1D(max_samples));
 
     for (int i = 0; i < num_bursts; i++)
@@ -244,7 +242,7 @@ CF_VEC_2D S1_Decoder::_get_range_compressed_swath_sm(
 
     CF_VEC_2D range_compressed;
 
-    for (int i = 0; i < azimuth_blocks.size(); i++)
+    for (unsigned int i = 0; i < azimuth_blocks.size(); i++)
     {        
         CF_VEC_2D range_compressed_az_block = _range_compress(azimuth_blocks[i], true, range_doppler);
 
@@ -391,7 +389,7 @@ CF_VEC_2D S1_Decoder::_get_azimuth_compressed_swath_sm(const std::string& swath)
 
     CF_VEC_2D azimuth_compressed;
 
-    for (int i = 0; i < azimuth_blocks.size(); i++)
+    for (unsigned int i = 0; i < azimuth_blocks.size(); i++)
     {
         CF_VEC_2D azimuth_compressed_az_block = _azimuth_compress(azimuth_blocks[i]);
 
@@ -526,9 +524,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     D_VEC_1D v_0 = _state_vectors.velocities[0];
 
     double v_norm = std::sqrt(std::pow(v_0[0], 2.0) + std::pow(v_0[1], 2.0) + std::pow(v_0[2], 2.0));
-    double range_sample_rate = double(num_samples) / (1e-6 * first_packet.get_swl());
-    double range_resolution = SPEED_OF_LIGHT / (2 * range_sample_rate);
-    double pulse_length = packets[0].get_pulse_length() * 1e-6;
     double pri = packets[0].get_pri() * 1e-6;
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
