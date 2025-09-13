@@ -4,10 +4,6 @@
 #include <cmath>
 #include "packet.h"
 
-typedef struct std::unordered_map<std::string, u_int64_t> SUBCOMM_DICT_INT;
-typedef struct std::unordered_map<std::string, double> SUBCOMM_DICT_DOUBLE;
-typedef struct std::vector<SUBCOMM_DICT_DOUBLE> SUBCOMM_DICTS;
-
 SUBCOMM_DICTS build_data_word_dicts(PACKET_VEC_1D& packets);
 
 enum QUAT_ORDER {

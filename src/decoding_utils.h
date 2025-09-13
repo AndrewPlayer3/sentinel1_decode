@@ -47,6 +47,6 @@ std::ifstream open_file(
 );
 
 double int_to_ieee754(
-    unsigned long number,
+    u_int64_t number,
     int is_double
 );
