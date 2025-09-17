@@ -237,6 +237,11 @@ CF_VEC_2D azimuth_time_ufr(
     double focused_time = burst_duration + ((bandwidth - (2 * doppler_bandwidth)) / ka_mean);
     double n_ref = dc_estimates[num_rng / 2] / az_fm_rate[num_az / 2][num_rng / 2];
 
+    if (swath_number != 11)
+    {
+        focused_time *= 0.9;
+    }
+
     int num_pos_tiles = std::ceil((n_ref + focused_time / 2) / burst_duration);
     int num_neg_tiles = std::floor((n_ref - focused_time / 2) / burst_duration);
     int num_tiles = num_pos_tiles - num_neg_tiles;
@@ -438,7 +443,7 @@ D_VEC_1D apply_src_and_rcmc(
         double range_shift = (slant_range / rcmc_factor) - slant_range;
 
         std::complex<double> rcmc_phase =
-            std::exp(4.0 * I * PI * range_freqs[j] * range_shift / SPEED_OF_LIGHT);
+            std::exp(-4.0 * I * PI * range_freqs[j] * range_shift / SPEED_OF_LIGHT);
 
         range_line[j] *= rcmc_phase;
     }

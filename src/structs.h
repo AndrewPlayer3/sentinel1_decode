@@ -31,6 +31,7 @@ const double CENTER_FREQ = 5.405000454334350e+9;
 const double WAVELENGTH = SPEED_OF_LIGHT / CENTER_FREQ;
 const double F_REF = 37.53472224;
 const double DELTA_T_SUPPRESSED = (320 / (8 * F_REF)) * 1e-6;
+const double LATCH_TIME_OFFSET = 1.439 * 1e-6;
 
 const u_int8_t PRIMARY_HEADER_SIZE   = 6;
 const u_int8_t SECONDARY_HEADER_SIZE = 62;

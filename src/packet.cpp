@@ -282,21 +282,20 @@ double L0Packet::get_range_sample_rate()
 
 
 D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
-{
-    if (num_ranges <= 0) num_ranges = 4 * _num_quads;
+{  
+    if (num_ranges <= 0) num_ranges = 2 * _num_quads;
 
-    double swl   = get_swl() * 1e-6;
-
+    double num_rng_samples = 2 * _num_quads;
+    double range_sample_rate = get_range_sample_rate() * 1e+6;
     double start_time = get_swst() * 1e-6;
-    double pri = get_pri() *1e-6;
+    double pri = get_pri() * 1e-6;
     double rank = _secondary_header.at("rank");
 
-    double delta_t = (320 / (8 * F_REF)) * 1e-6;
+    double delay_near = rank * pri + start_time + DELTA_T_SUPPRESSED;
+    double delay_far = delay_near + (num_rng_samples / range_sample_rate);
 
-    double delay = rank * pri + start_time + delta_t;
-
-    double min_slant_range = delay * SPEED_OF_LIGHT / 2;
-    double max_slant_range = (delay + swl) * SPEED_OF_LIGHT / 2;
+    double min_slant_range = delay_near * SPEED_OF_LIGHT / 2;
+    double max_slant_range = delay_far * SPEED_OF_LIGHT / 2;
 
     return linspace(min_slant_range, max_slant_range, num_ranges);
 }
@@ -304,19 +303,42 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
 
 D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
 {
-    if (num_ranges <= 0) num_ranges = 4 * _num_quads;
-
-    double swl   = get_swl() * 1e-6;
+    if (num_ranges <= 0) num_ranges = 2 * _num_quads;
 
     double start_time = get_swst() * 1e-6;
     double pri = get_pri() *1e-6;
     double rank = _secondary_header.at("rank");
+    double range_sample_rate = get_range_sample_rate() * 1e+6;
+    double num_rng_samples = 2 * _num_quads;
 
-    double delta_t = (320 / (8 * F_REF)) * 1e-6;
+    double delay_near = rank * pri + start_time + DELTA_T_SUPPRESSED;
+    double delay_far = delay_near + (num_rng_samples / range_sample_rate);
 
-    double delay = rank * pri + start_time + delta_t;
+    return linspace(delay_near, delay_far, num_ranges);
+}
 
-    return linspace(delay, delay + swl, num_ranges);
+
+/* Instrument Timing Correction + Fine Bi-Static Correction */
+D_VEC_1D L0Packet::get_timing_corrections()
+{
+    int num_rng_samples = 2 * _num_quads;
+
+    double range_sample_rate = get_range_sample_rate() * 1e+6;
+    double swst = get_swst() * 1e-6;;
+    double rank = _secondary_header.at("rank");
+    double pri  = get_pri() * 1e-6;
+    double time_spacing = 1 / range_sample_rate;
+
+    D_VEC_1D corrections(num_rng_samples);
+
+    std::iota(corrections.begin(), corrections.end(), 0.0);
+
+    for (int i = 0; i < num_rng_samples; i++)
+    {
+        corrections[i] = ( swst + LATCH_TIME_OFFSET ) + ( ( swst + (rank * pri) - (corrections[i] * time_spacing) ) / 2 );
+    }
+
+    return corrections;
 }
 
 
@@ -938,34 +960,54 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(const std::string& filename, const
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::string& swath)
+PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::string& swath, const bool& get_cal_packets)
 {
     PACKET_VEC_1D packets = L0Packet::get_packets_in_swath(data, swath);
     int num_packets = packets.size();
 
     PACKET_VEC_2D bursts; 
     PACKET_VEC_1D burst_packets;
+    int az = 0;
+    int pri_count = 0;
     int previous_az = 0;
+    int previous_pri_count = 0;
 
     for (int i = 0; i < num_packets; i++)
     {
         L0Packet packet = packets[i];
-        if (packet.get_data_format() == 'D')
+        if (packet.get_swath() == swath)
         {
-            int az = packet.secondary_header("azimuth_beam_address");
-
-            if (i == 0) previous_az = az;
-
-            if (az != previous_az && az != previous_az + 1)
+            if (!get_cal_packets)
             {
-                bursts.push_back(burst_packets);
-                burst_packets = PACKET_VEC_1D();
-            }
-            burst_packets.push_back(packet);
+                az = packet.secondary_header("azimuth_beam_address");
+                pri_count = packet.secondary_header("pri_count");
 
-            previous_az = az;
+                if (previous_az == 0) 
+                {
+                    previous_az = az;
+                    previous_pri_count = pri_count;
+                }
+
+                if (az < previous_az || pri_count > previous_pri_count + 1)
+                {
+                    if (burst_packets.size() < 1000)
+                    {
+                        burst_packets = PACKET_VEC_1D();
+                    }
+                    else
+                    {
+                        bursts.push_back(burst_packets);
+                        burst_packets = PACKET_VEC_1D();
+                    }
+                }
+
+                previous_pri_count = pri_count;
+                previous_az = az;
+            }
+
+            burst_packets.push_back(packet);
         }
-        if (i == num_packets - 1) bursts.push_back(burst_packets);
+        if (i == num_packets - 1 && burst_packets.size() > 0) bursts.push_back(burst_packets);
     }
 
     return bursts;
@@ -979,40 +1021,45 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std:
 
     PACKET_VEC_2D bursts; 
     PACKET_VEC_1D burst_packets;
+    int az = 0;
+    int pri_count = 0;
     int previous_az = 0;
     int previous_pri_count = 0;
 
     for (int i = 0; i < num_packets; i++)
     {
-
         L0Packet packet = packets[i];
-        bool type_check = get_cal_packets ? packet.get_data_format() != 'D' : packet.get_data_format() == 'D';
-
-        if (type_check && packet.get_swath() == swath)
+        if (packet.get_swath() == swath)
         {
-            int az = packet.secondary_header("azimuth_beam_address");
-            int pri_count = packet.secondary_header("pri_count");
-            if (previous_az == 0) 
+            if (!get_cal_packets)
             {
-                previous_az = az;
-                previous_pri_count = pri_count;
-            }
-            if (az < previous_az || pri_count > previous_pri_count + 1)
-            {
-                if (burst_packets.size() < 1000)
-                {
-                    burst_packets = PACKET_VEC_1D();
-                }
-                else
-                {
-                    bursts.push_back(burst_packets);
-                    burst_packets = PACKET_VEC_1D();
-                }
-            }
-            burst_packets.push_back(packet);
+                az = packet.secondary_header("azimuth_beam_address");
+                pri_count = packet.secondary_header("pri_count");
 
-            previous_pri_count = pri_count;
-            previous_az = az;
+                if (previous_az == 0) 
+                {
+                    previous_az = az;
+                    previous_pri_count = pri_count;
+                }
+                
+                if (az < previous_az || pri_count > previous_pri_count + 1)
+                {
+                    if (burst_packets.size() < 1000)
+                    {
+                        burst_packets = PACKET_VEC_1D();
+                    }
+                    else
+                    {
+                        bursts.push_back(burst_packets);
+                        burst_packets = PACKET_VEC_1D();
+                    }
+                }
+
+                previous_pri_count = pri_count;
+                previous_az = az;
+            }
+
+            burst_packets.push_back(packet);
         }
         if (i == num_packets - 1 && burst_packets.size() > 0) bursts.push_back(burst_packets);
     }

@@ -140,7 +140,7 @@ CF_VEC_2D S1_Decoder::_get_cal_swath(const std::string& swath)
 {
     PACKET_VEC_2D swath_packets = _cal_packets[swath];
 
-    int num_packets = swath_packets.size();
+    int num_packets = swath_packets[0].size();
     int num_samples = 2 * swath_packets[0][0].get_num_quads();
 
     CF_VEC_2D signals(num_packets, CF_VEC_1D(num_samples));
@@ -148,7 +148,7 @@ CF_VEC_2D S1_Decoder::_get_cal_swath(const std::string& swath)
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
-        L0Packet packet = swath_packets[i][0];
+        L0Packet packet = swath_packets[0][i];
         CF_VEC_1D signal = packet.get_signal();
         signals[i] = signal;
     }
@@ -518,25 +518,43 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     D_VEC_1D slant_ranges = packets[0].get_slant_ranges();
 
+    double ref_range_val = slant_ranges[slant_ranges.size() / 2];
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        for (int j = 0; j < num_samples; j++)
+        {
+            radar_data[i][j] /= std::sqrt( std::pow(ref_range_val / slant_ranges[j], 3.0) );
+        }
+    }
+
     std::cout << "Slant Ranges: "
               << slant_ranges[0] << ", " << slant_ranges.back() << std::endl;
 
     D_VEC_1D v_0 = _state_vectors.velocities[0];
 
+    int swath_number = packets[0].secondary_header("swath_number");
     double v_norm = std::sqrt(std::pow(v_0[0], 2.0) + std::pow(v_0[1], 2.0) + std::pow(v_0[2], 2.0));
     double pri = packets[0].get_pri() * 1e-6;
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
-    double doppler_bandwidth = prf * 0.45;
+    double doppler_bandwidth = swath_number == 11 ? 750 : 600;
     double t0 = first_packet.get_time();
     double time_delta = burst_length_seconds / prf;
-    double range_dec_sample_rate = first_packet.get_range_sample_rate();
+    double range_dec_sample_rate = first_packet.get_range_sample_rate() * 1e+6;
     double dc_rate;
+
+    D_VEC_1D slant_range_times = first_packet.get_slant_range_times();
+
+    std::cout << range_dec_sample_rate << std::endl;
+    std::cout << slant_range_times.front() << " " << slant_range_times.back() << std::endl;
 
     D_VEC_1D range_freqs = linspace(-range_dec_sample_rate / 2, range_dec_sample_rate / 2, num_samples);
     D_VEC_1D az_freqs(num_packets);
     D_VEC_1D doppler_centroid(num_samples);
     D_VEC_2D az_fm_rate;
+
+    int num_packets_orig = num_packets;
 
     if (tops_mode)
     {
@@ -546,7 +564,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             radar_data,
             dc_rate,
             burst_length_seconds,
-            first_packet
+            first_packet,
+            30
         );
 
         radar_data = azimuth_frequency_ufr(
@@ -595,6 +614,20 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     std::cout << "Azimuth Compressing" << std::endl;
 
+    D_VEC_1D time_corrections = first_packet.get_timing_corrections();
+
+    CF_VEC_1D az_filter(num_packets);
+    CF_VEC_1D filter_energies(num_samples);
+
+    D_VEC_1D window(num_packets);
+
+    std::iota(window.begin(), window.end(), 0.0);
+
+    for (int i = 0; i < num_packets; i++)
+    {
+        window[i] = 0.5 * (1.0 - std::cos(2.0 * PI * window[i] / (double(num_packets))));
+    }
+
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
@@ -629,16 +662,24 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             double rcmc_factor = rcmc_factors[j];
             double slant_range = slant_ranges[j];
 
+            std::complex<double> time_correction = std::exp( 2.0 * I * PI * (az_freqs[i] + doppler_centroid[j]) * time_corrections[j] );
+
             std::complex<double> az_filter = 
-                std::exp(4.0 * I * PI * slant_range * rcmc_factor / WAVELENGTH);
+                std::exp(4.0 * I * PI * slant_range * rcmc_factor / WAVELENGTH) * time_correction; // * window[i];
+
+            filter_energies[j] += std::pow( std::abs(az_filter), 2.0 );
 
             if (tops_mode) 
             {
+                rcmc_factor = sqrt(
+                    1 - ((std::pow(WAVELENGTH, 2.0) * std::pow(az_freqs[i] + doppler_centroid[j], 2.0)) / (4 * v_rel*v_rel))
+                );
+
                 az_fm_rate[i][j] = 
                     -2 * std::pow(v_rel, 2.0) * std::pow(rcmc_factor, 3.0) / (WAVELENGTH * slant_range);
             }
 
-            range_line[j] *= (1 / double(num_packets)) * az_filter;
+            range_line[j] *= az_filter;
         }
     }
 
@@ -649,7 +690,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     if (tops_mode)
     {
-        int swath_number = packets[0].secondary_header("swath_number");
         radar_data = azimuth_time_ufr(
             radar_data,
             doppler_centroid,
@@ -661,6 +701,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             doppler_bandwidth,
             swath_number
         );
+        num_packets = radar_data.size();
     }
 
     return radar_data;

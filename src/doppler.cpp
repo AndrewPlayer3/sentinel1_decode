@@ -192,13 +192,13 @@ D_VEC_1D get_doppler_centroid(
     D_VEC_1D poly = polyfit(rng_times, unwrapped_estimates);
 
     rng_times = first_packet.get_slant_range_times(num_rng);
+    double t0 = rng_times.front();
 
-    std::transform(
+    std::for_each(
         rng_times.begin(), rng_times.end(),
-            rng_times.begin(),
-                [initial_time] (const double& t) {
-                    return t - initial_time;
-                }
+            [t0] (double& t) {
+                t -= t0;
+            }
     );
 
     unwrapped_estimates = D_VEC_1D(num_rng);
@@ -206,8 +206,8 @@ D_VEC_1D get_doppler_centroid(
     std::transform(
         rng_times.begin(), rng_times.end(),
             unwrapped_estimates.begin(),
-                [poly] (const double& time) {
-                    return polyval(poly, time);
+                [poly, t0] (const double& time) {
+                    return (poly[0] + poly[1] * time + poly[2] * time * time); 
                 } 
     );
 
