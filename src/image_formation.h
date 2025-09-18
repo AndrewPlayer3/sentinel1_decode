@@ -52,11 +52,18 @@ D_VEC_1D get_effective_velocities(
     const D_VEC_1D& slant_ranges
 );
 
-D_VEC_1D apply_src_and_rcmc(
+D_VEC_1D apply_secondary_range_compression(
     CF_VEC_1D& range_line,
     const D_VEC_1D& effective_velocities,
     const D_VEC_1D& slant_ranges,
     const D_VEC_1D& range_freqs,
     const D_VEC_1D& doppler_centroids,
     const double& az_freq
+);
+
+void apply_range_cell_migration_correction(
+    CF_VEC_1D& range_line,
+    const D_VEC_1D& slant_ranges,
+    const D_VEC_1D& range_freqs,
+    const D_VEC_1D& rcmc_factors
 );

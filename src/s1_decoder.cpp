@@ -619,15 +619,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     CF_VEC_1D az_filter(num_packets);
     CF_VEC_1D filter_energies(num_samples);
 
-    D_VEC_1D window(num_packets);
-
-    std::iota(window.begin(), window.end(), 0.0);
-
-    for (int i = 0; i < num_packets; i++)
-    {
-        window[i] = 0.5 * (1.0 - std::cos(2.0 * PI * window[i] / (double(num_packets))));
-    }
-
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
@@ -644,7 +635,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             slant_ranges
         );
 
-        D_VEC_1D rcmc_factors = apply_src_and_rcmc(
+        D_VEC_1D rcmc_factors = apply_secondary_range_compression(
             range_line,
             effective_velocities,
             slant_ranges,
@@ -656,6 +647,16 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         fftw_execute(inverse_plans[i]);
         fftshift_in_place(range_line);
 
+        if (tops_mode)
+        {
+            apply_range_cell_migration_correction(
+                range_line,
+                slant_ranges,
+                range_freqs,
+                rcmc_factors
+            );
+        }
+
         for (int j = 0; j < num_samples; j++)
         {
             double v_rel = effective_velocities[j];
@@ -665,8 +666,9 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
             std::complex<double> time_correction = std::exp( 2.0 * I * PI * (az_freqs[i] + doppler_centroid[j]) * time_corrections[j] );
 
             std::complex<double> az_filter = 
-                std::exp(4.0 * I * PI * slant_range * rcmc_factor / WAVELENGTH) * time_correction; // * window[i];
+                std::exp(4.0 * I * PI * slant_range * rcmc_factor / WAVELENGTH) * time_correction;
 
+            // Unnecessary until windowing is added
             filter_energies[j] += std::pow( std::abs(az_filter), 2.0 );
 
             if (tops_mode) 
