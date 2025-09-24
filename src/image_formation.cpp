@@ -241,6 +241,10 @@ CF_VEC_2D azimuth_time_ufr(
     {
         focused_time *= 0.9;
     }
+    else
+    {
+        focused_time *= 1.05;
+    }
 
     int num_pos_tiles = std::ceil((n_ref + focused_time / 2) / burst_duration);
     int num_neg_tiles = std::floor((n_ref - focused_time / 2) / burst_duration);
