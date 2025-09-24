@@ -522,9 +522,11 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     for (int i = 0; i < num_packets; i++)
     {
+        CF_VEC_1D& radar_data_row = radar_data[i];
+        fftshift_in_place(radar_data_row);
         for (int j = 0; j < num_samples; j++)
         {
-            radar_data[i][j] /= std::sqrt( std::pow(ref_range_val / slant_ranges[j], 3.0) );
+            radar_data_row[j] /= std::sqrt( std::pow(ref_range_val / slant_ranges[j], 3.0) );
         }
     }
 
@@ -538,7 +540,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     double pri = packets[0].get_pri() * 1e-6;
     double prf = 1 / pri;
     double burst_length_seconds = double(num_packets) / prf;
-    double doppler_bandwidth = swath_number == 11 ? 750 : 600;
+    double doppler_bandwidth = swath_number == 11 ? 675 : 600;
     double t0 = first_packet.get_time();
     double time_delta = burst_length_seconds / prf;
     double range_dec_sample_rate = first_packet.get_range_sample_rate() * 1e+6;
@@ -645,7 +647,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         );
 
         fftw_execute(inverse_plans[i]);
-        fftshift_in_place(range_line);
+        // fftshift_in_place(range_line);
 
         if (tops_mode)
         {
