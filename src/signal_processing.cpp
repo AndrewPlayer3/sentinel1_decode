@@ -155,57 +155,63 @@ D_VEC_1D polyfit(const D_VEC_1D& x, const D_VEC_1D& y)
 {
     const int N = x.size();
 
-    D_VEC_1D Sx(7);
-    D_VEC_1D Sy(4);
+    // For degree 2: sums up to x^4
+    D_VEC_1D Sx(5, 0.0);  // [Σx^0, Σx^1, Σx^2, Σx^3, Σx^4]
+    D_VEC_1D Sy(3, 0.0);  // [Σy, Σxy, Σx^2y]
 
+    // Compute summations
     for (int i = 0; i < N; ++i) {
         double xi = 1.0;
-        for (int j = 0; j <= 6; ++j) {
-            if (j <= 3) Sy[j] += xi * y[i];
+        for (int j = 0; j <= 4; ++j) {
+            if (j <= 2) Sy[j] += xi * y[i];
             Sx[j] += xi;
             xi *= x[i];
         }
     }
 
+    // Build the normal equations matrix (3x3)
     D_VEC_2D A = {
-        {Sx[0], Sx[1], Sx[2], Sx[3]},
-        {Sx[1], Sx[2], Sx[3], Sx[4]},
-        {Sx[2], Sx[3], Sx[4], Sx[5]},
-        {Sx[3], Sx[4], Sx[5], Sx[6]}
+        {Sx[0], Sx[1], Sx[2]},
+        {Sx[1], Sx[2], Sx[3]},
+        {Sx[2], Sx[3], Sx[4]}
     };
-    D_VEC_1D b = {Sy[0], Sy[1], Sy[2], Sy[3]};
+    D_VEC_1D b = {Sy[0], Sy[1], Sy[2]};
 
-    for (int i = 0; i < 4; ++i) {
-        for (int k = i + 1; k < 4; ++k) {
+    // Gaussian elimination with partial pivoting
+    for (int i = 0; i < 3; ++i) {
+        // Pivot for numerical stability
+        for (int k = i + 1; k < 3; ++k) {
             if (std::abs(A[k][i]) > std::abs(A[i][i])) {
-                for (int j = 0; j < 4; ++j) std::swap(A[i][j], A[k][j]);
+                for (int j = 0; j < 3; ++j) std::swap(A[i][j], A[k][j]);
                 std::swap(b[i], b[k]);
             }
         }
 
-        for (int k = i + 1; k < 4; ++k) {
+        // Eliminate column below pivot
+        for (int k = i + 1; k < 3; ++k) {
             double factor = A[k][i] / A[i][i];
-            for (int j = i; j < 4; ++j)
+            for (int j = i; j < 3; ++j)
                 A[k][j] -= factor * A[i][j];
             b[k] -= factor * b[i];
         }
     }
 
-    D_VEC_1D coeffs(4);
-    for (int i = 3; i >= 0; --i) {
+    // Back substitution
+    D_VEC_1D coeffs(3);
+    for (int i = 2; i >= 0; --i) {
         coeffs[i] = b[i];
-        for (int j = i + 1; j < 4; ++j)
+        for (int j = i + 1; j < 3; ++j)
             coeffs[i] -= A[i][j] * coeffs[j];
         coeffs[i] /= A[i][i];
     }
 
-    return coeffs; // [d, c, b, a]
+    return coeffs; // [c, b, a]
 }
 
 
 double polyval(const D_VEC_1D& coeffs, const double& x) 
 {
-    // Evaluate polynomial: a*x^3 + b*x^2 + c*x + d
+    // Evaluate polynomial: a*x^2 + b*x + c
     double result = 0.0;
     for (int i = coeffs.size() - 1; i >= 0; --i)
         result = result * x + coeffs[i];
@@ -409,7 +415,7 @@ D_VEC_1D norm_1d(
         norm.begin(), norm.end(), 
             [log_scale, max_value](double &n) 
             { 
-                return log_scale ? 20 * log10(n / max_value) : n / max_value;
+                n = log_scale ? 20 * log10(n / max_value) : n / max_value;
             }
     );
     return norm;

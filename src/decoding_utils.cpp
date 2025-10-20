@@ -101,7 +101,7 @@ u_int64_t read_n_bits(
     {
         throw std::invalid_argument("Invalid number of bits to read. Must be between 1 and 64.");
     }
-    int byte_index = start_bit / 8;
+    unsigned int byte_index = start_bit / 8;
     int bit_offset = start_bit % 8;
 
     if (byte_index >= data.size()) 
@@ -146,10 +146,10 @@ std::ifstream open_file(const std::string& filename)
 }
 
 
-double int_to_ieee754(unsigned long number, int is_double)
+double int_to_ieee754(u_int64_t number, int is_double)
 {
     int mantissaShift = is_double ? 52 : 23;
-    unsigned long exponentMask = is_double ? 0x7FF0000000000000 : 0x7f800000;
+    u_int64_t exponentMask = is_double ? 0x7FF0000000000000 : 0x7f800000;
     int bias = is_double ? 1023 : 127;
     int signShift = is_double ? 63 : 31;
 

@@ -214,6 +214,7 @@ public:
     double get_range_sample_rate();
     D_VEC_1D get_slant_ranges(int num_ranges=0);
     D_VEC_1D get_slant_range_times(int num_times=0);
+    D_VEC_1D get_timing_corrections();
     CF_VEC_1D get_signal();
     CF_VEC_1D get_replica_chirp();
 
@@ -226,7 +227,7 @@ public:
     static PACKET_VEC_1D get_packets_in_swath(const std::string& filename, const std::string& swath);
     static PACKET_VEC_1D get_packets_in_swath(std::ifstream& data, const std::string& swath);
     static PACKET_VEC_2D get_packets_in_bursts(const std::string& filename, const std::string& swath);
-    static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath);
+    static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath, const bool& get_cal_packets = false);
     static PACKET_VEC_2D get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets = false);
     static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
     static void decode_packets_in_place(PACKET_VEC_1D& packets);
