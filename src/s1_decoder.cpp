@@ -518,18 +518,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
     D_VEC_1D slant_ranges = packets[0].get_slant_ranges();
 
-    double ref_range_val = slant_ranges[slant_ranges.size() / 2];
-
-    for (int i = 0; i < num_packets; i++)
-    {
-        CF_VEC_1D& radar_data_row = radar_data[i];
-        fftshift_in_place(radar_data_row);
-        for (int j = 0; j < num_samples; j++)
-        {
-            radar_data_row[j] /= std::sqrt( std::pow(ref_range_val / slant_ranges[j], 3.0) );
-        }
-    }
-
     std::cout << "Slant Ranges: "
               << slant_ranges[0] << ", " << slant_ranges.back() << std::endl;
 
@@ -645,7 +633,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         );
 
         fftw_execute(inverse_plans[i]);
-        // fftshift_in_place(range_line);
+        fftshift_in_place(range_line);
 
         if (tops_mode)
         {
