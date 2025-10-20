@@ -556,8 +556,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     D_VEC_1D doppler_centroid(num_samples);
     D_VEC_2D az_fm_rate;
 
-    int num_packets_orig = num_packets;
-
     if (tops_mode)
     {
         dc_rate = get_doppler_centroid_rate(packets, v_norm);

@@ -101,7 +101,7 @@ u_int64_t read_n_bits(
     {
         throw std::invalid_argument("Invalid number of bits to read. Must be between 1 and 64.");
     }
-    int byte_index = start_bit / 8;
+    unsigned int byte_index = start_bit / 8;
     int bit_offset = start_bit % 8;
 
     if (byte_index >= data.size()) 

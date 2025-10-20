@@ -25,7 +25,7 @@ void print_state_vectors(
 
 void print_packet_at_index(
     std::string filename,
-    int  index
+    unsigned int  index
 ) {
     std::ifstream data = open_file(filename);
     PACKET_VEC_1D packets = L0Packet::get_packets(data, index + 1);
