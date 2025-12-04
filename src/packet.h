@@ -175,48 +175,46 @@ public:
 
     bool is_empty() {return _is_empty;}
 
-    int  get_num_quads() {return _num_quads;}
-    int  get_num_baq_blocks  () {return _num_baq_blocks;}
-    int  get_user_data_length() {return _user_data_length;}
-    char get_data_format() {return _data_format;}
+    int  get_num_quads() const {return _num_quads;}
+    int  get_num_baq_blocks() const {return _num_baq_blocks;}
+    int  get_user_data_length() const {return _user_data_length;}
+    char get_data_format() const {return _data_format;}
 
-    const int primary_header(const std::string& key) {return _primary_header.at(key);}
-    const int secondary_header(const std::string& key) {return _secondary_header.at(key);}
+    int primary_header(const std::string& key) {return _primary_header.at(key);}
+    int secondary_header(const std::string& key) {return _secondary_header.at(key);}
+    
+    int get_packet_index() const;
+    int get_baq_block_length() const;
+    double get_time() const;
+    double get_pulse_length() const;
+    double get_tx_ramp_rate() const;
+    double get_start_frequency() const;
+    double get_pri() const;
+    double get_swl() const;
+    double get_swst() const;
+    double get_rx_gain() const;
+    double get_azimuth_beam_angle() const; 
+    char get_rx_polarization() const;
+    char get_tx_polarization() const;
 
-    const int get_packet_index();
-    const int get_baq_block_length();
-
-    const double get_time();
-    const double get_pulse_length();
-    const double get_tx_ramp_rate();
-    const double get_start_frequency();
-    const double get_pri();
-    const double get_swl();
-    const double get_swst();
-    const double get_rx_gain();
-    const double get_azimuth_beam_angle();
-
-    const char get_rx_polarization();
-    const char get_tx_polarization();
-
-    std::string get_baq_mode();
-    std::string get_test_mode();
-    std::string get_sensor_mode();
-    std::string get_signal_type();
-    std::string get_error_status();
-    std::string get_swath();
+    std::string get_baq_mode() const;
+    std::string get_test_mode() const;
+    std::string get_sensor_mode() const;
+    std::string get_signal_type() const;
+    std::string get_error_status() const;
+    std::string get_swath() const;
 
     void print_primary_header();
     void print_secondary_header();
     void print_modes();
     void print_pulse_info();
 
-    double get_range_sample_rate();
-    D_VEC_1D get_slant_ranges(int num_ranges=0);
-    D_VEC_1D get_slant_range_times(int num_times=0);
-    D_VEC_1D get_timing_corrections();
+    double get_range_sample_rate() const;
+    D_VEC_1D get_slant_ranges(int num_ranges=0) const;
+    D_VEC_1D get_slant_range_times(int num_times=0) const;
+    D_VEC_1D get_timing_corrections() const;
+    CF_VEC_1D get_replica_chirp() const;
     CF_VEC_1D get_signal();
-    CF_VEC_1D get_replica_chirp();
 
     typedef struct std::vector<L0Packet>              PACKET_VEC_1D;
     typedef struct std::vector<std::vector<L0Packet>> PACKET_VEC_2D;
