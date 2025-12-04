@@ -9,7 +9,7 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
     double norm_size = norm.size();
     std::for_each(
         norm.begin(), norm.end(),
-            [norm_size](std::complex<double> n) { n *= n / norm_size; }
+            [norm_size](double& n) { n *= n / norm_size; }
     );
     double energy = std::accumulate(norm.begin(), norm.end(), 0.0);
 
@@ -18,7 +18,7 @@ CF_VEC_1D get_reference_function(const CF_VEC_1D& replica_chirp)
 
     std::for_each(
          reference.begin(), reference.end(),
-            [energy](std::complex<double> &n) { n /= energy; }
+            [energy](std::complex<double>& n) { n /= energy; }
     );
 
     return reference;
@@ -45,36 +45,42 @@ CF_VEC_1D pulse_compression(
 
 std::pair<PACKET_VEC_2D, int> get_azimuth_blocks(PACKET_VEC_1D& packets)
 {
-    PACKET_VEC_2D azimuth_blocks;
-    PACKET_VEC_1D azimuth_block;
-
-    int previous_size = 2 * packets[0].get_num_quads();
-    double previous_time = packets[0].get_slant_range_times(100)[0];
-    int max_size = previous_size;
-
-    for (unsigned int i = 0; i < packets.size(); i++)
-    {
-        L0Packet packet = packets[i];
-        int size = 2 * packet.get_num_quads();
-        double t = packet.get_slant_range_times(100)[0];
-
-        if (size != previous_size || i == packets.size() - 1)
-        {
-            if (size > max_size) max_size = size;
-            previous_size = size;
-            azimuth_blocks.push_back(azimuth_block);
-            azimuth_block = {};
-        }
-        else if (t != previous_time)
-        {
-            previous_time = t;
-            azimuth_blocks.push_back(azimuth_block);
-            azimuth_block = {};
-        }
-        azimuth_block.push_back(packet);
+    if (packets.empty()) {
+        return {PACKET_VEC_2D{}, 0};
     }
 
-    return std::pair<PACKET_VEC_2D, int>(azimuth_blocks, max_size);
+    PACKET_VEC_2D azimuth_blocks;
+    azimuth_blocks.reserve(packets.size());
+
+    PACKET_VEC_1D current_block;
+    current_block.reserve(packets.size());
+
+    int previous_size = 2 * packets.front().get_num_quads();
+    int max_size      = previous_size;
+
+    for (const L0Packet& packet : packets)
+    {
+        int size = 2 * packet.get_num_quads();
+
+        if (size != previous_size && !current_block.empty())
+        {
+            azimuth_blocks.emplace_back(std::move(current_block));
+            current_block.clear();
+            previous_size = size;
+        }
+
+        if (size > max_size) {
+            max_size = size;
+        }
+
+        current_block.push_back(packet);
+    }
+
+    if (!current_block.empty()) {
+        azimuth_blocks.emplace_back(std::move(current_block));
+    }
+
+    return {std::move(azimuth_blocks), max_size};
 }
 
 
@@ -437,7 +443,7 @@ D_VEC_1D apply_secondary_range_compression(
         rcmc_factors[j] = rcmc_factor;
 
         double src_fm_rate  = 2.0 * std::pow(v_rel, 2.0) * std::pow(CENTER_FREQ, 3.0) * std::pow(rcmc_factor, 2.0);
-                src_fm_rate /= SPEED_OF_LIGHT * slant_range * std::pow(az_freq + dc, 2.0);
+               src_fm_rate /= (SPEED_OF_LIGHT * slant_range * std::pow(az_freq + dc, 2.0));
 
         std::complex<double> src_filter = 
             std::exp(-1.0 * I * PI * std::pow(range_freqs[j], 2.0) / src_fm_rate);
