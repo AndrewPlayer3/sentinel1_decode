@@ -12,51 +12,51 @@ Description: L0Packet class for storing and decoding Level-0 Packets in a convin
 
 
 /* Returns the length of the baq blocks in bytes */
-const int L0Packet::get_baq_block_length()
+int L0Packet::get_baq_block_length() const
 {   
-    return 8 * (_secondary_header["baq_block_length"] + 1);
+    return 8 * (_secondary_header.at("baq_block_length") + 1);
 }
 
 
 /* Returns the index of the packet within the data */
-const int L0Packet::get_packet_index()
+int L0Packet::get_packet_index() const
 {
     return _packet_index;
 }
 
 
 /* Returns the PRI in microseconds */
-const double L0Packet::get_pri()
+double L0Packet::get_pri() const
 {
     return _secondary_header.at("pri") / F_REF;
 }
 
 
 /* Returns the pulse length in microseconds */
-const double L0Packet::get_pulse_length()
+double L0Packet::get_pulse_length() const
 {
-    return _secondary_header["pulse_length"] / F_REF;
+    return _secondary_header.at("pulse_length") / F_REF;
 }
 
 
 /* Returns the sampling window length in microseconds */
-const double L0Packet::get_swl()
+double L0Packet::get_swl() const
 {
-    return _secondary_header["swl"] / F_REF;
+    return _secondary_header.at("swl") / F_REF;
 }
 
 
 /* Returns the start time of the sampling window in the PRI in microseconds */
-const double L0Packet::get_swst()
+double L0Packet::get_swst() const
 {
-    return _secondary_header["swst"] / F_REF;
+    return _secondary_header.at("swst") / F_REF;
 }
 
 
-const double L0Packet::get_time()
+double L0Packet::get_time() const
 {
-    double coarse_time = static_cast<double>(_secondary_header["coarse_time"]);
-    double fine_time   = static_cast<double>(_secondary_header["fine_time"]);
+    double coarse_time = static_cast<double>(_secondary_header.at("coarse_time"));
+    double fine_time   = static_cast<double>(_secondary_header.at("fine_time"));
 
     double time = coarse_time + (1.0 / fine_time);
     return time;
@@ -64,17 +64,17 @@ const double L0Packet::get_time()
 
 
 /* Returns the RX gain in dB */
-const double L0Packet::get_rx_gain()
+double L0Packet::get_rx_gain() const
 {
-    return -0.5 * _secondary_header["rx_gain"];
+    return -0.5 * _secondary_header.at("rx_gain");
 }
 
 
 /* Returns the tx pulse start frequency in MHz */
-const double L0Packet::get_start_frequency()
+double L0Packet::get_start_frequency() const
 {
-    int sign = _secondary_header["pulse_start_frequency_sign"] == 0 ? -1 : 1;
-    int mag  = _secondary_header["pulse_start_frequency_mag"];
+    int sign = _secondary_header.at("pulse_start_frequency_sign") == 0 ? -1 : 1;
+    int mag  = _secondary_header.at("pulse_start_frequency_mag");
     double txprr = get_tx_ramp_rate();
     return (sign * mag * (F_REF / 16384)) + (txprr / (4 * F_REF));
 }
@@ -84,26 +84,26 @@ static const D_VEC_1D AZIMUTH_BEAM_ADDRESS_TO_ANGLE = linspace(-0.018, 0.018, 10
 
 
 /* Returns the azimuth beam angle in radians*/
-const double L0Packet::get_azimuth_beam_angle()
+double L0Packet::get_azimuth_beam_angle() const
 {
-    return AZIMUTH_BEAM_ADDRESS_TO_ANGLE[_secondary_header["azimuth_beam_address"]];
+    return AZIMUTH_BEAM_ADDRESS_TO_ANGLE[_secondary_header.at("azimuth_beam_address")];
 }
 
 
 /* Returns the linear FM rate at which the chirp frequency changes in MHz/microsecond */
-const double L0Packet::get_tx_ramp_rate()
+double L0Packet::get_tx_ramp_rate() const
 {
-    int sign = _secondary_header["tx_ramp_rate_sign"] == 0 ? -1 : 1;
-    int mag  = _secondary_header["tx_ramp_rate_mag"];
+    int sign = _secondary_header.at("tx_ramp_rate_sign") == 0 ? -1 : 1;
+    int mag  = _secondary_header.at("tx_ramp_rate_mag");
 
     return sign * mag * (pow(F_REF, 2) / 2097152);
 }
 
 
 /* Returns the polarization of the tx pulse */
-const char L0Packet::get_tx_polarization()
+char L0Packet::get_tx_polarization() const
 {
-    int pol_code = _secondary_header["polarisation"];
+    int pol_code = _secondary_header.at("polarisation");
 
     if      (pol_code >= 0 && pol_code <= 3) return 'H';
     else if (pol_code >= 4 && pol_code <= 7) return 'V';
@@ -112,9 +112,9 @@ const char L0Packet::get_tx_polarization()
 
 
 /* Returns the rx polarization */
-const char L0Packet::get_rx_polarization()
+char L0Packet::get_rx_polarization() const
 {
-    switch (_secondary_header["rx_channel_id"])
+    switch (_secondary_header.at("rx_channel_id"))
     {
         case 0: return 'V';
         case 1: return 'H';
@@ -124,28 +124,28 @@ const char L0Packet::get_rx_polarization()
 
 
 /* Returns the parity error status of the SES SSB message */
-std::string L0Packet::get_error_status()
+std::string L0Packet::get_error_status() const
 {
     return _secondary_header.at("error_flag") == 0 ? "nominal" : "ssb_corrupt";
 }
 
 
 /* Returns the measurement, test, or rf characterization mode */
-std::string L0Packet::get_sensor_mode()
+std::string L0Packet::get_sensor_mode() const
 {
-    return ECC_CODE_TO_SENSOR_MODE[_secondary_header["ecc_number"]];
+    return ECC_CODE_TO_SENSOR_MODE[_secondary_header.at("ecc_number")];
 }
 
 
 /* Returns the swath string representation */
-std::string L0Packet::get_swath()
+std::string L0Packet::get_swath() const
 {
-    return SWATH_NUM_TO_STRING.at(_secondary_header["swath_number"]);
+    return SWATH_NUM_TO_STRING.at(_secondary_header.at("swath_number"));
 }
 
 
 /* Returns the type of baq compression */
-std::string L0Packet::get_baq_mode()
+std::string L0Packet::get_baq_mode() const
 {
     std::string baq_mode = std::unordered_map<int, std::string>({
         {0,  "bypass_mode"},
@@ -162,7 +162,7 @@ std::string L0Packet::get_baq_mode()
 
 
 /* Returns the test mode, or measurement mode if not testing */
-std::string L0Packet::get_test_mode()
+std::string L0Packet::get_test_mode() const
 {
     std::string test_mode = std::unordered_map<int, std::string>({
         {0, "measurement_mode"},
@@ -183,7 +183,7 @@ std::string L0Packet::get_test_mode()
 
 
 /* Returns the type of signal that is being received */
-std::string L0Packet::get_signal_type()
+std::string L0Packet::get_signal_type() const
 {
     std::string signal_type = std::unordered_map<int, std::string>({
         {0,  "echo"},
@@ -194,7 +194,7 @@ std::string L0Packet::get_signal_type()
         {11, "ta_cal"},
         {12, "apdn_cal"},
         {15, "txh_cal_iso"}
-    })[_secondary_header["signal_type"]];
+    })[_secondary_header.at("signal_type")];
     
     return signal_type == "" ? "n_a" : signal_type;
 }
@@ -274,14 +274,14 @@ void L0Packet::_set_data_format()
 }
 
 
-double L0Packet::get_range_sample_rate()
+double L0Packet::get_range_sample_rate() const
 {
-    int range_dec = secondary_header("range_decimation");
+    int range_dec = _secondary_header.at("range_decimation");
     return RANGE_DECIMATION[range_dec];
 }
 
 
-D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
+D_VEC_1D L0Packet::get_slant_ranges(int num_ranges) const
 {  
     if (num_ranges <= 0) num_ranges = 2 * _num_quads;
 
@@ -301,7 +301,7 @@ D_VEC_1D L0Packet::get_slant_ranges(int num_ranges)
 }
 
 
-D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
+D_VEC_1D L0Packet::get_slant_range_times(int num_ranges) const
 {
     if (num_ranges <= 0) num_ranges = 2 * _num_quads;
 
@@ -319,7 +319,7 @@ D_VEC_1D L0Packet::get_slant_range_times(int num_ranges)
 
 
 /* Instrument Timing Correction + Fine Bi-Static Correction */
-D_VEC_1D L0Packet::get_timing_corrections()
+D_VEC_1D L0Packet::get_timing_corrections() const
 {
     int num_rng_samples = 2 * _num_quads;
 
@@ -342,7 +342,7 @@ D_VEC_1D L0Packet::get_timing_corrections()
 }
 
 
-CF_VEC_1D L0Packet::get_replica_chirp()
+CF_VEC_1D L0Packet::get_replica_chirp() const
 {
     int num_range = 2 * _num_quads;
 
@@ -353,7 +353,7 @@ CF_VEC_1D L0Packet::get_replica_chirp()
     double phi_1 = txpsf;
     double phi_2 = txprr * 0.5;
 
-    int range_dec   = secondary_header("range_decimation");
+    int range_dec   = _secondary_header.at("range_decimation");
     int num_samples = int(floor(RANGE_DECIMATION[range_dec] * txpl));
 
     D_VEC_1D  time = linspace(0.0, txpl, num_samples);
