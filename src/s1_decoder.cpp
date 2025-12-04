@@ -661,12 +661,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
             if (tops_mode) 
             {
-                rcmc_factor = sqrt(
-                    1 - ((std::pow(WAVELENGTH, 2.0) * std::pow(az_freqs[i] + doppler_centroid[j], 2.0)) / (4 * v_rel*v_rel))
-                );
-
                 az_fm_rate[i][j] = 
-                    -2 * std::pow(v_rel, 2.0) * std::pow(rcmc_factor, 3.0) / (WAVELENGTH * slant_range);
+                    -2 * std::pow(v_rel, 2.0) * std::pow(rcmc_factors[j], 3.0) / (WAVELENGTH * slant_range);
             }
 
             range_line[j] *= az_filter;
