@@ -1,9 +1,18 @@
 #include "s1_decoder.h"
 
 
+bool is_sm(const std::string& swath) { return STRIPMAP_SWATHS.contains(swath); }
+bool is_iw(const std::string& swath) { return IW_SWATHS.contains(swath); }
+bool is_ew(const std::string& swath) { return EW_SWATHS.contains(swath); }
+bool is_wv(const std::string& swath) { return WV_SWATHS.contains(swath); }
+bool is_cal(const std::string& swath) { return CAL_SWATHS.contains(swath); }
+
+STATE_VECTORS S1_Decoder::get_state_vectors() { return _state_vectors; }
+
+
 void S1_Decoder::_set_packets()
 {
-    _flat_packets = L0Packet::get_packets(_filename, 0);
+    _flat_packets = get_packets(_filename, 0);
 
     for (L0Packet packet : _flat_packets) 
     {
@@ -15,48 +24,15 @@ void S1_Decoder::_set_packets()
         std::string name = swath_count.first;
         if (ECHO_SWATHS.contains(name))  
         {
-            _echo_packets[name] = L0Packet::get_packets_in_bursts(_flat_packets, name);
+            _echo_packets[name] = get_packets_in_bursts(_flat_packets, name);
         }
         else if (CAL_SWATHS.contains(name))
         {
-            _cal_packets[name] = L0Packet::get_packets_in_bursts(_flat_packets, name, true);
+            _cal_packets[name] = get_packets_in_bursts(_flat_packets, name, true);
         }
     }
 }
 
-
-bool is_sm(const std::string& swath)
-{
-    return STRIPMAP_SWATHS.contains(swath);
-}
-
-
-bool is_iw(const std::string& swath)
-{
-    return IW_SWATHS.contains(swath);
-}
-
-
-bool is_ew(const std::string& swath)
-{
-    return EW_SWATHS.contains(swath);
-}
-
-
-bool is_wv(const std::string& swath)
-{
-    return WV_SWATHS.contains(swath);
-}
-
-bool is_cal(const std::string& swath)
-{
-    return CAL_SWATHS.contains(swath);
-}
-
-STATE_VECTORS S1_Decoder::get_state_vectors()
-{
-    return _state_vectors;
-}
 
 void S1_Decoder::apply_eccm(const int& detection_threshold, const int& mitigation_threshold)
 {
@@ -64,6 +40,7 @@ void S1_Decoder::apply_eccm(const int& detection_threshold, const int& mitigatio
     _eccm_detection_threshold = detection_threshold;
     _eccm_mitigation_threshold = mitigation_threshold;
 }
+
 
 void S1_Decoder::_validate_request(const std::string& swath, const int& burst)
 {
@@ -607,6 +584,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     CF_VEC_1D az_filter(num_packets);
     CF_VEC_1D filter_energies(num_samples);
 
+    double ref_range = slant_ranges[num_samples / 2];
+
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
@@ -635,6 +614,11 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         fftw_execute(inverse_plans[i]);
         fftshift_in_place(range_line);
 
+        for (int j = 0; j < num_samples; j++)
+        {
+            radar_data[i][j] /= std::sqrt( std::pow( ref_range / slant_ranges[j], 3.0 ) );
+        }
+
         if (tops_mode)
         {
             apply_range_cell_migration_correction(
@@ -655,9 +639,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
             std::complex<double> az_filter = 
                 std::exp(4.0 * I * PI * slant_range * rcmc_factor / WAVELENGTH) * time_correction;
-
-            // Unnecessary until windowing is added
-            filter_energies[j] += std::pow( std::abs(az_filter), 2.0 );
 
             if (tops_mode) 
             {

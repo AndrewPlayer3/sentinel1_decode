@@ -466,7 +466,6 @@ void apply_range_cell_migration_correction(
     for (int j = 0; j < num_samples; j++)
     {
         double slant_range = slant_ranges[j];
-
         double range_shift = (slant_range / rcmc_factors[j]) - slant_range;
 
         std::complex<double> rcmc_phase =

@@ -17,7 +17,7 @@ Description: Main function with random command-line arguments for testing purpos
 void print_state_vectors(
     std::string filename
 ) {
-    PACKET_VEC_1D packets = L0Packet::get_packets(filename, 0);
+    PACKET_VEC_1D packets = get_packets(filename, 0);
     STATE_VECTORS state_vectors(packets);
     state_vectors.print();
 }
@@ -28,7 +28,7 @@ void print_packet_at_index(
     unsigned int  index
 ) {
     std::ifstream data = open_file(filename);
-    PACKET_VEC_1D packets = L0Packet::get_packets(data, index + 1);
+    PACKET_VEC_1D packets = get_packets(data, index + 1);
 
     if (index >= packets.size())
     {
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
         STRING_VEC_1D types = {"path"};
         validate_args(command, args, types, &(argv[0]));
 
-        PACKET_VEC_1D packets = L0Packet::get_packets(std::string(argv[2]));
+        PACKET_VEC_1D packets = get_packets(std::string(argv[2]));
         
         std::unordered_map<std::string, int> swaths;
 
@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
 
         std::ifstream data = open_file(std::string(argv[3]));
 
-        PACKET_VEC_1D       packets = L0Packet::get_packets(data, std::stoi(argv[2]) + 1);
+        PACKET_VEC_1D       packets = get_packets(data, std::stoi(argv[2]) + 1);
         CF_VEC_1D signal  = packets[std::stoi(argv[2])].get_signal();
 
         for (std::complex<double> sample : signal)
