@@ -183,7 +183,6 @@ CF_VEC_2D azimuth_frequency_ufr(
     // Low-pass Filter
     compute_axis_dft_in_place(ufr_output, 0, 1, false);
 
-    #pragma omp parallel for
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
         for (int az_line = 0; az_line < shape; az_line++)
@@ -320,7 +319,6 @@ CF_VEC_2D azimuth_time_ufr(
     // Low-pass Filter
     compute_axis_dft_in_place(ufr_intermediate, 0, 1, false);
 
-    #pragma omp parallel for
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
         for (int az_line = 0; az_line < shape; az_line++)
