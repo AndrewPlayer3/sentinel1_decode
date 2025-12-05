@@ -74,7 +74,6 @@ private:
     int _baq_mode;
     int _num_baq_blocks;
     int _user_data_length;
-    int _bit_index;
 
     bool _is_empty = true;
 
@@ -82,7 +81,7 @@ private:
 
     void _set_data_format();
 
-    static std::unordered_map<std::string, int> _parse_header(
+    [[nodiscard]] static std::unordered_map<std::string, int> _parse_header(
         const UINT8_VEC_1D&  bytes,
         const INT_VEC_1D&    bit_lengths,
         const STRING_VEC_1D& field_names
@@ -101,23 +100,24 @@ private:
 
     void _set_signal();
     void _decode();
-    int  _get_next_word_boundary(const int& bit_index);
 
-    H_CODE _get_h_code_type_c(
+    [[nodiscard]] int  _get_next_word_boundary(const int& bit_index);
+
+    [[nodiscard]] H_CODE _get_h_code_type_c(
               int&  bit_index, 
         const bool& is_last_block
     );
-    H_CODE _get_h_code_type_d(
+    [[nodiscard]] H_CODE _get_h_code_type_d(
         const u_int8_t& brc,
               int&      bit_index,
         const bool&     is_last_block
     );
-    double _get_s_values_type_c(
+    [[nodiscard]] double _get_s_values_type_c(
         const u_int16_t& threshold_id,
         const int&       sign,
         const int&       m_code
     );
-    double _get_s_values_type_d(
+    [[nodiscard]] double _get_s_values_type_d(
         const u_int8_t&  brc,
         const u_int16_t& threshold_id,
         const int&       sign,
@@ -128,15 +128,15 @@ private:
     void _set_quad_type_c(QUAD& component, int& bit_index);
     void _set_quad_types_a_and_b(H_CODE& component, int& bit_index);
 
-    CF_VEC_1D _get_signal_type_d(
+    [[nodiscard]] CF_VEC_1D _get_signal_type_d(
         QUAD& IE, QUAD& IO, 
         QUAD& QE, QUAD& QO
     );
-    CF_VEC_1D _get_signal_type_c(
+    [[nodiscard]] CF_VEC_1D _get_signal_type_c(
         QUAD& IE, QUAD& IO,
         QUAD& QE, QUAD& QO
     );
-    CF_VEC_1D _get_signal_types_a_and_b(
+    [[nodiscard]] CF_VEC_1D _get_signal_types_a_and_b(
         H_CODE& IE, H_CODE& IO,
         H_CODE& QE, H_CODE& QO
     );
@@ -173,61 +173,60 @@ public:
         _is_empty = false;
     }
 
-    bool is_empty() {return _is_empty;}
+    [[nodiscard]] int primary_header(const std::string& key) {return _primary_header.at(key);}
+    [[nodiscard]] int secondary_header(const std::string& key) {return _secondary_header.at(key);}
 
-    int  get_num_quads() const {return _num_quads;}
-    int  get_num_baq_blocks() const {return _num_baq_blocks;}
-    int  get_user_data_length() const {return _user_data_length;}
-    char get_data_format() const {return _data_format;}
-
-    int primary_header(const std::string& key) {return _primary_header.at(key);}
-    int secondary_header(const std::string& key) {return _secondary_header.at(key);}
+    [[nodiscard]] bool is_empty() {return _is_empty;}
+    [[nodiscard]] int  get_num_quads() const {return _num_quads;}
+    [[nodiscard]] int  get_num_baq_blocks() const {return _num_baq_blocks;}
+    [[nodiscard]] int  get_user_data_length() const {return _user_data_length;}
+    [[nodiscard]] char get_data_format() const {return _data_format;}
     
-    int get_packet_index() const;
-    int get_baq_block_length() const;
-    double get_time() const;
-    double get_pulse_length() const;
-    double get_tx_ramp_rate() const;
-    double get_start_frequency() const;
-    double get_pri() const;
-    double get_swl() const;
-    double get_swst() const;
-    double get_rx_gain() const;
-    double get_azimuth_beam_angle() const; 
-    char get_rx_polarization() const;
-    char get_tx_polarization() const;
+    [[nodiscard]] int get_packet_index() const;
+    [[nodiscard]] int get_baq_block_length() const;
+    [[nodiscard]] double get_time() const;
+    [[nodiscard]] double get_pulse_length() const;
+    [[nodiscard]] double get_tx_ramp_rate() const;
+    [[nodiscard]] double get_start_frequency() const;
+    [[nodiscard]] double get_pri() const;
+    [[nodiscard]] double get_swl() const;
+    [[nodiscard]] double get_swst() const;
+    [[nodiscard]] double get_rx_gain() const;
+    [[nodiscard]] double get_azimuth_beam_angle() const; 
+    [[nodiscard]] char get_rx_polarization() const;
+    [[nodiscard]] char get_tx_polarization() const;
 
-    std::string get_baq_mode() const;
-    std::string get_test_mode() const;
-    std::string get_sensor_mode() const;
-    std::string get_signal_type() const;
-    std::string get_error_status() const;
-    std::string get_swath() const;
+    [[nodiscard]] std::string get_baq_mode() const;
+    [[nodiscard]] std::string get_test_mode() const;
+    [[nodiscard]] std::string get_sensor_mode() const;
+    [[nodiscard]] std::string get_signal_type() const;
+    [[nodiscard]] std::string get_error_status() const;
+    [[nodiscard]] std::string get_swath() const;
+
+    [[nodiscard]] double get_range_sample_rate() const;
+    [[nodiscard]] D_VEC_1D get_slant_ranges(int num_ranges=0) const;
+    [[nodiscard]] D_VEC_1D get_slant_range_times(int num_times=0) const;
+    [[nodiscard]] D_VEC_1D get_timing_corrections() const;
+    [[nodiscard]] CF_VEC_1D get_replica_chirp() const;
+    [[nodiscard]] CF_VEC_1D get_signal();
 
     void print_primary_header();
     void print_secondary_header();
     void print_modes();
     void print_pulse_info();
 
-    double get_range_sample_rate() const;
-    D_VEC_1D get_slant_ranges(int num_ranges=0) const;
-    D_VEC_1D get_slant_range_times(int num_times=0) const;
-    D_VEC_1D get_timing_corrections() const;
-    CF_VEC_1D get_replica_chirp() const;
-    CF_VEC_1D get_signal();
-
     typedef struct std::vector<L0Packet>              PACKET_VEC_1D;
     typedef struct std::vector<std::vector<L0Packet>> PACKET_VEC_2D;
 
-    static L0Packet get_next_packet(std::ifstream& data, int& packet_index);
-    static PACKET_VEC_1D get_packets(std::ifstream& data, const int& num_packets = 0);
-    static PACKET_VEC_1D get_packets(const std::string& filename, const int& num_packets = 0);
-    static PACKET_VEC_1D get_packets_in_swath(const std::string& filename, const std::string& swath);
-    static PACKET_VEC_1D get_packets_in_swath(std::ifstream& data, const std::string& swath);
-    static PACKET_VEC_2D get_packets_in_bursts(const std::string& filename, const std::string& swath);
-    static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath, const bool& get_cal_packets = false);
-    static PACKET_VEC_2D get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets = false);
-    static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
+    [[nodiscard]] static L0Packet get_next_packet(std::ifstream& data, int& packet_index);
+    [[nodiscard]] static PACKET_VEC_1D get_packets(std::ifstream& data, const int& num_packets = 0);
+    [[nodiscard]] static PACKET_VEC_1D get_packets(const std::string& filename, const int& num_packets = 0);
+    [[nodiscard]] static PACKET_VEC_1D get_packets_in_swath(const std::string& filename, const std::string& swath);
+    [[nodiscard]] static PACKET_VEC_1D get_packets_in_swath(std::ifstream& data, const std::string& swath);
+    [[nodiscard]] static PACKET_VEC_2D get_packets_in_bursts(const std::string& filename, const std::string& swath);
+    [[nodiscard]] static PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath, const bool& get_cal_packets = false);
+    [[nodiscard]] static PACKET_VEC_2D get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets = false);
+    [[nodiscard]] static PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets);
     static void decode_packets_in_place(PACKET_VEC_1D& packets);
 };
 

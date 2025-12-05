@@ -206,8 +206,8 @@ D_VEC_1D get_doppler_centroid(
     std::transform(
         rng_times.begin(), rng_times.end(),
             unwrapped_estimates.begin(),
-                [poly, t0] (const double& time) {
-                    return (poly[0] + poly[1] * time + poly[2] * time * time); 
+                [poly] (const double& t) {
+                    return (poly[0] + poly[1] * t + poly[2] * t * t); 
                 } 
     );
 

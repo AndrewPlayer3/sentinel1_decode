@@ -1078,7 +1078,7 @@ PACKET_VEC_1D L0Packet::decode_packets(const PACKET_VEC_1D& packets)
     for (int i = 0; i < num_packets; i++)
     {
         L0Packet packet = packets[i];
-        packet.get_signal();
+        static_cast<void>(packet.get_signal());
         packets_out[i] = packet;
     }
 
@@ -1093,6 +1093,6 @@ void L0Packet::decode_packets_in_place(PACKET_VEC_1D& packets)
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
-        packets[i].get_signal();
+        static_cast<void>(packets[i].get_signal());
     }
 }
