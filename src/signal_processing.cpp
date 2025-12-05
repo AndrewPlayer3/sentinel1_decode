@@ -151,6 +151,7 @@ CF_VEC_1D quadratic_resample(const CF_VEC_1D& arr, const int& num_output_samples
 }
 
 
+/* Source: ChatGPT */
 D_VEC_1D polyfit(const D_VEC_1D& x, const D_VEC_1D& y) 
 {
     const int N = x.size();
@@ -209,6 +210,7 @@ D_VEC_1D polyfit(const D_VEC_1D& x, const D_VEC_1D& y)
 }
 
 
+/* Source: ChatGPT */
 double polyval(const D_VEC_1D& coeffs, const double& x) 
 {
     // Evaluate polynomial: a*x^2 + b*x + c

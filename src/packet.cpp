@@ -812,13 +812,13 @@ void L0Packet::_set_quad_type_d(QUAD& component, int& bit_index)
 
 /***********************************************************************/
 /*                                                                     */
-/* STATIC DECODING METHODS                                             */
+/* DECODING FUNCTIONS                                                  */
 /*                                                                     */
 /***********************************************************************/
 
 
 /* Returns the header dictionary with the values cast to integers with no calculations */
-std::unordered_map<std::string, int> L0Packet::_parse_header(
+std::unordered_map<std::string, int> parse_packet_header(
     const UINT8_VEC_1D&  bytes,
     const INT_VEC_1D&   bit_lengths,
     const STRING_VEC_1D& field_names
@@ -839,10 +839,10 @@ std::unordered_map<std::string, int> L0Packet::_parse_header(
 
 
 /* Decode the next packet within the data stream */
-L0Packet L0Packet::get_next_packet(std::ifstream& data, int& packet_index)
+L0Packet get_next_packet(std::ifstream& data, int packet_index)
 {
     UINT8_VEC_1D primary_bytes = read_bytes(data, 6);
-    std::unordered_map<std::string, int> primary_header = _parse_header(
+    std::unordered_map<std::string, int> primary_header = parse_packet_header(
         primary_bytes,
         PRIMARY_HEADER,
         PRIMARY_HEADER_FIELDS
@@ -850,7 +850,7 @@ L0Packet L0Packet::get_next_packet(std::ifstream& data, int& packet_index)
     if (data.eof()) return L0Packet();
 
     UINT8_VEC_1D secondary_bytes = read_bytes(data, 62);
-    std::unordered_map<std::string, int> secondary_header = _parse_header(
+    std::unordered_map<std::string, int> secondary_header = parse_packet_header(
         secondary_bytes,
         SECONDARY_HEADER,
         SECONDARY_HEADER_FIELDS
@@ -872,7 +872,7 @@ L0Packet L0Packet::get_next_packet(std::ifstream& data, int& packet_index)
 
 
 /* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-PACKET_VEC_1D L0Packet::get_packets(const std::string& filename, const int& num_packets)
+PACKET_VEC_1D get_packets(const std::string& filename, int num_packets)
 {
     std::ifstream data = open_file(filename);
     return get_packets(data, num_packets);
@@ -880,7 +880,7 @@ PACKET_VEC_1D L0Packet::get_packets(const std::string& filename, const int& num_
 
 
 /* Returns num_packets packets from the data stream or all packets if num_packets is 0  */
-PACKET_VEC_1D L0Packet::get_packets(std::ifstream& data, const int& num_packets)
+PACKET_VEC_1D get_packets(std::ifstream& data, int num_packets)
 {
     PACKET_VEC_1D packets;
 
@@ -892,7 +892,7 @@ PACKET_VEC_1D L0Packet::get_packets(std::ifstream& data, const int& num_packets)
     {
         try
         {
-            L0Packet packet = L0Packet::get_next_packet(data, index);
+            L0Packet packet = get_next_packet(data, index);
 
             if (!packet.is_empty()) packets.push_back(packet);
             else break;
@@ -910,7 +910,7 @@ PACKET_VEC_1D L0Packet::get_packets(std::ifstream& data, const int& num_packets)
 
 
 /* Returns all packets that are inside of the provided swath */
-PACKET_VEC_1D L0Packet::get_packets_in_swath(const std::string& filename, const std::string& swath)
+PACKET_VEC_1D get_packets_in_swath(const std::string& filename, const std::string& swath)
 {
     std::ifstream data = open_file(filename);
     return get_packets_in_swath(data, swath);
@@ -918,7 +918,7 @@ PACKET_VEC_1D L0Packet::get_packets_in_swath(const std::string& filename, const 
 
 
 /* Returns all packets that are inside of the provided swath */
-PACKET_VEC_1D L0Packet::get_packets_in_swath(std::ifstream& data, const std::string& swath)
+PACKET_VEC_1D get_packets_in_swath(std::ifstream& data, const std::string& swath)
 {
     PACKET_VEC_1D packets;
 
@@ -928,7 +928,7 @@ PACKET_VEC_1D L0Packet::get_packets_in_swath(std::ifstream& data, const std::str
     {
         try
         {
-            L0Packet packet = L0Packet::get_next_packet(data, index);
+            L0Packet packet = get_next_packet(data, index);
 
             if (packet.is_empty()) break;
             if (packet.get_swath() == swath) packets.push_back(packet);
@@ -952,7 +952,7 @@ PACKET_VEC_1D L0Packet::get_packets_in_swath(std::ifstream& data, const std::str
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-PACKET_VEC_2D L0Packet::get_packets_in_bursts(const std::string& filename, const std::string& swath)
+PACKET_VEC_2D get_packets_in_bursts(const std::string& filename, const std::string& swath)
 {
     std::ifstream data = open_file(filename);
     return get_packets_in_bursts(data, swath);
@@ -960,9 +960,9 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(const std::string& filename, const
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::string& swath, const bool& get_cal_packets)
+PACKET_VEC_2D get_packets_in_bursts(std::ifstream& data, const std::string& swath, bool get_cal_packets)
 {
-    PACKET_VEC_1D packets = L0Packet::get_packets_in_swath(data, swath);
+    PACKET_VEC_1D packets = get_packets_in_swath(data, swath);
     int num_packets = packets.size();
 
     PACKET_VEC_2D bursts; 
@@ -1015,7 +1015,7 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(std::ifstream& data, const std::st
 
 
 /* Returns all packets in the provided swath, with each burst in its own vector. */
-PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, const bool& get_cal_packets)
+PACKET_VEC_2D get_packets_in_bursts(PACKET_VEC_1D& packets, const std::string& swath, bool get_cal_packets)
 {
     int num_packets = packets.size();
 
@@ -1068,7 +1068,7 @@ PACKET_VEC_2D L0Packet::get_packets_in_bursts(PACKET_VEC_1D& packets, const std:
 }
 
 
-PACKET_VEC_1D L0Packet::decode_packets(const PACKET_VEC_1D& packets)
+PACKET_VEC_1D decode_packets(const PACKET_VEC_1D& packets)
 {
     int num_packets = packets.size();
 
@@ -1086,7 +1086,7 @@ PACKET_VEC_1D L0Packet::decode_packets(const PACKET_VEC_1D& packets)
 }
 
 
-void L0Packet::decode_packets_in_place(PACKET_VEC_1D& packets)
+void decode_packets_in_place(PACKET_VEC_1D& packets)
 {
     int num_packets = packets.size();
     

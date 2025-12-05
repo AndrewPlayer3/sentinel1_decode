@@ -61,17 +61,17 @@ public:
 
     void _set_packets();
 
-    STATE_VECTORS get_state_vectors();
-
     void apply_eccm() {_use_eccm = true;}
     void apply_eccm(const int& detection_threshold, const int& mitigation_threshold);
 
-    CF_VEC_2D get_burst(const std::string& swath, const int& burst);
-    CF_VEC_2D get_swath(const std::string& swath);
+    [[nodiscard]] STATE_VECTORS get_state_vectors();
 
-    CF_VEC_2D get_range_compressed_burst(const std::string& swath, const int& burst, const bool& range_doppler=false);
-    CF_VEC_2D get_range_compressed_swath(const std::string& swath, const bool& range_doppler=false);
+    [[nodiscard]] CF_VEC_2D get_burst(const std::string& swath, const int& burst);
+    [[nodiscard]] CF_VEC_2D get_swath(const std::string& swath);
 
-    CF_VEC_2D get_azimuth_compressed_burst(const std::string& swath, const int& burst);
-    CF_VEC_2D get_azimuth_compressed_swath(const std::string& swath);
+    [[nodiscard]] CF_VEC_2D get_range_compressed_burst(const std::string& swath, const int& burst, const bool& range_doppler=false);
+    [[nodiscard]] CF_VEC_2D get_range_compressed_swath(const std::string& swath, const bool& range_doppler=false);
+
+    [[nodiscard]] CF_VEC_2D get_azimuth_compressed_burst(const std::string& swath, const int& burst);
+    [[nodiscard]] CF_VEC_2D get_azimuth_compressed_swath(const std::string& swath);
 };
