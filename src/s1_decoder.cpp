@@ -584,6 +584,8 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     CF_VEC_1D az_filter(num_packets);
     CF_VEC_1D filter_energies(num_samples);
 
+    double ref_range = slant_ranges[num_samples / 2];
+
     #pragma omp parallel for
     for (int i = 0; i < num_packets; i++)
     {
@@ -612,6 +614,11 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         fftw_execute(inverse_plans[i]);
         fftshift_in_place(range_line);
 
+        for (int j = 0; j < num_samples; j++)
+        {
+            radar_data[i][j] /= std::sqrt( std::pow( ref_range / slant_ranges[j], 3.0 ) );
+        }
+
         if (tops_mode)
         {
             apply_range_cell_migration_correction(
@@ -632,9 +639,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
 
             std::complex<double> az_filter = 
                 std::exp(4.0 * I * PI * slant_range * rcmc_factor / WAVELENGTH) * time_correction;
-
-            // Unnecessary until windowing is added
-            filter_energies[j] += std::pow( std::abs(az_filter), 2.0 );
 
             if (tops_mode) 
             {
