@@ -183,6 +183,7 @@ CF_VEC_2D azimuth_frequency_ufr(
     // Low-pass Filter
     compute_axis_dft_in_place(ufr_output, 0, 1, false);
 
+    #pragma omp parallel for
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
         for (int az_line = 0; az_line < shape; az_line++)
@@ -319,6 +320,7 @@ CF_VEC_2D azimuth_time_ufr(
     // Low-pass Filter
     compute_axis_dft_in_place(ufr_intermediate, 0, 1, false);
 
+    #pragma omp parallel for
     for (int rng_line = 0; rng_line < num_rng; rng_line++)
     {
         for (int az_line = 0; az_line < shape; az_line++)
@@ -464,7 +466,6 @@ void apply_range_cell_migration_correction(
     for (int j = 0; j < num_samples; j++)
     {
         double slant_range = slant_ranges[j];
-
         double range_shift = (slant_range / rcmc_factors[j]) - slant_range;
 
         std::complex<double> rcmc_phase =

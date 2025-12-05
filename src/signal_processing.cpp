@@ -46,7 +46,7 @@ D_VEC_1D linear_resample(const D_VEC_1D& arr, const int& num_output_samples)
 
     int index = 0;
 
-    for (int i = 0; i < num_input_samples; i++)
+    for (int i = 0; i < num_input_samples - 1; i++)
     {
         double x0 = i * dx_in;
         double x1 = (i + 1) * dx_in;
@@ -60,7 +60,9 @@ D_VEC_1D linear_resample(const D_VEC_1D& arr, const int& num_output_samples)
             index += 1;
         }
     }
- 
+
+    out[num_output_samples - 1] = arr[num_input_samples - 1];
+
     return out;
 }
 
@@ -82,7 +84,7 @@ CF_VEC_1D linear_resample(const CF_VEC_1D& arr, const int& num_output_samples)
 
     int index = 0;
 
-    for (int i = 0; i < num_input_samples; i++)
+    for (int i = 0; i < num_input_samples - 1; i++)
     {
         double x0 = i * dx_in;
         double x1 = (i + 1) * dx_in;
@@ -98,6 +100,8 @@ CF_VEC_1D linear_resample(const CF_VEC_1D& arr, const int& num_output_samples)
         }
     }
  
+    out[num_output_samples - 1] = arr[num_input_samples - 1];
+
     return out;
 }
 
@@ -666,7 +670,6 @@ void _compute_axis_dft(
 
     if (inverse)
     {
-        #pragma omp parallel for num_threads(4)
         for (int i = 0; i < signal_rows; i++)
         {
             std::for_each(
