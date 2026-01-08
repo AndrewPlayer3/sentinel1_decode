@@ -417,6 +417,31 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 }
 
 
+void pad_radar_data(CF_VEC_2D& radar_data, int chirp_len)
+{
+    for (int i = 0; i < num_packets; i++)
+    {
+        CF_VEC_1D rng_line(padded_len);
+        std::transform(
+            radar_data[i].begin(), radar_data[i].end(),
+            rng_line.begin() + chirp_len, rng_line.begin() + chirp_len,
+            [] (std::complex<double>& n, std::complex<double>& m) {return n;}
+        );
+        radar_data[i] = rng_line;
+    }
+}
+
+
+void crop_radar_data(CF_VEC_2D& radar_data, int chirp_len)
+{
+    for (int i = 0; i < radar_data.size(); i++)
+    {
+        CF_VEC_1D temp = radar_data[i];
+        radar_data[i] = CF_VEC_1D(temp.begin() + chirp_len, temp.end() - chirp_len);
+    }
+}
+
+
 CF_VEC_2D S1_Decoder::_range_compress(
     PACKET_VEC_1D& packets,
     const bool& do_ifft,
@@ -445,11 +470,17 @@ CF_VEC_2D S1_Decoder::_range_compress(
         eccm(range_compressed, 128, 64, _eccm_detection_threshold, _eccm_mitigation_threshold, rx_pol);
     }
 
+    int chirp_len = packets[0].get_replica_chirp_length();
+    int padded_len = num_samples + (2 * chirp_len);
+
+    pad_radar_data(range_compressed, chirp_len);
+
     compute_axis_dft_in_place(range_compressed, 0, 1, false);
 
     std::cout << "Range Compressing" << std::endl;
 
-    CF_VEC_1D reference_function = get_reference_function(packets[0].get_replica_chirp());
+    CF_VEC_1D ref_chirp = packets[0].get_replica_chirp();
+    CF_VEC_1D reference_function = get_reference_function(ref_chirp);
 
     for (int i = 0; i < num_packets; i++)
     {
@@ -459,15 +490,10 @@ CF_VEC_2D S1_Decoder::_range_compress(
     if (do_ifft)
     {
         compute_axis_dft_in_place(range_compressed, 0, 1, true);
-        fftshift_in_place(range_compressed);
     }
 
-    std::for_each(
-        range_compressed.begin(), range_compressed.end(),
-            [num_samples] (CF_VEC_1D& row) { 
-                std::rotate(row.begin(), row.end()-(num_samples / 2), row.end());
-            }
-    );
+    fftshift_in_place(range_compressed);
+    crop_radar_data(range_compressed, chirp_len);
 
     if (do_azimuth_fft)
     {
@@ -491,7 +517,7 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
     CF_VEC_2D radar_data;
 
     if (tops_mode) radar_data = _range_compress(packets, true, false);
-    else radar_data = _range_compress(packets, false, true);
+    else radar_data = _range_compress(packets, true, true);
 
     D_VEC_1D slant_ranges = packets[0].get_slant_ranges();
 
@@ -612,7 +638,6 @@ CF_VEC_2D S1_Decoder::_azimuth_compress(PACKET_VEC_1D& packets, const bool& tops
         );
 
         fftw_execute(inverse_plans[i]);
-        fftshift_in_place(range_line);
 
         for (int j = 0; j < num_samples; j++)
         {
