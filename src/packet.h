@@ -177,6 +177,7 @@ public:
 
     [[nodiscard]] int get_packet_index() const;
     [[nodiscard]] int get_baq_block_length() const;
+    [[nodiscard]] int get_replica_chirp_length() const;
     [[nodiscard]] double get_time() const;
     [[nodiscard]] double get_pulse_length() const;
     [[nodiscard]] double get_tx_ramp_rate() const;

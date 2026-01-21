@@ -358,10 +358,11 @@ CF_VEC_1D L0Packet::get_replica_chirp() const
 
     D_VEC_1D  time = linspace(0.0, txpl, num_samples);
 
-    int min_index = int(ceil((num_range - num_samples)/2))-1;
+    int rep_len = num_range + 2 * num_samples;
+    int min_index = int(floor((rep_len - num_samples)/2));
     int max_index = min_index + num_samples;
 
-    CF_VEC_1D chirp(num_range);
+    CF_VEC_1D chirp(rep_len);
     for (int i = min_index; i < max_index; i++)
     {
         double t  = time[i - min_index]; 
@@ -369,6 +370,13 @@ CF_VEC_1D L0Packet::get_replica_chirp() const
     }
 
     return chirp;
+}
+
+
+int L0Packet::get_replica_chirp_length() const
+{
+    int range_dec = _secondary_header.at("range_decimation");
+    return int(floor(RANGE_DECIMATION[range_dec] * get_pulse_length()));
 }
 
 
