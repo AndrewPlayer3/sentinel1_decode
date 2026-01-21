@@ -419,6 +419,9 @@ CF_VEC_2D S1_Decoder::get_azimuth_compressed_swath(const std::string& swath)
 
 void pad_radar_data(CF_VEC_2D& radar_data, int chirp_len)
 {
+    int num_packets = radar_data.size();
+    int num_samples = radar_data[0].size();
+    int padded_len = num_samples + 2 * chirp_len;
     for (int i = 0; i < num_packets; i++)
     {
         CF_VEC_1D rng_line(padded_len);
@@ -471,10 +474,8 @@ CF_VEC_2D S1_Decoder::_range_compress(
     }
 
     int chirp_len = packets[0].get_replica_chirp_length();
-    int padded_len = num_samples + (2 * chirp_len);
 
     pad_radar_data(range_compressed, chirp_len);
-
     compute_axis_dft_in_place(range_compressed, 0, 1, false);
 
     std::cout << "Range Compressing" << std::endl;
